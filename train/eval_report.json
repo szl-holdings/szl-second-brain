@@ -164,12 +164,7 @@
   "generate": {
     "kind": "GENERATE",
     "label": "UNAVAILABLE",
-    "reason": (
-      "Named-N generate on the local bf16 LoRA did not emit parseable JSON this checkout "
-      "(Qwen3.5 multimodal processor treated prompts as image sources; later token-ids-only "
-      "runs returned unparseable text). SOFTWARE planner is the shipped navigator. "
-      "publication_eligible stays false. Train loss 0.1805 is not this eval."
-    ),
+    "reason": "Named-N generate on the local bf16 LoRA did not emit parseable JSON this checkout (Qwen3.5 multimodal processor treated prompts as image sources; later token-ids-only runs returned unparseable text). SOFTWARE planner is the shipped navigator. publication_eligible stays false. Train loss 0.1805 is not this eval.",
     "publication_eligible": false
   },
   "computed_at": "2026-08-29T13:18:14.020501+00:00",
