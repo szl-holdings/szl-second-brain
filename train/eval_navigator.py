@@ -186,13 +186,16 @@ def generate_bench() -> dict[str, Any]:
         encoded = tok(prompt, return_tensors="pt", add_special_tokens=False)
         input_ids = encoded["input_ids"].to(model.device)
         attn = encoded.get("attention_mask")
+        eos = getattr(tok, "eos_token_id", None)
         gen_kw: dict[str, Any] = {
             "input_ids": input_ids,
-            "max_new_tokens": 512,
+            "max_new_tokens": 384,
             "do_sample": False,
         }
         if attn is not None:
             gen_kw["attention_mask"] = attn.to(model.device)
+        if eos is not None:
+            gen_kw["eos_token_id"] = eos
         out = model.generate(**gen_kw)
         text = tok.decode(out[0][input_ids.shape[-1] :], skip_special_tokens=True)
         return _parse_plan(text)
@@ -210,6 +213,7 @@ def generate_bench() -> dict[str, Any]:
             if not plan:
                 parse_fail += 1
                 cases.append({"id": row["id"], "ok": False, "reason": "unparseable"})
+                print(f"[generate] {row['id']} unparseable")
                 continue
             offered = {h["nodeId"] for h in row["handles"]}
             cites = list(plan.get("citedNodeIds") or [])
@@ -224,6 +228,7 @@ def generate_bench() -> dict[str, Any]:
             )
             if ok:
                 nav_ok += 1
+            print(f"[generate] {row['id']} {plan.get('decision')} ok={ok}")
             cases.append(
                 {
                     "id": row["id"],
