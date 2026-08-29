@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>SZL Second Brain — holographic handles</title>
+<meta name="description" content="Public 575-chunk projection. Handles only. SOFTWARE lexical rank, never correctness. Λ = Conjecture 1."/>
+<style>
+:root{--void:#03060c;--panel:rgba(8,16,26,.82);--line:#1b2a38;--teal:#3af4c8;--gold:#e8c074;--cream:#eef3f6;--dim:#8aa0b3;--rose:#ff7a9c}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--void);color:var(--cream);font:13.5px/1.5 ui-sans-serif,system-ui,Segoe UI,Roboto,Arial}
+body{overflow:hidden}
+canvas#holo{position:fixed;inset:0;width:100%;height:100%;display:block}
+.hud{position:relative;z-index:2;display:grid;grid-template-columns:1fr 340px;grid-template-rows:auto 1fr auto;height:100vh;pointer-events:none}
+.hud > *{pointer-events:auto}
+.top{grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 18px;flex-wrap:wrap;background:linear-gradient(180deg,rgba(3,6,12,.9),transparent)}
+.brand h1{margin:0;font-size:20px;color:var(--teal)}
+.sub{color:var(--gold);font:11px ui-monospace,monospace;letter-spacing:1.1px;text-transform:uppercase}
+.links a{color:var(--teal);text-decoration:none;border:1px solid var(--line);border-radius:999px;padding:4px 10px;font:11px ui-monospace,monospace}
+.right{margin:8px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px;overflow:auto;backdrop-filter:blur(8px)}
+.prompt{margin:8px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px;backdrop-filter:blur(8px)}
+h2{margin:0 0 8px;font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--gold)}
+textarea,button,input{font:inherit}
+textarea{width:100%;min-height:56px;resize:vertical;background:#070e16;color:var(--cream);border:1px solid var(--line);border-radius:8px;padding:8px}
+button{background:var(--teal);color:#04140f;border:0;border-radius:8px;padding:8px 14px;font-weight:700;cursor:pointer;margin:8px 8px 0 0}
+button.ghost{background:transparent;color:var(--teal);border:1px solid var(--line)}
+.note{color:var(--dim);font-size:11.5px;margin:8px 0}
+.handle{border:1px solid var(--line);border-radius:8px;padding:7px;margin:0 0 6px;background:#071018;font:11.5px ui-monospace,monospace}
+.handle b{color:var(--teal)}
+.cited{border-color:var(--gold)}
+@media (max-width:860px){
+  body{overflow:auto}
+  .hud{display:flex;flex-direction:column;height:auto;min-height:100vh}
+  canvas#holo{position:sticky;top:0;height:38vh}
+}
+</style>
+</head>
+<body>
+<canvas id="holo" aria-hidden="true"></canvas>
+<noscript>
+  <div class="note" style="position:relative;z-index:3;padding:24px">
+    JavaScript required for the hologram. API still live:
+    <a href="/retrieve?q=lambda">/retrieve</a> ·
+    <a href="/plan?q=lambda">/plan</a> ·
+    <a href="/health">/health</a>
+    · Λ = Conjecture 1 · 0 runtime CDN
+  </div>
+</noscript>
+<div class="hud">
+  <header class="top">
+    <div class="brand">
+      <h1>Second Brain</h1>
+      <div class="sub">handles only · SOFTWARE lexical rank</div>
+    </div>
+    <nav class="links">
+      <a href="/health">health</a>
+      <a href="/api/v1/index">index</a>
+      <a href="/retrieve?q=khipu">retrieve</a>
+      <a href="/plan?q=khipu">plan</a>
+    </nav>
+  </header>
+  <section></section>
+  <aside class="right">
+    <h2>Index</h2>
+    <div class="note" id="status">index…</div>
+    <h2>Plan</h2>
+    <div class="note" id="plan">plan…</div>
+    <h2>Handles</h2>
+    <div id="handles"></div>
+  </aside>
+  <form class="prompt" id="form">
+    <textarea id="q" placeholder="Query the public projection. Handles only — never node text.">Lambda uniqueness conjecture 1</textarea>
+    <div>
+      <button type="submit" id="go">Retrieve + plan</button>
+      <button type="button" class="ghost" id="abstain">Abstain probe</button>
+    </div>
+    <p class="note">Score is overlap, never correctness. Private 9464-node graph is not here. Λ = Conjecture 1.</p>
+  </form>
+</div>
+<script>
+const esc = s => String(s??"").replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
+let nodes = [];
+let cited = new Set();
+let decision = "UNAVAILABLE";
+let rot = 0.15;
+
+async function j(url){
+  try{
+    const r = await fetch(url);
+    let d = {};
+    try{ d = await r.json(); }catch(e){}
+    return {ok:r.ok, status:r.status, data:d};
+  }catch(e){ return {ok:false, status:"network", data:{error:"UNAVAILABLE"}}; }
+}
+
+function renderStatus(r){
+  const el = document.getElementById("status");
+  if (!r.ok){ el.textContent = "UNAVAILABLE · " + (r.status||"network"); return; }
+  const d = r.data || {};
+  if (d.built === false || d.ok === false){
+    el.textContent = "UNAVAILABLE · " + (d.honesty || d.load_error || "index not built");
+    return;
+  }
+  el.textContent = "SOFTWARE · chunks=" + (d.chunk_count||d.document_count||"UNAVAILABLE") +
+    " · weights=false · gradients=0";
+}
+
+function renderGraph(hit, plan){
+  const box = document.getElementById("handles");
+  const pel = document.getElementById("plan");
+  if (!hit.ok){
+    nodes = []; cited = new Set(); decision = "UNAVAILABLE";
+    box.textContent = "UNAVAILABLE · retrieve failed";
+    pel.textContent = "UNAVAILABLE";
+    return;
+  }
+  const handles = (hit.data && hit.data.handles) || [];
+  if (!hit.data.ready || !handles.length){
+    nodes = []; cited = new Set();
+    decision = (plan.ok && plan.data && plan.data.decision) || "ABSTAIN";
+    box.textContent = "UNAVAILABLE · " + ((hit.data && hit.data.honesty) || "no handles");
+    pel.textContent = (plan.ok ? (plan.data.decision||"ABSTAIN") : "UNAVAILABLE") +
+      " · " + ((plan.data && (plan.data.abstainReason || plan.data.honesty)) || "");
+    return;
+  }
+  nodes = handles.map((h,i)=>({
+    id: h.nodeId, note: h.note || "", source: h.source || "",
+    kind: h.nodeKind || "INDEX", a: (i/Math.max(handles.length,1))*Math.PI*2
+  }));
+  const p = plan.ok ? (plan.data||{}) : {};
+  decision = p.decision || "UNAVAILABLE";
+  cited = new Set(p.citedNodeIds || []);
+  pel.textContent = (plan.ok ? "" : "UNAVAILABLE · ") +
+    (p.kind || "SOFTWARE") + " decision=" + decision +
+    " cited=" + (p.citedNodeIds||[]).join(",") +
+    (p.abstainReason ? " · " + p.abstainReason : "");
+  box.innerHTML = nodes.map(n=>
+    `<div class="handle${cited.has(n.id)?" cited":""}"><b>${esc(n.id)}</b><div>${esc(n.note)}</div></div>`
+  ).join("");
+}
+
+async function run(query){
+  const [hit, plan, health] = await Promise.all([
+    j("/retrieve?q="+encodeURIComponent(query)+"&k=8"),
+    j("/plan?q="+encodeURIComponent(query)+"&k=8"),
+    j("/health")
+  ]);
+  renderStatus(health);
+  renderGraph(hit, plan);
+}
+
+document.getElementById("form").addEventListener("submit", e=>{
+  e.preventDefault();
+  run(document.getElementById("q").value);
+});
+document.getElementById("abstain").addEventListener("click", ()=>{
+  document.getElementById("q").value = "Which private 9464-node graph row proves Lambda is a theorem?";
+  run(document.getElementById("q").value);
+});
+
+const cv = document.getElementById("holo"), ctx = cv.getContext("2d");
+function resize(){ cv.width = innerWidth*devicePixelRatio; cv.height = innerHeight*devicePixelRatio; }
+addEventListener("resize", resize); resize();
+function proj(x,y,z,w,h){
+  const c=Math.cos(rot), s=Math.sin(rot);
+  const x2=x*c-z*s, z2=x*s+z*c, f=2.5/(4.1+z2);
+  return [w*0.38+x2*f*w*0.22, h*0.46+y*f*h*0.28, f];
+}
+function frame(){
+  const w=cv.width,h=cv.height;
+  ctx.fillStyle="#03060c"; ctx.fillRect(0,0,w,h);
+  const g=ctx.createRadialGradient(w*0.38,h*0.46,12,w*0.4,h*0.5,Math.max(w,h)*0.5);
+  g.addColorStop(0,"rgba(58,244,200,.08)"); g.addColorStop(1,"rgba(3,6,12,0)");
+  ctx.fillStyle=g; ctx.fillRect(0,0,w,h);
+  rot += 0.004;
+  ctx.save(); ctx.globalCompositeOperation="lighter";
+  const origin = proj(0,0,0,w,h);
+  ctx.fillStyle="rgba(232,192,116,.9)";
+  ctx.beginPath(); ctx.arc(origin[0], origin[1], 7*devicePixelRatio, 0, Math.PI*2); ctx.fill();
+  ctx.font = `${10*devicePixelRatio}px ui-monospace`;
+  ctx.fillStyle="#eef3f6"; ctx.textAlign="center";
+  ctx.fillText(decision, origin[0], origin[1]+18*devicePixelRatio);
+  nodes.forEach(n=>{
+    const x=Math.cos(n.a+rot*0.2)*1.7, z=Math.sin(n.a+rot*0.2)*1.7;
+    const q=proj(x,0,z,w,h);
+    const on = cited.has(n.id);
+    ctx.strokeStyle = on ? "rgba(232,192,116,.55)" : "rgba(58,244,200,.22)";
+    ctx.beginPath(); ctx.moveTo(origin[0], origin[1]); ctx.lineTo(q[0], q[1]); ctx.stroke();
+    ctx.fillStyle = on ? "#e8c074" : "#3af4c8";
+    ctx.beginPath(); ctx.arc(q[0], q[1], (on?9:6)*q[2]*devicePixelRatio, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle="#eef3f6";
+    ctx.font = `${9*devicePixelRatio}px ui-monospace`;
+    ctx.fillText((n.id||"").slice(0,22), q[0], q[1]+16*devicePixelRatio);
+  });
+  ctx.restore();
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+(async function boot(){
+  const health = await j("/health");
+  renderStatus(health);
+  await run(document.getElementById("q").value);
+})();
+</script>
+</body>
+</html>
