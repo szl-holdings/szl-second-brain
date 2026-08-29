@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>SZL Second Brain — holographic navigator</title>
+<meta name="description" content="Handles-only retrieval hologram over the public 575-chunk second-brain projection. SOFTWARE planner. Λ = Conjecture 1."/>
+<style>
+:root{
+  --void:#03060c;--panel:rgba(8,16,26,.78);--line:#1b2a38;
+  --teal:#3af4c8;--gold:#e8c074;--cream:#eef3f6;--dim:#8aa0b3;--rose:#ff7a9c;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--void);color:var(--cream);
+  font:13.5px/1.5 ui-sans-serif,system-ui,Segoe UI,Roboto,Arial}
+body{overflow:hidden}
+canvas#holo{position:fixed;inset:0;width:100%;height:100%;display:block}
+.hud{position:relative;z-index:2;display:grid;grid-template-columns:300px 1fr 360px;
+  grid-template-rows:auto 1fr auto;height:100vh;gap:0;pointer-events:none}
+.hud > *{pointer-events:auto}
+.top{grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;gap:12px;
+  padding:12px 18px;background:linear-gradient(180deg,rgba(3,6,12,.92),transparent);flex-wrap:wrap}
+.brand{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.brand h1{margin:0;font-size:20px;letter-spacing:.4px;color:var(--teal)}
+.brand .sub{color:var(--gold);font:11px ui-monospace,Consolas,monospace;letter-spacing:1.1px;text-transform:uppercase}
+.links{display:flex;gap:8px;flex-wrap:wrap}
+.links a{color:var(--teal);text-decoration:none;border:1px solid var(--line);border-radius:999px;
+  padding:4px 10px;font:11px ui-monospace,Consolas,monospace}
+.links a:hover{border-color:var(--teal)}
+.badge{font:10.5px ui-monospace,Consolas,monospace;padding:3px 8px;border-radius:999px;border:1px solid var(--line);color:var(--dim)}
+.left,.right{margin:8px;background:var(--panel);border:1px solid var(--line);border-radius:12px;
+  padding:12px;overflow:auto;backdrop-filter:blur(8px)}
+.center{display:flex;flex-direction:column;justify-content:flex-end;padding:0 12px 12px;min-width:0}
+h2{margin:0 0 8px;font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--gold)}
+.prompt{display:flex;flex-direction:column;gap:8px;background:var(--panel);border:1px solid var(--line);
+  border-radius:12px;padding:10px;backdrop-filter:blur(8px)}
+textarea,button,input{font:inherit}
+textarea{width:100%;min-height:64px;resize:vertical;background:#070e16;color:var(--cream);
+  border:1px solid var(--line);border-radius:8px;padding:8px}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+button{background:var(--teal);color:#04140f;border:0;border-radius:8px;padding:8px 14px;font-weight:700;cursor:pointer}
+button.ghost{background:transparent;color:var(--teal);border:1px solid var(--line)}
+button:disabled{opacity:.5;cursor:wait}
+.kpi{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px}
+.kpi div{background:#071018;border:1px solid var(--line);border-radius:8px;padding:8px}
+.kpi b{display:block;font-size:16px;color:var(--teal)}
+.handle{border:1px solid var(--line);border-radius:8px;padding:8px;margin:0 0 8px;background:#071018}
+.handle.cited{border-color:var(--teal)}
+.handle .id{color:var(--dim);font:11px ui-monospace,Consolas,monospace;word-break:break-all}
+.plan{white-space:pre-wrap;font:11.5px/1.45 ui-monospace,Consolas,monospace;background:#071018;
+  border:1px solid var(--line);border-radius:8px;padding:8px;max-height:46vh;overflow:auto}
+.note,.law{color:var(--dim);font-size:11.5px;margin-top:8px}
+.noscript{position:relative;z-index:3;padding:24px;max-width:46rem;margin:40px auto;background:#071018;border:1px solid var(--line);border-radius:12px}
+@media (max-width:960px){
+  body{overflow:auto}
+  .hud{display:flex;flex-direction:column;height:auto;min-height:100vh}
+  canvas#holo{position:sticky;top:0;height:42vh}
+  .left,.right,.center{margin:8px}
+}
+</style>
+</head>
+<body>
+<canvas id="holo" aria-hidden="true"></canvas>
+<noscript>
+  <div class="noscript">
+    <h1>SZL Second Brain</h1>
+    <p>The hologram needs JavaScript. The API is still live:</p>
+    <ul>
+      <li><a href="/health">/health</a></li>
+      <li><a href="/retrieve?q=khipu">/retrieve</a></li>
+      <li><a href="/plan?q=khipu">/plan</a></li>
+      <li><a href="/api/v1/index">/api/v1/index</a></li>
+      <li><a href="/api/v1/manifest">/api/v1/manifest</a></li>
+    </ul>
+    <p>Λ = Conjecture 1 · 0 runtime CDN · Apache-2.0</p>
+  </div>
+</noscript>
+<div class="hud">
+  <header class="top">
+    <div class="brand">
+      <h1>Second Brain</h1>
+      <div class="sub">handles-only holographic navigator</div>
+      <span id="mode" class="badge">SOFTWARE</span>
+    </div>
+    <nav class="links" aria-label="origins">
+      <a href="https://a-11-oy.com">a-11-oy.com</a>
+      <a href="https://github.com/szl-holdings/szl-second-brain">GitHub</a>
+      <a href="https://huggingface.co/spaces/SZLHOLDINGS/second-brain">HF Space</a>
+      <a href="/retrieve?q=khipu">retrieve</a>
+      <a href="/plan?q=khipu">plan</a>
+      <a href="/api/v1/manifest">contract</a>
+    </nav>
+  </header>
+  <aside class="left">
+    <h2>Index</h2>
+    <div class="kpi">
+      <div><span>chunks</span><b id="n">…</b></div>
+      <div><span>kind</span><b>SOFTWARE</b></div>
+      <div><span>gradients</span><b>0 raw nodes</b></div>
+      <div><span>Λ</span><b>Conjecture 1</b></div>
+    </div>
+    <p class="note">Public 575-chunk projection. BM25-like overlap is never correctness. Private 9464-node graph is not here. Existing 1.5B BrainNavigator is a different SKU (abstain MEASURED 2/6) and is not overwritten.</p>
+    <h2>Handles</h2>
+    <div id="handles"></div>
+  </aside>
+  <div class="center">
+    <form class="prompt" id="form">
+      <label for="q">Query</label>
+      <textarea id="q" maxlength="400">Lambda uniqueness conjecture TH_L1</textarea>
+      <div class="row">
+        <button type="submit" id="go">Retrieve + plan</button>
+        <button type="button" class="ghost" id="abs">Abstain probe</button>
+      </div>
+      <p class="law">Proposal only. Controller resolves content outside the weights. publication_eligible false.</p>
+    </form>
+  </div>
+  <aside class="right">
+    <h2>Plan JSON</h2>
+    <div id="decision" class="badge">idle</div>
+    <pre class="plan" id="plan">awaiting query</pre>
+    <p class="note" id="eval">eval: …</p>
+  </aside>
+</div>
+<script>
+const canvas = document.getElementById("holo");
+const ctx = canvas.getContext("2d");
+let w=0,h=0,rot=0, graph={nodes:[],edges:[]};
+
+function resize(){
+  w = canvas.width = innerWidth * devicePixelRatio;
+  h = canvas.height = innerHeight * devicePixelRatio;
+}
+addEventListener("resize", resize); resize();
+
+function proj(x,y,z){
+  const c = Math.cos(rot), s = Math.sin(rot);
+  const X = x*c - z*s, Z = x*s + z*c;
+  const sc = 220*devicePixelRatio / (3.2 + Z);
+  return [w/2 + X*sc, h*0.42 + y*sc, Math.max(0.4, 1.4/(1.2+Z))];
+}
+function esc(s){ return String(s||"").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c])); }
+
+const particles = Array.from({length:80}, (_,i)=>({
+  a: i*0.31, r: 0.4 + (i%7)*0.18, y: ((i%5)-2)*0.12, s: 0.004 + (i%3)*0.001
+}));
+
+function frame(){
+  ctx.clearRect(0,0,w,h);
+  const g = ctx.createRadialGradient(w/2,h*0.4,20,w/2,h*0.4,Math.max(w,h)*0.6);
+  g.addColorStop(0,"rgba(58,244,200,.05)"); g.addColorStop(1,"rgba(3,6,12,0)");
+  ctx.fillStyle = g; ctx.fillRect(0,0,w,h);
+  rot += 0.003;
+  ctx.save();
+  ctx.globalCompositeOperation = "lighter";
+  particles.forEach(p=>{
+    p.a += p.s;
+    const q = proj(Math.cos(p.a)*p.r, p.y, Math.sin(p.a)*p.r);
+    ctx.fillStyle = "rgba(58,244,200,.16)";
+    ctx.beginPath(); ctx.arc(q[0], q[1], 1.1*q[2]*devicePixelRatio, 0, Math.PI*2); ctx.fill();
+  });
+  const nodes = graph.nodes || [];
+  const nH = nodes.filter(n => n.kind === "HANDLE");
+  nH.forEach((n,i)=>{
+    const a = (i / Math.max(1,nH.length))*Math.PI*2 + rot*0.2;
+    n._x = Math.cos(a)*1.55; n._y = (i%2?0.18:-0.12); n._z = Math.sin(a)*1.55;
+    const q = proj(n._x, n._y, n._z);
+    const cited = !!n.cited;
+    ctx.strokeStyle = cited ? "rgba(58,244,200,.7)" : "rgba(138,160,179,.28)";
+    const c = proj(0,0,0);
+    ctx.beginPath(); ctx.moveTo(c[0],c[1]); ctx.lineTo(q[0],q[1]); ctx.stroke();
+    ctx.fillStyle = cited ? "#3af4c8" : "#8aa0b3";
+    ctx.globalAlpha = cited ? 0.95 : 0.55;
+    ctx.beginPath(); ctx.arc(q[0], q[1], (cited?14:9)*q[2]*devicePixelRatio, 0, Math.PI*2); ctx.fill();
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = "#eef3f6";
+    ctx.font = `${10*devicePixelRatio}px ui-sans-serif`;
+    ctx.textAlign = "center";
+    ctx.fillText(String(n.label||"").slice(0,28), q[0], q[1]+22*devicePixelRatio);
+  });
+  const qc = proj(0,0,0);
+  ctx.fillStyle = "#e8c074";
+  ctx.beginPath(); ctx.arc(qc[0], qc[1], 16*devicePixelRatio, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle = "#04140f";
+  ctx.font = `bold ${11*devicePixelRatio}px ui-sans-serif`;
+  ctx.textAlign = "center";
+  ctx.fillText("Q", qc[0], qc[1]+4*devicePixelRatio);
+  ctx.restore();
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+
+async function j(url, opt){
+  try{
+    const r = await fetch(url, opt);
+    let data = {};
+    try{ data = await r.json(); }catch(e){ data = {error:"non-JSON"}; }
+    return {ok:r.ok, status:r.status, data};
+  }catch(e){
+    return {ok:false, status:"network", data:{error:"UNAVAILABLE", detail:String(e)}};
+  }
+}
+
+function renderHandles(hit, plan){
+  const box = document.getElementById("handles");
+  const cited = new Set((plan && plan.citedNodeIds) || []);
+  const rows = (hit && hit.handles) || [];
+  box.innerHTML = rows.length ? rows.map(h =>
+    `<div class="handle ${cited.has(h.nodeId)?"cited":""}">
+      <div>${esc(h.note||h.nodeId)}</div>
+      <div class="id">${esc(h.nodeId)}</div>
+    </div>`
+  ).join("") : "<p class='note'>UNAVAILABLE · no handles</p>";
+}
+
+document.getElementById("form").addEventListener("submit", async (e)=>{
+  e.preventDefault();
+  await run(document.getElementById("q").value);
+});
+document.getElementById("abs").addEventListener("click", async ()=>{
+  document.getElementById("q").value = "Who won the 2099 world cup according to the corpus?";
+  await run(document.getElementById("q").value);
+});
+
+async function run(q){
+  const btn = document.getElementById("go");
+  btn.disabled = true;
+  const [hit, planned] = await Promise.all([
+    j("/retrieve?q="+encodeURIComponent(q)+"&k=6"),
+    j("/plan?q="+encodeURIComponent(q)+"&k=6")
+  ]);
+  btn.disabled = false;
+  if (!hit.ok){
+    graph = {nodes:[], edges:[]};
+    document.getElementById("decision").textContent = "UNAVAILABLE";
+    document.getElementById("plan").textContent = "UNAVAILABLE · retrieve http=" + hit.status;
+    document.getElementById("handles").innerHTML = "<p class='note'>UNAVAILABLE</p>";
+    return;
+  }
+  const plan = planned.ok ? (planned.data || {}) : {decision:"UNAVAILABLE", honesty:"UNAVAILABLE"};
+  const handles = hit.data.handles || [];
+  const cited = new Set(plan.citedNodeIds || []);
+  graph = {
+    nodes: [{id:"query", kind:"QUERY", label:q.slice(0,80)}].concat(
+      handles.map(h => ({id:h.nodeId, kind:"HANDLE", label:h.note||h.nodeId, cited:cited.has(h.nodeId)}))
+    ),
+    edges: handles.map(h => ({from:"query", to:h.nodeId}))
+  };
+  document.getElementById("decision").textContent =
+    (planned.ok ? (plan.decision || "UNAVAILABLE") : "UNAVAILABLE") + " · " + (plan.kind || "SOFTWARE");
+  document.getElementById("plan").textContent = planned.ok
+    ? JSON.stringify(plan, null, 2)
+    : "UNAVAILABLE · plan http=" + planned.status;
+  renderHandles(hit.data, plan);
+}
+
+(async function boot(){
+  const [idx, ev] = await Promise.all([j("/api/v1/index"), j("/api/v1/eval")]);
+  document.getElementById("n").textContent = (idx.ok && idx.data.chunk_count) ? idx.data.chunk_count : "UNAVAILABLE";
+  const s = ev.ok && ev.data && ev.data.software;
+  document.getElementById("eval").textContent = s
+    ? `SOFTWARE retrieve-hit ${s.retrieve_hit} · abstain ${s.abstain} · GENERATE ${(ev.data.generate||{}).label||"UNAVAILABLE"} · publication_eligible false`
+    : "eval: UNAVAILABLE until named-N bench is written";
+  await run(document.getElementById("q").value);
+})();
+</script>
+</body>
+</html>

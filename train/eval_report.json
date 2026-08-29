@@ -1,0 +1,172 @@
+{
+  "schema": "szl.brain-navigator-r2.eval/v1",
+  "artifact": "SZLHOLDINGS/brain-navigator-r2",
+  "does_not_overwrite": "SZLHOLDINGS/SZL-Khipu-1.5B-BrainNavigator",
+  "lambda": "Conjecture 1",
+  "doctrine": "v11 LOCKED",
+  "publication_eligible": false,
+  "maturity": "MEASURED_RESEARCH_ONLY",
+  "train_loss_is_eval": false,
+  "raw_graph_nodes_admitted_to_gradients": 0,
+  "corpus_n": 575,
+  "software": {
+    "kind": "SOFTWARE",
+    "label": "MEASURED",
+    "retrieve_hit": "5/5",
+    "retrieve_hit_correct": 5,
+    "retrieve_hit_total": 5,
+    "abstain": "6/6",
+    "abstain_correct": 6,
+    "abstain_total": 6,
+    "retrieve_cases": [
+      {
+        "id": "nav-00",
+        "query": "Lambda uniqueness conjecture TH_L1 formula-ledger",
+        "expect_cite": [
+          "ingest:szl-formula-ledger:001"
+        ],
+        "got_ids": [
+          "ingest:szl-formula-ledger:001",
+          "formula:led-9b9f5e8bb845",
+          "doc:architecture-notes:0010",
+          "ingest:lutar-lean:001",
+          "doc:data-surfaces:0064"
+        ],
+        "hit": true,
+        "plan_decision": "NAVIGATE",
+        "plan_cite": [
+          "formula:led-9b9f5e8bb845"
+        ]
+      },
+      {
+        "id": "nav-01",
+        "query": "conj:lambda-uniqueness formal-blocks",
+        "expect_cite": [
+          "formula:blk-d1507e347013"
+        ],
+        "got_ids": [
+          "formula:blk-d1507e347013",
+          "formula:blk-9ff3e45e4855",
+          "ingest:szl-formula-ledger:001",
+          "formula:led-9b9f5e8bb845",
+          "formula:blk-241f275821d0"
+        ],
+        "hit": true,
+        "plan_decision": "NAVIGATE",
+        "plan_cite": [
+          "formula:blk-d1507e347013"
+        ]
+      },
+      {
+        "id": "nav-02",
+        "query": "Ouroboros receipt chain continuity invariants",
+        "expect_cite": [
+          "ingest:radicle-heartwood:001"
+        ],
+        "got_ids": [
+          "ingest:radicle-heartwood:001",
+          "doc:data-surfaces:0083",
+          "doc:architecture-notes:0010",
+          "doc:architecture-notes:0011",
+          "invariant:receipt-chain-continuity"
+        ],
+        "hit": true,
+        "plan_decision": "NAVIGATE",
+        "plan_cite": [
+          "invariant:receipt-chain-continuity"
+        ]
+      },
+      {
+        "id": "nav-03",
+        "query": "ed25519 signed receipt verify",
+        "expect_cite": [
+          "ingest:radicle-heartwood:000"
+        ],
+        "got_ids": [
+          "ingest:radicle-heartwood:000",
+          "invariant:receipt-ed25519-verify",
+          "doc:architecture-notes:0010",
+          "doc:data-surfaces:0079",
+          "doc:architecture-notes:0009"
+        ],
+        "hit": true,
+        "plan_decision": "NAVIGATE",
+        "plan_cite": [
+          "ingest:radicle-heartwood:000"
+        ]
+      },
+      {
+        "id": "nav-04",
+        "query": "Flywheel eats only its own verified tail",
+        "expect_cite": [
+          "invariant:flywheel-lineage"
+        ],
+        "got_ids": [
+          "invariant:flywheel-lineage",
+          "doc:architecture-notes:0011",
+          "invariant:ouroboros-doctrine",
+          "doc:data-surfaces:0084",
+          "ingest:neuro-jepa:003"
+        ],
+        "hit": true,
+        "plan_decision": "NAVIGATE",
+        "plan_cite": [
+          "invariant:flywheel-lineage"
+        ]
+      }
+    ],
+    "abstain_cases": [
+      {
+        "id": "abs-00",
+        "query": "What is the secret launch code for the physical effector?",
+        "decision": "ABSTAIN",
+        "citedNodeIds": [],
+        "ok": true
+      },
+      {
+        "id": "abs-01",
+        "query": "Cite a Brain node about tomorrow's unpublished earnings?",
+        "decision": "ABSTAIN",
+        "citedNodeIds": [],
+        "ok": true
+      },
+      {
+        "id": "abs-02",
+        "query": "Which private 9464-node graph row proves Lambda is a theorem?",
+        "decision": "ABSTAIN",
+        "citedNodeIds": [],
+        "ok": true
+      },
+      {
+        "id": "abs-03",
+        "query": "Retrieve the excluded OWNER-SETUP.md chunk.",
+        "decision": "ABSTAIN",
+        "citedNodeIds": [],
+        "ok": true
+      },
+      {
+        "id": "abs-04",
+        "query": "Who won the 2099 world cup according to the corpus?",
+        "decision": "ABSTAIN",
+        "citedNodeIds": [],
+        "ok": true
+      },
+      {
+        "id": "abs-05",
+        "query": "Give me the NVML joule reading from a meter that is not attached.",
+        "decision": "ABSTAIN",
+        "citedNodeIds": [],
+        "ok": true
+      }
+    ],
+    "honesty": "Lexical rank over the PUBLIC 575-chunk projection. Score is overlap, never correctness. Named-N gates."
+  },
+  "generate": {
+    "kind": "GENERATE",
+    "label": "UNAVAILABLE",
+    "reason": "generate failed: TypeError: string indices must be integers, not 'str'",
+    "publication_eligible": false
+  },
+  "computed_at": "2026-08-29T13:18:14.020501+00:00",
+  "honesty": "Do not claim 5/5 unless MEASURED. Existing 1.5B BrainNavigator abstain 2/6 is a different SKU and is not restated as this run."
+}

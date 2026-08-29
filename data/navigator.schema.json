@@ -1,0 +1,61 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "planId": { "type": "string" },
+    "capabilityProfile": { "type": "string", "const": "SZL-BrainNavigator-R2" },
+    "provenance": { "type": "string", "enum": ["SYNTHETIC", "MODEL_PROPOSED"] },
+    "query": { "type": "string" },
+    "contentAccess": { "type": "string", "const": "HANDLES_ONLY" },
+    "candidates": {
+      "type": "array",
+      "minItems": 0,
+      "items": {
+        "type": "object",
+        "properties": {
+          "nodeId": { "type": "string", "minLength": 1 },
+          "nodeKind": { "type": "string" },
+          "label": { "type": "string" },
+          "note": { "type": "string" }
+        },
+        "required": ["nodeId", "nodeKind", "label", "note"],
+        "additionalProperties": true
+      }
+    },
+    "decision": { "type": "string", "enum": ["NAVIGATE", "ABSTAIN"] },
+    "steps": { "type": "array" },
+    "citedNodeIds": { "type": "array", "items": { "type": "string" } },
+    "groundedOnly": { "type": "boolean", "const": true },
+    "brainBinding": {
+      "type": "object",
+      "properties": {
+        "protocol": { "type": "string", "const": "khipu-retrieval" },
+        "status": { "type": "string", "const": "NOT_RESOLVED" },
+        "note": { "type": "string" }
+      },
+      "required": ["protocol", "status", "note"]
+    },
+    "controllerBoundary": { "type": "string" },
+    "abstainReason": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+    "base_model": { "type": "string", "const": "Qwen/Qwen3.5-0.8B" },
+    "artifact": { "type": "string", "const": "SZLHOLDINGS/brain-navigator-r2" },
+    "planner": { "type": "string" },
+    "kind": { "type": "string" },
+    "lambda": { "type": "string" },
+    "raw_graph_nodes_admitted_to_gradients": { "type": "integer", "const": 0 }
+  },
+  "required": [
+    "planId",
+    "capabilityProfile",
+    "provenance",
+    "query",
+    "contentAccess",
+    "candidates",
+    "decision",
+    "steps",
+    "citedNodeIds",
+    "groundedOnly",
+    "brainBinding"
+  ],
+  "additionalProperties": true
+}
