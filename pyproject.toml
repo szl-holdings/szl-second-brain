@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "szl-second-brain"
-version = "1.2.0"
-description = "Governed hybrid public retrieval with controller-only authorized hydration. Handles only on public surfaces; Lambda = Conjecture 1."
+version = "1.3.0"
+description = "Governed hybrid retrieval and review-gated continuous frontier memory. Public handles only; controller-only hydration; Lambda = Conjecture 1."
 readme = "README.md"
 license = "Apache-2.0"
 requires-python = ">=3.11"
