@@ -11,6 +11,8 @@ def test_review_proposal_fails_over_to_an_explicit_external_handoff() -> None:
     assert "gh pr create" in text
     assert "BRANCH_READY_EXTERNAL_PR_REQUIRED" in text
     assert "set +e" in text
+    assert "Resource not accessible by integration" in text
+    assert 'exit "$pr_status"' in text
 
 
 def test_review_proposal_has_no_merge_or_approval_authority() -> None:
