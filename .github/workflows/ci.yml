@@ -24,7 +24,7 @@ jobs:
         run: PYTHONPATH=. python -m pytest -q
       - name: Build wheel
         run: python -m build --wheel
-      - name: Prove installed-mode corpus, retrieval, and hydration
+      - name: Prove installed-mode corpus, retrieval, frontier memory, and hydration
         shell: bash
         run: |
           set -euo pipefail
@@ -35,9 +35,18 @@ jobs:
             cd "$RUNNER_TEMP"
             "$venv/bin/python" - <<'PY'
           import importlib.metadata
-          from second_brain import AuthorizedHydrator, __version__, hybrid_context, index
+          from second_brain import (
+              AuthorizedFrontierHydrator,
+              AuthorizedHydrator,
+              __version__,
+              anatomy_feed,
+              frontier_search,
+              frontier_status,
+              hybrid_context,
+              index,
+          )
 
-          assert __version__ == importlib.metadata.version("szl-second-brain") == "1.2.0"
+          assert __version__ == importlib.metadata.version("szl-second-brain") == "1.3.0"
           brain = index()
           assert brain.built is True, brain.load_error
           assert brain.n == 575
@@ -61,5 +70,36 @@ jobs:
           assert len(hydrated["documents"]) == len(context["handles"])
           assert hydrated["evidence_set_sha256"] == context["evidence_set_sha256"]
           assert hydrated["raw_graph_nodes_admitted_to_gradients"] == 0
+
+          frontier = frontier_status()
+          assert frontier["ready"] is True
+          assert frontier["state"] == "REVIEW_REQUIRED"
+          assert frontier["candidate_count"] >= 70
+          assert frontier["source_count"] == 6
+          assert frontier["training_authority"] == "NONE"
+          assert frontier["promotion_authority"] == "NONE"
+          assert frontier["execution_authority"] == "NONE"
+
+          review = frontier_search("formula quant anatomy ouroboros", k=8)
+          assert review["content_access"] == "HANDLES_ONLY"
+          assert review["handles"]
+          assert all("content" not in handle for handle in review["handles"])
+
+          feed = anatomy_feed(k=12)
+          assert feed["purpose"] == "READ_ONLY_LIVING_ANATOMY_OBSERVATION"
+          assert feed["execution_authority"] == "NONE"
+
+          frontier_hydrator = AuthorizedFrontierHydrator(lambda *_args: True)
+          review_content = frontier_hydrator.hydrate(
+              review["handles"],
+              principal_id="installed-mode-reviewer",
+              tenant_id="installed-mode-tenant",
+              policy_revision="frontier-policy-v1",
+          )
+          assert review_content["state"] == "AUTHORIZED_REVIEW_CONTENT_READY"
+          assert review_content["content_access"] == "CONTROLLER_ONLY"
+          assert review_content["training_authority"] == "NONE"
+          assert review_content["promotion_authority"] == "NONE"
+          assert review_content["execution_authority"] == "NONE"
           PY
           )
