@@ -47,11 +47,12 @@ controller decisions and must pass the same per-row digest checks.
 
 ## Continuous frontier memory
 
-The two-hour `Continuous frontier memory` workflow is a bounded discovery loop,
-not autonomous retraining. It reads only six fixed public source contracts:
+The hourly `Continuous frontier memory` workflow is a bounded discovery loop,
+not autonomous retraining. It reads only seven fixed public source contracts:
 
 - the exact `szl-formulas` formula/quant atlas;
-- the Ouroboros runtime README;
+- the canonical `szl-ouroboros` bounded-loop kernel README;
+- the canonical `szl-kernels` governed suite and MiniEmbed truth card;
 - the Living Anatomy README;
 - the A11oy public-estate manifest;
 - the Forge production-controller contract;
@@ -59,10 +60,11 @@ not autonomous retraining. It reads only six fixed public source contracts:
 
 Each source is resolved to the latest exact commit that changed its admitted
 path, fetched from immutable raw GitHub, scanned for secret-like material, and
-converted into content-addressed candidates. The current initial set contains
-122 candidates, including 30 attributed formulas, 21 executable formulas, nine
-quant domains, the A11oy public topology, Forge controller contracts, and
-source-document sections.
+converted into content-addressed candidates. The committed state records the
+exact candidate count and digest, including 30 attributed formulas, 21
+executable formulas, nine quant domains, the active kernel/model truth cards,
+the A11oy public topology, Forge controller contracts, and source-document
+sections.
 
 A changed candidate set creates one content-addressed pull request. The workflow
 cannot force-push, merge, train, publish weights, reveal candidate content through
