@@ -1,6 +1,6 @@
 {
-  "candidate_count": 122,
-  "candidate_set_sha256": "5e5aca651d91ceef73d3a38c0cd394736da846afd07a1997d9c551ea12cc4b03",
+  "candidate_count": 123,
+  "candidate_set_sha256": "550343d1856832de87c45339a49ac831fa459e78f3919d0a72ae2ade5f2f7adb",
   "controller_content_access": "AUTHORIZED_CONTROLLER_ONLY",
   "execution_authority": "NONE",
   "lambda": "CONJECTURE_1",
@@ -31,7 +31,7 @@
     "formula-authority": 1,
     "python-contract": 5,
     "quant-domain": 9,
-    "source-document": 49
+    "source-document": 50
   },
   "sources": [
     {
@@ -62,12 +62,12 @@
       "source_id": "formula_quant_atlas"
     },
     {
-      "candidate_count": 18,
-      "content_sha256": "cc691253621fd87f781d6efe183551adc5e915d5a5eaa3331d7814513ab0c13f",
+      "candidate_count": 19,
+      "content_sha256": "539ac708116f45a0aaad4360d89608ae934a90fdbd30df22f4edc171faf55213",
       "parser": "markdown",
       "path": "README.md",
       "repository": "szl-holdings/anatomy",
-      "revision": "3dffd8a27d823bdc47300fbea0c9e6b5e3fd4340",
+      "revision": "3c8aab384383314e284b19b24961ae976f01c44b",
       "source_id": "living_anatomy"
     },
     {
@@ -90,6 +90,6 @@
     }
   ],
   "state": "REVIEW_REQUIRED",
-  "state_sha256": "417bb9d968e536ef2c603ba9889a8720ba55d7d84559d463a7b617d14899ec22",
+  "state_sha256": "6aa429e5d60f11d0dd2f58967dc0e956eb5da65e14cfa2412f08713266a10479",
   "training_authority": "NONE"
 }
