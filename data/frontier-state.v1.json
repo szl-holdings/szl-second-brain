@@ -1,6 +1,6 @@
 {
-  "candidate_count": 123,
-  "candidate_set_sha256": "550343d1856832de87c45339a49ac831fa459e78f3919d0a72ae2ade5f2f7adb",
+  "candidate_count": 129,
+  "candidate_set_sha256": "fb15e2d2822a9afb445c3eae7e077a7c250a59565fdd395a9e11f2247b12a884",
   "controller_content_access": "AUTHORIZED_CONTROLLER_ONLY",
   "execution_authority": "NONE",
   "lambda": "CONJECTURE_1",
@@ -22,7 +22,7 @@
   },
   "raw_graph_nodes_admitted_to_gradients": 0,
   "schema": "szl.second-brain.frontier-state/v1",
-  "source_count": 6,
+  "source_count": 7,
   "source_kind_counts": {
     "attributed-formula": 30,
     "estate-authority": 1,
@@ -31,7 +31,7 @@
     "formula-authority": 1,
     "python-contract": 5,
     "quant-domain": 9,
-    "source-document": 50
+    "source-document": 56
   },
   "sources": [
     {
@@ -62,12 +62,21 @@
       "source_id": "formula_quant_atlas"
     },
     {
-      "candidate_count": 19,
-      "content_sha256": "539ac708116f45a0aaad4360d89608ae934a90fdbd30df22f4edc171faf55213",
+      "candidate_count": 21,
+      "content_sha256": "dddf9569fbd2e3fdff4fa43c822979a81e7c7925db74263a28936dbbae3ac28d",
+      "parser": "markdown",
+      "path": "README.md",
+      "repository": "szl-holdings/szl-kernels",
+      "revision": "45a56d0b132945e06a2d88a104f26c4840abebe2",
+      "source_id": "governed_kernel_suite"
+    },
+    {
+      "candidate_count": 20,
+      "content_sha256": "129ce416948ad14ec8b9edd31450690c4fa7cbcb464430c9cb403c4c4b118420",
       "parser": "markdown",
       "path": "README.md",
       "repository": "szl-holdings/anatomy",
-      "revision": "3c8aab384383314e284b19b24961ae976f01c44b",
+      "revision": "6422274e284c443f640c3899fc4dbb7947bd5b30",
       "source_id": "living_anatomy"
     },
     {
@@ -80,16 +89,16 @@
       "source_id": "nemo_witness"
     },
     {
-      "candidate_count": 20,
-      "content_sha256": "6877a3adc9e6f23aec938ccce1d1964f6ab410f2f17c29dfdbd4a51847273509",
+      "candidate_count": 4,
+      "content_sha256": "a4be2532660eb18dee173263218c36dfef54624713ac0c97dc3e0382ba7c62f1",
       "parser": "markdown",
       "path": "README.md",
-      "repository": "szl-holdings/ouroboros",
-      "revision": "62e9779edddb21694d27c1a7c2c8ccc74157949f",
+      "repository": "szl-holdings/szl-ouroboros",
+      "revision": "cd8a451ca2be19f71653dcb4ef50e15e6836e697",
       "source_id": "ouroboros_runtime"
     }
   ],
   "state": "REVIEW_REQUIRED",
-  "state_sha256": "6aa429e5d60f11d0dd2f58967dc0e956eb5da65e14cfa2412f08713266a10479",
+  "state_sha256": "ce9878c839bdb2a36d3891e2c8b53fa399367a053efea6cb21a889e7a3839dab",
   "training_authority": "NONE"
 }

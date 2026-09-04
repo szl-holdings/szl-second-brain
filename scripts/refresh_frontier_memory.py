@@ -49,7 +49,13 @@ SOURCES = (
     ),
     SourceSpec(
         "ouroboros_runtime",
-        "szl-holdings/ouroboros",
+        "szl-holdings/szl-ouroboros",
+        "README.md",
+        "markdown",
+    ),
+    SourceSpec(
+        "governed_kernel_suite",
+        "szl-holdings/szl-kernels",
         "README.md",
         "markdown",
     ),
