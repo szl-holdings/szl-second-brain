@@ -7,7 +7,7 @@ sdk: docker
 app_port: 7860
 pinned: false
 license: apache-2.0
-short_description: Governed hybrid retrieval with controller-only hydration.
+short_description: Governed retrieval and review-gated continuous frontier memory.
 tags:
   - retrieval
   - hybrid-search
@@ -29,20 +29,77 @@ gradients. The index is data, not model weights. Lambda uniqueness remains
 
 ## Installed-mode guarantee
 
-Version 1.2 packages the public corpus and its schemas into the wheel. Installing
-`szl-second-brain` no longer produces a code-only package with an unavailable
-index: a clean installed environment can build the 575-chunk index, run governed
-hybrid retrieval, and perform controller-only authorized hydration without a
-source checkout.
+Version 1.3 packages the public corpus, schemas, and the review-gated frontier
+candidate index into the wheel. Installing `szl-second-brain` in a clean
+environment can build the 575-chunk index, run governed hybrid retrieval, inspect
+the exact frontier state, search review candidates by handles, and perform
+controller-only authorized hydration without a source checkout.
 
-The wheel contains only the public projection. It contains no private graph rows,
+The wheel contains only public material. It contains no private graph rows,
 credentials, model weights, signing keys, or execution authority. CI builds the
 wheel, installs it into an isolated environment, changes outside the repository,
-and proves corpus discovery, retrieval, digest parity, and authorized hydration.
+and proves corpus discovery, frontier discovery, retrieval, digest parity,
+Living Anatomy feed generation, and authorized hydration.
 
 An operator may still provide a different governed projection through
 `SECOND_BRAIN_CORPUS` or `AYLLU_BRAIN_CORPUS`. Explicit corpus paths remain
 controller decisions and must pass the same per-row digest checks.
+
+## Continuous frontier memory
+
+The two-hour `Continuous frontier memory` workflow is a bounded discovery loop,
+not autonomous retraining. It reads only six fixed public source contracts:
+
+- the exact `szl-formulas` formula/quant atlas;
+- the Ouroboros runtime README;
+- the Living Anatomy README;
+- the A11oy public-estate manifest;
+- the Forge production-controller contract;
+- the Nemo witness README.
+
+Each source is resolved to the latest exact commit that changed its admitted
+path, fetched from immutable raw GitHub, scanned for secret-like material, and
+converted into content-addressed candidates. The current initial set contains
+122 candidates, including 30 attributed formulas, 21 executable formulas, nine
+quant domains, the A11oy public topology, Forge controller contracts, and
+source-document sections.
+
+A changed candidate set creates one content-addressed pull request. The workflow
+cannot force-push, merge, train, publish weights, reveal candidate content through
+the public API, load the private graph, or mutate a provider. Candidate state is
+always `DISCOVERED_REVIEW_REQUIRED` until a separate reviewed process acts.
+
+This is the operational meaning of “the Brain keeps learning” here:
+
+```text
+fixed public sources
+       ↓ exact path revisions + SHA-256
+bounded candidate extraction
+       ↓
+handles-only review index
+       ↓
+content-addressed review PR
+       ↓
+human-governed acceptance or rejection
+```
+
+It is continuous evidence acquisition, not silent model self-modification.
+
+## Formula and quant authority
+
+The frontier memory consumes `szl-holdings/szl-formulas` as the active executable
+kernel and its source-attributed formula/quant atlas. The atlas preserves all 30
+attributed records and nine quant domains while keeping three different concepts
+strictly separate:
+
+- per-obligation `PROOF_STATUS` on the 21 executable functions;
+- source-reported status on the attributed formula corpus;
+- membership in the locked-proven set of exactly eight formulas.
+
+No status string promotes a formula. The F-number-to-executable mapping remains
+`UNKNOWN_NOT_INFERRED`, and Lambda remains `CONJECTURE_1_OPEN_ADVISORY_ONLY`.
+Empirical and conjectural records are evidence or review inputs, never execution
+authority.
 
 ## Retrieval modes
 
@@ -71,20 +128,26 @@ correctness.
 
 ## Authorized hydration
 
-`AuthorizedHydrator` is a library-only controller component. It requires:
+`AuthorizedHydrator` and `AuthorizedFrontierHydrator` are library-only controller
+components. They require:
 
 - a non-empty principal ID and tenant ID;
 - an immutable policy revision;
 - an explicit per-node authorization callback;
 - matching node identity, source, and SHA-256;
-- an untampered public corpus row.
+- an untampered public corpus or frontier-candidate row.
 
 Any denial, provider error, duplicate, unknown handle, source mismatch, or digest
 mismatch fails the whole hydration request closed. Hydrated text is never exposed
 by the public FastAPI application.
 
 ```python
-from second_brain import AuthorizedHydrator, HybridSecondBrain
+from second_brain import (
+    AuthorizedFrontierHydrator,
+    AuthorizedHydrator,
+    HybridSecondBrain,
+    frontier_search,
+)
 
 retriever = HybridSecondBrain(
     dense_provider=my_dense_provider,
@@ -99,19 +162,31 @@ hydrated = hydrator.hydrate(
     tenant_id="tenant-abc",
     policy_revision="<full immutable revision>",
 )
+
+review = frontier_search("formula quant anatomy ouroboros", k=12)
+review_hydrator = AuthorizedFrontierHydrator(my_frontier_authorizer)
+review_content = review_hydrator.hydrate(
+    review["handles"],
+    principal_id="reviewer-123",
+    tenant_id="tenant-abc",
+    policy_revision="<review policy revision>",
+)
 ```
 
 ## Public surfaces
 
 | Surface | Contract |
 |---|---|
-| `GET /health` | Base index state |
+| `GET /health` | Base 575-chunk index state |
 | `GET /api/v1/index` | Public chunk counts by source |
 | `GET /api/v1/retrieve?q=` | Legacy lexical handles-only retrieval |
 | `GET /api/v1/navigator?q=` | Legacy navigator context |
 | `GET /api/v1/hybrid?q=` | Governed retrieval with an explicit ranking receipt |
 | `POST /api/v1/hybrid` | JSON alias for governed retrieval |
 | `GET /api/v1/retrieval-capabilities` | Truthful runtime capability declaration |
+| `GET /api/v1/frontier-status` | Exact candidate/source/digest state, no content |
+| `GET /api/v1/frontier-handles?q=` | Handles-only review-candidate search |
+| `GET /api/v1/anatomy-feed` | Read-only Brain/formula/quant/Ouroboros feed for Living Anatomy |
 
 GitHub is the source of truth; the Hugging Face Space is a deployed public
 surface. Apache-2.0. Doctrine v11.
