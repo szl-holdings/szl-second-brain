@@ -1,0 +1,141 @@
+name: Reconcile continuous frontier memory once v2
+
+on:
+  push:
+    branches:
+      - feat/continuous-frontier-memory-v1-20260904
+    paths:
+      - .github/workflows/reconcile-continuous-frontier-memory-once-v2.yml
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+
+concurrency:
+  group: reconcile-continuous-frontier-memory-v2
+  cancel-in-progress: false
+
+jobs:
+  reconcile:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@05e31511f85b41b11d1cf0ef85d0992719546e2c # v2.21.0
+        with:
+          egress-policy: audit
+
+      - name: Checkout exact feature history
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: feat/continuous-frontier-memory-v1-20260904
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Select or create the current-main successor
+        shell: bash
+        run: |
+          set -euo pipefail
+          feature_sha="$(git rev-parse HEAD)"
+          git fetch --no-tags origin main
+          branch=repair/continuous-frontier-memory-v1-20260904
+          git config user.name "Lutar, Stephen P."
+          git config user.email "stephenlutar2@gmail.com"
+          if git ls-remote --exit-code --heads origin "$branch" >/dev/null 2>&1; then
+            git fetch --no-tags origin "refs/heads/$branch:refs/remotes/origin/$branch"
+            git switch -c local-brain-v2 "origin/$branch"
+            if ! git merge-base --is-ancestor origin/main HEAD; then
+              git merge --no-edit origin/main
+            fi
+          else
+            git switch --detach origin/main
+            git switch -c local-brain-v2
+            set +e
+            git merge --no-commit --no-ff -X theirs "$feature_sha"
+            rc=$?
+            set -e
+            if [ "$rc" -ne 0 ] || [ -n "$(git diff --name-only --diff-filter=U)" ]; then
+              echo '::error::Unresolved Second Brain semantic conflicts:'
+              git diff --name-only --diff-filter=U >&2 || true
+              exit 4
+            fi
+            for path in \
+              .github/workflows/reconcile-continuous-frontier-memory-once.yml \
+              .github/workflows/reconcile-continuous-frontier-memory-once-v2.yml \
+              .github/workflows/finalize-continuous-frontier-memory-successor.yml; do
+              git rm -f --ignore-unmatch "$path"
+            done
+            git diff --cached --check
+            git commit -s -m "feat(brain): reconcile continuous frontier memory on current main"
+          fi
+          echo "TARGET_REF=$branch" >> "$GITHUB_ENV"
+
+      - name: Refresh sources and prove the complete package contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install --disable-pip-version-check --no-cache-dir \
+            -r requirements.txt "pytest>=8,<9" "build>=1.2,<2"
+          python scripts/refresh_frontier_memory.py
+          python -m py_compile scripts/refresh_frontier_memory.py second_brain/frontier.py app_operational.py
+          PYTHONPATH=. python -m pytest -q
+          python -m build --wheel
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          state = json.loads(Path('data/frontier-state.v1.json').read_text(encoding='utf-8'))
+          assert state['state'] == 'REVIEW_REQUIRED'
+          assert state['source_count'] == 6
+          assert state['candidate_count'] > 0
+          assert state['training_authority'] == 'NONE'
+          assert state['promotion_authority'] == 'NONE'
+          assert state['execution_authority'] == 'NONE'
+          assert state['private_graph_present'] is False
+          assert state['raw_graph_nodes_admitted_to_gradients'] == 0
+          assert len(state['candidate_set_sha256']) == 64
+          PY
+          git diff --check
+          if ! git diff --quiet -- data/frontier-candidates.public.jsonl data/frontier-state.v1.json; then
+            git add data/frontier-candidates.public.jsonl data/frontier-state.v1.json
+            git diff --cached --check
+            git commit -s -m "chore(brain): refresh reconciled frontier memory"
+          fi
+          test -z "$(git status --porcelain)"
+
+      - name: Push successor and arm protected auto-merge
+        id: pr
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          git push origin "HEAD:$TARGET_REF"
+          url="$(gh pr list --state open --head "$TARGET_REF" --json url --jq '.[0].url // ""')"
+          if [ -z "$url" ]; then
+            url="$(gh pr create \
+              --base main \
+              --head "$TARGET_REF" \
+              --title 'feat(brain): reconcile continuous frontier memory on current main' \
+              --body $'## Current-main successor to #8\n\nPreserves the already-merged portable memory and multimodal retrieval lanes while adding the full six-source review-gated frontier-memory contract. Public access is handles-only; private graph, gradients, training, promotion, execution, merge, and provider authority remain absent.\n\nSigned-off-by: Stephen Lutar <stephenlutar2@gmail.com>')"
+          fi
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+          gh pr merge "$url" --auto --squash
+
+      - name: Close #8 only after successor merge
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_URL: ${{ steps.pr.outputs.url }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          for _ in $(seq 1 120); do
+            merged="$(gh pr view "$PR_URL" --json mergedAt --jq '.mergedAt // ""')"
+            if [ -n "$merged" ]; then
+              sha="$(gh pr view "$PR_URL" --json mergeCommit --jq '.mergeCommit.oid')"
+              gh pr close 8 --comment "Superseded by $PR_URL merged as $sha after current-main reconciliation and complete package qualification."
+              exit 0
+            fi
+            sleep 20
+          done
+          echo 'Auto-merge remains armed; no stale PR closure was performed.'
