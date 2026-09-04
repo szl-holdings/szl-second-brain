@@ -1,0 +1,20 @@
+{
+  "datasetName": "SZL Second Brain — in-repo lane (public projection)",
+  "doctrine": "Public projection of the IN-REPO lane of the SZL Second Brain. It is DATA, not a model — a retrieval corpus, never weights. Built deterministically from repo-public text (curated docs, the 269-entry formula corpus, DECLARED ingest takeaways, and the DECLARED Ouroboros invariant codex — definitions only, never live check status). The owner-infrastructure ops doc (OWNER-SETUP.md) is EXCLUDED from this public projection, though it remains in the app-served corpus. A BM25 / similarity score over these chunks ranks lexical overlap; it is NEVER correctness. This is wholly separate from the owner's private Brain, which is never published. Nothing here trains a model, evaluates one, serves inference, or upgrades Λ (Conjecture-1).",
+  "supersetChunkCount": 581,
+  "supersetCorpusSha256": "04e037b7ccf3bb0f4e54d2cbcda59a833277277f99f7726224e8f9a009603a7d",
+  "publicChunkCount": 575,
+  "bySource": {
+    "doc": 152,
+    "formula": 269,
+    "ingest": 143,
+    "invariant": 11
+  },
+  "excludedSourceIds": [
+    "OWNER-SETUP.md"
+  ],
+  "excludedChunkCount": 6,
+  "projectionSha256": "d02487523b451b390125bc3c0a20e259c44b5715528fac69cf789ca56755ea10",
+  "secretScan": "PASS",
+  "secretScanPatternCount": 7
+}

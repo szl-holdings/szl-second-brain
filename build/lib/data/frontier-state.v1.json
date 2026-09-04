@@ -1,0 +1,95 @@
+{
+  "candidate_count": 123,
+  "candidate_set_sha256": "550343d1856832de87c45339a49ac831fa459e78f3919d0a72ae2ade5f2f7adb",
+  "controller_content_access": "AUTHORIZED_CONTROLLER_ONLY",
+  "execution_authority": "NONE",
+  "lambda": "CONJECTURE_1",
+  "learning_definition": "Content-addressed public-source candidates are proposed for human review. No silent weight update or automatic truth promotion occurs.",
+  "merge_authority": "NONE",
+  "private_graph_nodes_loaded": 0,
+  "promotion_authority": "NONE",
+  "public_content_access": "HANDLES_ONLY",
+  "quant_domain_counts": {
+    "algebra_number_theory": 5,
+    "coding_error_control": 4,
+    "dynamics_consensus": 6,
+    "energy_entropy_physics": 5,
+    "governance_receipts": 6,
+    "information_geometry": 3,
+    "narrative_lineage": 2,
+    "topology_geometry": 2,
+    "trust_aggregation": 6
+  },
+  "raw_graph_nodes_admitted_to_gradients": 0,
+  "schema": "szl.second-brain.frontier-state/v1",
+  "source_count": 6,
+  "source_kind_counts": {
+    "attributed-formula": 30,
+    "estate-authority": 1,
+    "estate-surface": 6,
+    "executable-formula": 21,
+    "formula-authority": 1,
+    "python-contract": 5,
+    "quant-domain": 9,
+    "source-document": 50
+  },
+  "sources": [
+    {
+      "candidate_count": 7,
+      "content_sha256": "44aaf9654efde3008aae5c1e2f6a5d78f7047dd08bd40e5c6792d272e0c57935",
+      "parser": "public_estate",
+      "path": "governance/public-estate.v1.json",
+      "repository": "szl-holdings/a11oy",
+      "revision": "b37fa90cc48921f15883c23932cc6ded9152f9f1",
+      "source_id": "a11oy_public_estate"
+    },
+    {
+      "candidate_count": 5,
+      "content_sha256": "2a1644066c931bd2a73e880c60666765cb10607c4282c22206cb8be01d177e22",
+      "parser": "python_contract",
+      "path": "inference/production.py",
+      "repository": "szl-holdings/szl-forge",
+      "revision": "943f6ab987bbe120cae32649c46c3a5f0b6f9e9b",
+      "source_id": "forge_production_controller"
+    },
+    {
+      "candidate_count": 61,
+      "content_sha256": "765b9e5c9dd8d4fc5c7518a5b2f70cd6008918591cfa5edfc9868453cb30b7a2",
+      "parser": "formula_atlas",
+      "path": "atlas/formula-atlas.v1.json",
+      "repository": "szl-holdings/szl-formulas",
+      "revision": "174c5e2f468158f89d5e2ebf656ad596b2c9a9bb",
+      "source_id": "formula_quant_atlas"
+    },
+    {
+      "candidate_count": 19,
+      "content_sha256": "539ac708116f45a0aaad4360d89608ae934a90fdbd30df22f4edc171faf55213",
+      "parser": "markdown",
+      "path": "README.md",
+      "repository": "szl-holdings/anatomy",
+      "revision": "3c8aab384383314e284b19b24961ae976f01c44b",
+      "source_id": "living_anatomy"
+    },
+    {
+      "candidate_count": 11,
+      "content_sha256": "f6d704ffd36bbbda2cb59ead28a9946646383ed635a5349fb031f4c799a8a43d",
+      "parser": "markdown",
+      "path": "README.md",
+      "repository": "szl-holdings/szl-nemo",
+      "revision": "810231a531188bb569e3faa17396386eb0a5e260",
+      "source_id": "nemo_witness"
+    },
+    {
+      "candidate_count": 20,
+      "content_sha256": "6877a3adc9e6f23aec938ccce1d1964f6ab410f2f17c29dfdbd4a51847273509",
+      "parser": "markdown",
+      "path": "README.md",
+      "repository": "szl-holdings/ouroboros",
+      "revision": "62e9779edddb21694d27c1a7c2c8ccc74157949f",
+      "source_id": "ouroboros_runtime"
+    }
+  ],
+  "state": "REVIEW_REQUIRED",
+  "state_sha256": "6aa429e5d60f11d0dd2f58967dc0e956eb5da65e14cfa2412f08713266a10479",
+  "training_authority": "NONE"
+}
