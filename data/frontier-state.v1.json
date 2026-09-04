@@ -1,6 +1,6 @@
 {
-  "candidate_count": 129,
-  "candidate_set_sha256": "fb15e2d2822a9afb445c3eae7e077a7c250a59565fdd395a9e11f2247b12a884",
+  "candidate_count": 130,
+  "candidate_set_sha256": "f5ed9218e5abe85d9afb95b945f05f9c16ee3396c963040a3fb2d0dbf74f8ec6",
   "controller_content_access": "AUTHORIZED_CONTROLLER_ONLY",
   "execution_authority": "NONE",
   "lambda": "CONJECTURE_1",
@@ -26,7 +26,7 @@
   "source_kind_counts": {
     "attributed-formula": 30,
     "estate-authority": 1,
-    "estate-surface": 6,
+    "estate-surface": 7,
     "executable-formula": 21,
     "formula-authority": 1,
     "python-contract": 5,
@@ -35,12 +35,12 @@
   },
   "sources": [
     {
-      "candidate_count": 7,
-      "content_sha256": "44aaf9654efde3008aae5c1e2f6a5d78f7047dd08bd40e5c6792d272e0c57935",
+      "candidate_count": 8,
+      "content_sha256": "02c62f43e583fd41a0b6f1aada8889620f7d5d680523ff35eb3b11d34fa64bd3",
       "parser": "public_estate",
       "path": "governance/public-estate.v1.json",
       "repository": "szl-holdings/a11oy",
-      "revision": "b37fa90cc48921f15883c23932cc6ded9152f9f1",
+      "revision": "420fcfc36b71858e46a81f669546be1ce2f8a2b6",
       "source_id": "a11oy_public_estate"
     },
     {
@@ -99,6 +99,6 @@
     }
   ],
   "state": "REVIEW_REQUIRED",
-  "state_sha256": "ce9878c839bdb2a36d3891e2c8b53fa399367a053efea6cb21a889e7a3839dab",
+  "state_sha256": "42e42da1b23a36af8873a18067cb4f92e3824e70ca4d4b9b127a59b62fa5c3f1",
   "training_authority": "NONE"
 }
