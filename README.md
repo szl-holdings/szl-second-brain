@@ -66,7 +66,10 @@ executable formulas, nine quant domains, the active kernel/model truth cards,
 the A11oy public topology, Forge controller contracts, and source-document
 sections.
 
-A changed candidate set creates one content-addressed pull request. The workflow
+A changed candidate set creates one content-addressed review branch and attempts
+to open its pull request. When organization policy blocks Actions from opening
+pull requests, the receipt reports `BRANCH_READY_EXTERNAL_PR_REQUIRED` and an
+authorized founder must open that exact branch without rewriting it. The workflow
 cannot force-push, merge, train, publish weights, reveal candidate content through
 the public API, load the private graph, or mutate a provider. Candidate state is
 always `DISCOVERED_REVIEW_REQUIRED` until a separate reviewed process acts.
