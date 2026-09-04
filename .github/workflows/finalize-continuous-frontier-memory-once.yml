@@ -1,0 +1,111 @@
+# SPDX-License-Identifier: Apache-2.0
+name: Finalize continuous frontier memory once
+
+on:
+  push:
+    branches:
+      - feat/continuous-frontier-memory-v1-20260904
+    paths:
+      - .github/workflows/finalize-continuous-frontier-memory-once.yml
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: finalize-continuous-frontier-memory-once
+  cancel-in-progress: false
+
+jobs:
+  finalize:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@05e31511f85b41b11d1cf0ef85d0992719546e2c # v2.21.0
+        with:
+          egress-policy: audit
+
+      - name: Checkout exact branch
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: feat/continuous-frontier-memory-v1-20260904
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Reconcile protected main and prove no lineage loss
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch --no-tags origin main
+          main_sha="$(git rev-parse origin/main)"
+          git config user.name "Lutar, Stephen P."
+          git config user.email "stephenlutar2@gmail.com"
+          if ! git merge-base --is-ancestor origin/main HEAD; then
+            git merge -X ours --no-ff origin/main \
+              -m "chore(brain): reconcile protected main ${main_sha:0:12}" \
+              -m "Preserve the review-gated frontier-memory implementation and incorporate every current protected-main commit." \
+              -m "Signed-off-by: Stephen Lutar <stephenlutar2@gmail.com>"
+          fi
+          test -z "$(git diff --name-only --diff-filter=U)"
+          git merge-base --is-ancestor "$main_sha" HEAD
+          while IFS= read -r -d '' path; do
+            test -e "$path" || { echo "::error::Protected-main path disappeared: $path"; exit 2; }
+          done < <(git ls-tree -r -z --name-only "$main_sha")
+
+      - name: Run complete package and frontier contracts
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install --disable-pip-version-check --no-cache-dir \
+            -r requirements.txt "pytest>=8,<9" "build>=1.2,<2"
+          python -m py_compile \
+            scripts/refresh_frontier_memory.py \
+            second_brain/frontier.py \
+            app_operational.py
+          PYTHONPATH=. python -m pytest -q
+          python -m build --wheel
+          python - <<'PY'
+          from pathlib import Path
+          import json
+          root = Path('.')
+          source = '\n'.join(
+              p.read_text(encoding='utf-8', errors='ignore')
+              for p in root.rglob('*')
+              if p.is_file() and p.suffix in {'.py','.md','.json','.toml','.yml','.yaml'}
+          )
+          for marker in (
+              'AuthorizedFrontierHydrator', 'frontier_status', 'frontier_search',
+              'HANDLES_ONLY', 'REVIEW_REQUIRED', 'training_authority',
+              'promotion_authority', 'execution_authority', 'Funes', 'NeoMME',
+              'FineWeb'
+          ):
+              assert marker in source, marker
+          state = json.loads((root/'data/frontier-state.v1.json').read_text(encoding='utf-8'))
+          assert len(state['candidate_set_sha256']) == 64
+          assert state['candidate_count'] > 0
+          assert state['source_count'] >= 6
+          PY
+          git diff --check
+
+      - name: Remove one-use machinery, push exact head, and request protected merge
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          for path in \
+            .github/workflows/reconcile-continuous-frontier-memory-once.yml \
+            .github/workflows/finalize-continuous-frontier-memory-once.yml; do
+            if [ -e "$path" ]; then git rm -f "$path"; fi
+          done
+          git add -A
+          git diff --cached --check
+          git config user.name "Lutar, Stephen P."
+          git config user.email "stephenlutar2@gmail.com"
+          git commit -s -m "feat(brain): finalize continuous review-gated frontier memory"
+          final_sha="$(git rev-parse HEAD)"
+          git push origin HEAD:feat/continuous-frontier-memory-v1-20260904
+          gh pr merge 8 --repo szl-holdings/szl-second-brain \
+            --auto --squash --match-head-commit "$final_sha"
