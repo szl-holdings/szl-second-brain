@@ -114,25 +114,27 @@ jobs:
           git diff --cached --quiet && { echo "::error::Expected candidate changes are absent"; exit 4; }
           git commit -s -m "chore(brain): propose frontier memory ${digest:0:16}"
           git push origin "HEAD:$branch"
+          body="$(printf '%s\n' \
+            '## Bounded discovery proposal' \
+            '' \
+            'This automated proposal refreshes only the fixed public-source candidate corpus and exact source receipts.' \
+            '' \
+            "- Candidate set: \`${digest}\`" \
+            '- Public API: handles and digests only' \
+            '- Candidate state: `DISCOVERED_REVIEW_REQUIRED`' \
+            '- Training authority: `NONE`' \
+            '- Promotion authority: `NONE`' \
+            '- Execution authority: `NONE`' \
+            '- Merge authority: `NONE`' \
+            '' \
+            'The workflow ran the complete source tests and wheel build. Human review remains required; this workflow cannot merge the PR, train a model, publish weights, expose private graph content, or mutate a provider.' \
+            '' \
+            'Signed-off-by: Stephen Lutar <stephenlutar2@gmail.com>')"
           pr_url="$(gh pr create \
             --base main \
             --head "$branch" \
             --title "chore(brain): review frontier memory ${digest:0:16}" \
-            --body "## Bounded discovery proposal
-
-This automated proposal refreshes only the fixed public-source candidate corpus and exact source receipts.
-
-- Candidate set: \`${digest}\`
-- Public API: handles and digests only
-- Candidate state: \`DISCOVERED_REVIEW_REQUIRED\`
-- Training authority: \`NONE\`
-- Promotion authority: \`NONE\`
-- Execution authority: \`NONE\`
-- Merge authority: \`NONE\`
-
-The workflow ran the complete source tests and wheel build. Human review remains required; this workflow cannot merge the PR, train a model, publish weights, expose private graph content, or mutate a provider.
-
-Signed-off-by: Stephen Lutar <stephenlutar2@gmail.com>")"
+            --body "$body")"
           echo "state=NEW_REVIEW_PR" >> "$GITHUB_OUTPUT"
           echo "pr_url=$pr_url" >> "$GITHUB_OUTPUT"
 
