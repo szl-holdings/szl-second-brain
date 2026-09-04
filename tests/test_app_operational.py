@@ -12,13 +12,19 @@ def test_retrieval_capabilities_are_honest():
     response = client.get("/api/v1/retrieval-capabilities")
     assert response.status_code == 200
     body = response.json()
-    assert body["version"] == "1.2.0"
+    assert body["version"] == "1.3.0"
     assert body["public_content_access"] == "HANDLES_ONLY"
     assert body["controller_hydration"] == "AUTHORIZED_LIBRARY_ONLY"
     assert body["public_runtime_mode"] == "BM25_ONLY"
     assert body["dense_provider"] == "NOT_CONFIGURED"
     assert body["private_graph_present"] is False
     assert body["lambda"] == "CONJECTURE_1"
+    assert body["frontier_memory"]["state"] == "REVIEW_REQUIRED"
+    assert body["frontier_memory"]["candidate_count"] >= 70
+    assert body["frontier_memory"]["content_access"] == "HANDLES_ONLY"
+    assert body["frontier_memory"]["training_authority"] == "NONE"
+    assert body["frontier_memory"]["promotion_authority"] == "NONE"
+    assert body["frontier_memory"]["execution_authority"] == "NONE"
 
 
 def test_hybrid_get_returns_handles_and_ranking_receipt_only():
