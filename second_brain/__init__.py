@@ -33,7 +33,7 @@ from second_brain.retrieve import (
 )
 from second_brain.retrieve import retrieve as search
 
-__version__ = "1.2.0"
+__version__ = "1.3.0"
 
 __all__ = [
     "AuthorizedFrontierHydrator",
