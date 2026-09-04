@@ -1,9 +1,13 @@
+[build-system]
+requires = ["setuptools>=77", "wheel"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "szl-second-brain"
-version = "1.1.0"
+version = "1.2.0"
 description = "Governed hybrid public retrieval with controller-only authorized hydration. Handles only on public surfaces; Lambda = Conjecture 1."
 readme = "README.md"
-license = { text = "Apache-2.0" }
+license = "Apache-2.0"
 requires-python = ">=3.11"
 authors = [{ name = "SZL Holdings" }]
 dependencies = [
@@ -12,7 +16,18 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-test = ["pytest>=8.0"]
+test = ["pytest>=8.0", "build>=1.2"]
+
+[tool.setuptools]
+packages = ["second_brain"]
+
+[tool.setuptools.data-files]
+"share/szl-second-brain" = [
+  "data/brain-corpus.public.jsonl",
+  "data/khipu.schema.json",
+  "data/manifest.json",
+  "data/navigator.schema.json",
+]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
