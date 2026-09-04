@@ -1,0 +1,30 @@
+{
+  "schema": "szl.frontier.binding.v1",
+  "evaluated_at": "2026-09-04T13:36:00Z",
+  "owner": "szl-second-brain",
+  "default_effect": "HOLD",
+  "candidates": [
+    {
+      "id": "funes-agent-memory-2026-09-03",
+      "source": "https://huggingface.co/blog/funes",
+      "role": "portable dataset-as-memory interchange pattern",
+      "status": "ARCHITECTURE_WATCH",
+      "constraints": ["Memory Covenant remains authority", "no secrets in public datasets", "tenant/domain isolation", "tombstones propagate", "source handles required", "receipts required"]
+    },
+    {
+      "id": "neomme-2026-09-03",
+      "source": "https://huggingface.co/Hcompany/NeoMME-260M-Retriever",
+      "role": "shadow multimodal retriever",
+      "status": "EVALUATE",
+      "constraints": ["embedding generation isolation", "pinned revision", "pinned qrels", "no silent index migration", "text-only fallback", "receipt-linked benchmark"]
+    },
+    {
+      "id": "qdrant-fineweb-10b-2026-09-01",
+      "source": "https://huggingface.co/datasets/Qdrant/FineWeb-10B",
+      "role": "scale benchmark substrate",
+      "status": "BENCHMARK",
+      "constraints": ["bounded shard first", "query rights review", "cost ceiling", "no unbounded corpus ingestion"]
+    }
+  ],
+  "production_promotion": false
+}
