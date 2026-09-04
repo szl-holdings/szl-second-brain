@@ -134,14 +134,21 @@ jobs:
             --base main \
             --head "$branch" \
             --title "chore(brain): review frontier memory ${digest:0:16}" \
-            --body "$body")"
+            --body "$body" 2>&1)"
           pr_status=$?
           set -e
           if [ "$pr_status" -ne 0 ]; then
-            echo "::warning::Review branch $branch is ready, but organization policy requires an external pull-request opener."
-            echo "state=BRANCH_READY_EXTERNAL_PR_REQUIRED" >> "$GITHUB_OUTPUT"
-            echo "pr_url=" >> "$GITHUB_OUTPUT"
-            exit 0
+            if printf '%s\n' "$pr_output" | grep -Eqi \
+              'GitHub Actions is not permitted to create or approve pull requests|Resource not accessible by integration|not permitted to create.*pull request'
+            then
+              echo "::warning::Review branch $branch is ready, but organization policy requires an external pull-request opener."
+              echo "state=BRANCH_READY_EXTERNAL_PR_REQUIRED" >> "$GITHUB_OUTPUT"
+              echo "pr_url=" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+            echo "::error::gh pr create failed unexpectedly with exit ${pr_status}."
+            printf '%s\n' "$pr_output" >&2
+            exit "$pr_status"
           fi
           pr_url="$pr_output"
           echo "state=NEW_REVIEW_PR" >> "$GITHUB_OUTPUT"
