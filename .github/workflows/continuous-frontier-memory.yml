@@ -3,7 +3,7 @@ name: Continuous frontier memory
 
 on:
   schedule:
-    - cron: "17 */2 * * *"
+    - cron: "17 * * * *"
   workflow_dispatch:
     inputs:
       reason:
@@ -48,7 +48,7 @@ jobs:
           python -m pip install --disable-pip-version-check --no-cache-dir
           -r requirements.txt "pytest>=8,<9" "build>=1.2,<2"
 
-      - name: Refresh the six fixed public source contracts
+      - name: Refresh the seven fixed public source contracts
         id: refresh
         env:
           GITHUB_TOKEN: ${{ github.token }}
@@ -112,7 +112,7 @@ jobs:
           git config user.email "stephenlutar2@gmail.com"
           git add data/frontier-candidates.public.jsonl data/frontier-state.v1.json
           git diff --cached --quiet && { echo "::error::Expected candidate changes are absent"; exit 4; }
-          git commit -s -m "chore(brain): propose frontier memory ${digest:0:16}"
+          git commit -m "chore(brain): propose frontier memory ${digest:0:16}"
           git push origin "HEAD:$branch"
           body="$(printf '%s\n' \
             '## Bounded discovery proposal' \
@@ -127,9 +127,7 @@ jobs:
             '- Execution authority: `NONE`' \
             '- Merge authority: `NONE`' \
             '' \
-            'The workflow ran the complete source tests and wheel build. Human review remains required; this workflow cannot merge the PR, train a model, publish weights, expose private graph content, or mutate a provider.' \
-            '' \
-            'Signed-off-by: Stephen Lutar <stephenlutar2@gmail.com>')"
+            'The workflow ran the complete source tests and wheel build. Human review remains required; this workflow cannot merge the PR, train a model, publish weights, expose private graph content, or mutate a provider.')"
           pr_url="$(gh pr create \
             --base main \
             --head "$branch" \

@@ -31,7 +31,7 @@ def test_frontier_state_is_exact_and_review_required() -> None:
     assert state["ready"] is True
     assert state["state"] == "REVIEW_REQUIRED"
     assert state["candidate_count"] >= 70
-    assert state["source_count"] == len(SOURCES) == 6
+    assert state["source_count"] == len(SOURCES) == 7
     assert len(state["candidate_set_sha256"]) == 64
     assert state["public_content_access"] == "HANDLES_ONLY"
     assert state["controller_content_access"] == "AUTHORIZED_CONTROLLER_ONLY"
