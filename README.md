@@ -22,14 +22,31 @@ tags:
 A governed memory plane for SZL inference: **public handles and digests outside;
 authorized content hydration inside the trusted controller**.
 
-The public projection currently contains 575 in-repository chunks. The private
-9,464-node graph is not published, is not queried by this package, and is never
-admitted to gradients. The index is data, not model weights. Lambda uniqueness
-remains **Conjecture 1**.
+The public projection contains 575 governed chunks. The private 9,464-node graph
+is not published, is not queried by this package, and is never admitted to
+gradients. The index is data, not model weights. Lambda uniqueness remains
+**Conjecture 1**.
+
+## Installed-mode guarantee
+
+Version 1.2 packages the public corpus and its schemas into the wheel. Installing
+`szl-second-brain` no longer produces a code-only package with an unavailable
+index: a clean installed environment can build the 575-chunk index, run governed
+hybrid retrieval, and perform controller-only authorized hydration without a
+source checkout.
+
+The wheel contains only the public projection. It contains no private graph rows,
+credentials, model weights, signing keys, or execution authority. CI builds the
+wheel, installs it into an isolated environment, changes outside the repository,
+and proves corpus discovery, retrieval, digest parity, and authorized hydration.
+
+An operator may still provide a different governed projection through
+`SECOND_BRAIN_CORPUS` or `AYLLU_BRAIN_CORPUS`. Explicit corpus paths remain
+controller decisions and must pass the same per-row digest checks.
 
 ## Retrieval modes
 
-Version 1.1 adds `HybridSecondBrain`, an engine-neutral retrieval coordinator:
+`HybridSecondBrain` is an engine-neutral retrieval coordinator:
 
 ```text
 BM25 candidates
@@ -69,8 +86,10 @@ by the public FastAPI application.
 ```python
 from second_brain import AuthorizedHydrator, HybridSecondBrain
 
-retriever = HybridSecondBrain(dense_provider=my_dense_provider,
-                              reranker=my_reranker)
+retriever = HybridSecondBrain(
+    dense_provider=my_dense_provider,
+    reranker=my_reranker,
+)
 context = retriever.context("locked formula authority", k=6)
 
 hydrator = AuthorizedHydrator(my_authorizer)
