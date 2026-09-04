@@ -75,7 +75,7 @@ jobs:
           assert frontier["ready"] is True
           assert frontier["state"] == "REVIEW_REQUIRED"
           assert frontier["candidate_count"] >= 70
-          assert frontier["source_count"] == 6
+          assert frontier["source_count"] == 7
           assert frontier["training_authority"] == "NONE"
           assert frontier["promotion_authority"] == "NONE"
           assert frontier["execution_authority"] == "NONE"

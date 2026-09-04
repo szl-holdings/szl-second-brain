@@ -138,7 +138,7 @@ jobs:
           pr_status=$?
           set -e
           if [ "$pr_status" -ne 0 ]; then
-            echo "::warning::Review branch $branch is ready, but repository policy requires an external pull-request opener."
+            echo "::warning::Review branch $branch is ready, but organization policy requires an external pull-request opener."
             echo "state=BRANCH_READY_EXTERNAL_PR_REQUIRED" >> "$GITHUB_OUTPUT"
             echo "pr_url=" >> "$GITHUB_OUTPUT"
             exit 0
