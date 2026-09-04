@@ -1,0 +1,94 @@
+# SPDX-License-Identifier: Apache-2.0
+name: Finalize frontier memory v2 once
+
+on:
+  push:
+    branches:
+      - feat/continuous-frontier-memory-v1-20260904
+    paths:
+      - .github/workflows/zz-finalize-frontier-memory-v2-once.yml
+
+permissions:
+  contents: write
+
+jobs:
+  finalize:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@05e31511f85b41b11d1cf0ef85d0992719546e2c # v2.21.0
+        with:
+          egress-policy: audit
+
+      - name: Checkout exact feature branch
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: feat/continuous-frontier-memory-v1-20260904
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+
+      - name: Install exact source-test toolchain
+        run: >-
+          python -m pip install --disable-pip-version-check --no-cache-dir
+          -r requirements.txt "pytest>=8,<9" "build>=1.2,<2"
+
+      - name: Materialize and prove exact continuous memory
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python scripts/refresh_frontier_memory.py
+          python -m py_compile scripts/refresh_frontier_memory.py second_brain/frontier.py app_operational.py
+          PYTHONPATH=. python -m pytest -q
+          python -m build --wheel
+          python - <<'PY'
+          import hashlib
+          import json
+          from pathlib import Path
+
+          state = json.loads(Path("data/frontier-state.v1.json").read_text(encoding="utf-8"))
+          rows = [
+              json.loads(line)
+              for line in Path("data/frontier-candidates.public.jsonl").read_text(encoding="utf-8").splitlines()
+              if line.strip()
+          ]
+          canonical = b"".join(
+              json.dumps(row, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8") + b"\n"
+              for row in rows
+          )
+          assert state["schema"] == "szl.second-brain.frontier-state/v1"
+          assert state["state"] == "REVIEW_REQUIRED"
+          assert state["candidate_count"] == len(rows)
+          assert state["candidate_set_sha256"] == hashlib.sha256(canonical).hexdigest()
+          assert state["source_count"] == 6
+          assert state["training_authority"] == "NONE"
+          assert state["promotion_authority"] == "NONE"
+          assert state["execution_authority"] == "NONE"
+          assert state["merge_authority"] == "NONE"
+          assert state["private_graph_nodes_loaded"] == 0
+          assert state["raw_graph_nodes_admitted_to_gradients"] == 0
+          assert state["lambda"] == "CONJECTURE_1"
+          PY
+          git diff --check
+
+      - name: Remove every temporary controller and commit durable state
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -f \
+            .github/workflows/materialize-frontier-memory-once.yml \
+            .github/workflows/finalize-frontier-memory-once.yml \
+            .github/workflows/zz-finalize-frontier-memory-v2-once.yml
+          git config user.name "Lutar, Stephen P."
+          git config user.email "stephenlutar2@gmail.com"
+          git add --all
+          git diff --cached --quiet && { echo "::error::No finalization changes were produced"; exit 1; }
+          digest="$(python -c 'import json; print(json.load(open("data/frontier-state.v1.json"))["candidate_set_sha256"][:16])')"
+          git commit -s -m "chore(brain): finalize continuous memory ${digest}"
+          git push origin HEAD:feat/continuous-frontier-memory-v1-20260904
