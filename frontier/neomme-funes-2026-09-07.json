@@ -1,0 +1,65 @@
+{
+  "schema": "szl.frontier.second-brain-binding.v1",
+  "observed_at": "2026-09-07T13:43:00Z",
+  "owner": "szl-second-brain",
+  "canonical_frontier_contract": "https://github.com/szl-holdings/szl-frontier/blob/94a039d086d1343d1fcfe5bca617f601006ca05b/public/frontier/top-choice-integration-matrix.v1.json",
+  "canonical_frontier_revision": "94a039d086d1343d1fcfe5bca617f601006ca05b",
+  "default_effect": "HOLD",
+  "corpus_mutation_authority": false,
+  "training_authority": false,
+  "execution_authority": false,
+  "production_promotion": false,
+  "content_addressed_corpus_policy": "This binding does not mutate data/frontier-candidates.public.jsonl or frontier-state.v1.json. Those artifacts change only through a full deterministic refresh that recomputes all source pins, candidate rows, and digests.",
+  "candidates": [
+    {
+      "id": "neomme-2026-09-03",
+      "source": "https://huggingface.co/Hcompany/NeoMME-260M-Retriever",
+      "license": "Apache-2.0",
+      "status": "QUALIFY_RETRIEVAL_SHADOW",
+      "primitive": "Evidence-Native Multimodal Retriever",
+      "role": "candidate retrieval backend for admitted text and document-page-image evidence",
+      "model_identity_policy": "Pin the exact upstream Hugging Face revision at benchmark time and carry it into every index and query receipt.",
+      "required_metrics": [
+        "nDCG@10",
+        "Recall@100",
+        "p95_query_latency_ms",
+        "encode_docs_per_second",
+        "index_bytes_per_document",
+        "page_and_span_provenance_exact_match"
+      ],
+      "required_invariants": [
+        "run current SZL retriever on identical checksum-pinned qrels as the control",
+        "page screenshots and text documents remain distinguishable in provenance",
+        "dense and late-interaction indexes are disposable derived state",
+        "retrieved evidence never gains execution authority",
+        "unsupported or failed multimodal inputs use an explicit measured fallback"
+      ],
+      "promotion_effect": "NONE"
+    },
+    {
+      "id": "funes-agent-memory-2026-09-03",
+      "source": "https://huggingface.co/blog/funes",
+      "status": "ADOPT_PATTERN_IN_SHADOW",
+      "primitive": "Memory Covenant Interchange",
+      "role": "architecture pattern for durable local traces plus derived hybrid recall",
+      "adoption_policy": "Adopt the raw-trace-plus-derived-index pattern and interoperability ideas; do not relabel Funes as SZL-originated software or make an unreviewed external memory store authoritative.",
+      "required_metrics": [
+        "relevant_memory_recall_at_10",
+        "provenance_exact_match",
+        "secret_exposure_rate",
+        "cross_tenant_leakage_rate",
+        "deleted_memory_return_rate",
+        "sync_divergence_rate",
+        "p95_recall_latency_ms"
+      ],
+      "required_invariants": [
+        "raw traces are the system-of-record evidence and embeddings/indexes are disposable derived state",
+        "redaction and secret scanning occur before every synchronization boundary",
+        "tenant, domain, purpose, lifecycle state, and source provenance accompany every recalled memory",
+        "tombstones and deletions propagate to all derived indexes before recall resumes",
+        "memory is context evidence only and cannot authorize tools, writes, training, or production actions"
+      ],
+      "promotion_effect": "NONE"
+    }
+  ]
+}
