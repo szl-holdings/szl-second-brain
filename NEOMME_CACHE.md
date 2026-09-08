@@ -1,38 +1,39 @@
-# Public NeoMME cache: measured-performance follow-through
+# Public NeoMME cache: measured CPU evidence
 
-The 1.4.0 native exercise actually indexed all 575 public chunks and completed
-all eight diagnostic queries with body reranking and authorized hydration parity.
-It exposed a real performance problem: per-query CPU times of approximately
-12.9 to 49.5 seconds for a 24-candidate body rerank. The first-process index build
-was 396.55 seconds. These are observations from HF job
-https://huggingface.co/jobs/SZLHOLDINGS/6a9ff40cb012ba1d5b8f2af5 at exact source
-`1db2ad1f8db869cbc4c847d8cd595318af283243`, not a relevance benchmark or SLA.
-The first complete report digest was
-`9f921747a9a87e3811e2ed19b524d50dc4592452de78df856be3735870ea68f4`.
-A completed first process does not establish the full job's restart check passed.
+The NeoMME public-corpus cache is now measured on the complete packaged public corpus rather than described only through unit-test behavior.
 
-This patch retains the already-computed public document token embeddings instead
-of throwing them away after dense indexing and re-encoding the same bodies on
-every query. A 256 MiB default LRU budget (configurable from zero to 512 MiB)
-counts tensor payload bytes, NOT total Python/process/active-request memory.
-Keys bind exact corpus, model/runtime identity, node ID, body digest and title
-digest. Query embeddings and private memory are not retained in this cache.
+The authoritative observation is Hugging Face CPU job `SZLHOLDINGS/6a9ff8ff8e5f7b7fd14cbbe3`, completed on 2026-09-08. It executed candidate source `76e1eb42a115b41724fa469ba238f1d81bd13583`, which was admitted through PR #19 and protected-main merge `74aea2a4103fcf9cd6d013b69fbe51e5472f4bb6`. The installed package reported version `1.4.1`.
 
-Body lookups remain behind the existing exact-public-corpus and candidate
-source/digest checks. A changed encoder identity fails closed and requires a
-separately admitted generation; it never relabels an existing dense index or
-reuses another model's token cache. Invalid limits, oversized entries and LRU
-accounting are covered by explicit unit tests.
+## Bound source and model
 
-The persisted dense index format is unchanged and still requires an externally
-supplied checksum on restore. The token cache is deliberately in-process: after
-a fresh process restore, body lookups warm it lazily and have different latency
-from a fully warm index. Neither this cache nor JSON index persistence is a
-private memory/revocation store or a multi-replica durability claim.
+- Source repository: `szl-holdings/szl-second-brain`
+- Model: `Hcompany/NeoMME-260M-Retriever`
+- Model revision: `0dcb6c924435bd0bf5d504dba9ba2bb63acd8595`
+- Model-lock SHA-256: `957e56a53a74e51ec75a679524eab07769806734caedfce9e5263521bd42f65a`
+- Transformers revision: `cdfdcad31314fe4f23b40ab374e860a62403f72a`
+- Runtime: PyTorch `2.8.0+cpu`, float32, L2-normalized embeddings
+- Corpus scope: `EXACT_PACKAGED_PUBLIC_CORPUS_ONLY`
+- Corpus SHA-256: `387337acbd8fe443637102fe7ea75387fa4c3d9d746d8ab6e2d14d6c138aad8f`
 
-The actual corpus probe now reports stage/count progress and cache observations
-per query. Compare complete runs of the same eight predeclared queries, candidate
-budget, model, source and index identities. Unit tests using fake payloads prove
-cache contracts only. New performance improvement and full cold-restore claims
-remain unmeasured until the new native run is complete. Do not mark the existing
-Forge/HF inference service as upgraded solely because this patch merged.
+## Measured result
+
+The job indexed all **575** public documents at **1,024** dimensions and ran all eight fixed diagnostic queries in two separate processes.
+
+The first process built a 12,480,582-byte dense index in `388.19100568816066` seconds. Its SHA-256 was `f6c98283b5a19ea79aef468874b1ac945c2bb84351e224451dbcab91d5287ef5`. With the public-document token cache warm, median query time was `0.3286384674720466` seconds, compared with the retained uncached observation median of `42.876986605348065` seconds.
+
+The first process cache contained 575 entries, recorded 192 hits, zero misses and zero evictions, and held 63,686,144 tensor-payload bytes under the 256 MiB cache budget. Maximum process RSS, including dependencies, was 3,639,939,072 bytes; the cache budget does not claim total-process memory control.
+
+A fresh second process restored the exact dense index in `0.29764229292050004` seconds. Candidate rankings were identical to the first process and the earlier uncached observation, and every hydration digest matched. The in-process token cache intentionally did not persist: the fresh process lazily warmed 157 entries, recording 35 hits and 157 misses. Its eight query times ranged from approximately 12.53 to 44.73 seconds.
+
+This distinction is deliberate: **dense-index restore is proven; cross-process token-cache persistence is not implemented or claimed.**
+
+## Receipts
+
+- Build receipt SHA-256: `7ad792ce9301f4bd25a3ffc01d06e1a50bba553a6519bb27bc59763c7fbdf5aa`
+- Restore receipt SHA-256: `c9a7cde5bed89435d7db9cfcdcba98fe4ff09eac7d8be9a01298c8b14d0a682f`
+- Receipt kind: `UNSIGNED_EXECUTION_RECORD_NOT_AUTHORIZATION`
+- Machine-readable projection: `evidence/neomme-cache-1.4.1-hf-cpu-20260908.json`
+
+## Truth boundary
+
+This is an eight-query CPU diagnostic observation, not an independent relevance benchmark, production SLA, private-memory durability proof, model-quality winner, or deployment authorization. Training was not performed. The private graph was not loaded. Production promotion remains false.
