@@ -3,6 +3,7 @@ from __future__ import annotations
 from fastapi.testclient import TestClient
 
 from app_operational import app
+from second_brain import __version__
 
 
 client = TestClient(app)
@@ -12,7 +13,7 @@ def test_retrieval_capabilities_are_honest():
     response = client.get("/api/v1/retrieval-capabilities")
     assert response.status_code == 200
     body = response.json()
-    assert body["version"] == "1.3.0"
+    assert body["version"] == __version__ == "1.4.0"
     assert body["public_content_access"] == "HANDLES_ONLY"
     assert body["controller_hydration"] == "AUTHORIZED_LIBRARY_ONLY"
     assert body["public_runtime_mode"] == "BM25_ONLY"
