@@ -42,13 +42,19 @@ def run(args):
             if not args.model_dir or not args.index_path:
                 raise ValueError("model directory and index path required")
             stage = "VERIFIED_NATIVE_MODEL_LOAD"
+            print(json.dumps({"stage": stage}), flush=True)
             encoder = NeoMME(args.model_dir)
             brain = PublicNeuralBrain(encoder)
             if len(brain.corpus.rows) != 575:
                 raise ValueError("unexpected public corpus count")
             stage = "RESTORE_INDEX" if args.restore_sha else "BUILD_ALL_PUBLIC_EMBEDDINGS"
             mark = time.perf_counter()
-            seal = brain.load(args.index_path, expected_sha256=args.restore_sha) if args.restore_sha else brain.build(args.index_path)
+            print(json.dumps({"stage": stage}), flush=True)
+            def progress(done, total):
+                if done % 50 == 0 or done == total:
+                    print(json.dumps({"rows_indexed": done, "total": total}), flush=True)
+            seal = (brain.load(args.index_path, expected_sha256=args.restore_sha) if args.restore_sha
+                    else brain.build(args.index_path, progress=progress))
             result["index_build_or_restore_seconds"] = time.perf_counter() - mark
             result["index_operation"] = "RESTORED" if args.restore_sha else "BUILT"
             result["indexed_rows"] = len(brain.corpus.rows)
@@ -83,14 +89,16 @@ def run(args):
                               "baseline_node_ids": [h["nodeId"] for h in sparse["handles"]],
                               "candidate_node_ids": [h["nodeId"] for h in context["handles"]],
                               "evidence_set_sha256": context["evidence_set_sha256"],
-                              "hydration_digest_match": True, "ranking_receipt": context["ranking_receipt"]})
+                              "hydration_digest_match": True, "ranking_receipt": context["ranking_receipt"],
+                              "cache_after_query": brain.cache_stats()})
                 print(json.dumps({"query_executed": len(cases), "total": len(QUERIES), "seconds": elapsed}), flush=True)
             root = Path(__file__).resolve().parents[1]
             result.update({"status": "EXECUTED_PUBLIC_CORPUS", "cases": cases,
                            "model_lock_file_sha256": file_sha256(LOCK_PATH),
                            "source_files": {str(p): file_sha256(root / p) for p in
-                               ("second_brain/corpus.py", "second_brain/retrieve.py", "second_brain/hybrid.py",
+                               ("second_brain/corpus.py", "second_brain/embedding_cache.py", "second_brain/retrieve.py", "second_brain/hybrid.py",
                                 "second_brain/neomme.py", "tools/neomme_corpus_probe.py")},
+                           "cache": brain.cache_stats(),
                            "max_rss_bytes_including_dependencies": resource.getrusage(resource.RUSAGE_SELF).ru_maxrss * 1024,
                            "python": platform.python_version(), "platform": platform.platform(),
                            "limit": "575 public documents indexed; eight diagnostic queries, no independent qrels, no quality winner or live deployment claim."})
