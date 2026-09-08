@@ -21,6 +21,7 @@ from second_brain.frontier import (
 from second_brain.hybrid import (
     AuthorizedHydrator,
     HybridSecondBrain,
+    ProviderUnavailable,
     RetrievalBoundaryError,
     hybrid_context,
     hybrid_index,
@@ -33,7 +34,7 @@ from second_brain.retrieve import (
 )
 from second_brain.retrieve import retrieve as search
 
-__version__ = "1.3.0"
+__version__ = "1.4.0"
 
 __all__ = [
     "AuthorizedFrontierHydrator",
@@ -41,6 +42,7 @@ __all__ = [
     "FrontierBoundaryError",
     "FrontierIndex",
     "HybridSecondBrain",
+    "ProviderUnavailable",
     "RetrievalBoundaryError",
     "SecondBrainIndex",
     "anatomy_feed",

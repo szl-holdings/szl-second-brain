@@ -1,0 +1,53 @@
+{
+  "schema": "szl.brain.model-lock/v1",
+  "repository_id": "Hcompany/NeoMME-260M-Retriever",
+  "revision": "0dcb6c924435bd0bf5d504dba9ba2bb63acd8595",
+  "model_type": "neomme",
+  "license": "apache-2.0",
+  "license_basis": "UPSTREAM_CARD_AND_LICENSE_BYTES; preserve notices; not a general rights certificate",
+  "trust_remote_code": false,
+  "qualification": "PRIOR_SYNTHETIC_SMOKE_ONLY_NOT_PRODUCTION",
+  "transformers_source_revision": "cdfdcad31314fe4f23b40ab374e860a62403f72a",
+  "files": [
+    {
+      "path": "LICENSE",
+      "bytes": 11353,
+      "sha256": "6d002392f3dcd355a43c457e759c8fe3914cb48c2f7dce93d0dbba0fb99a34c8"
+    },
+    {
+      "path": "README.md",
+      "bytes": 7879,
+      "sha256": "ab77aa065849a6d605ea6dc241c56c2b0c68477b207ea3224d985ec5dfbce0dd"
+    },
+    {
+      "path": "chat_template.jinja",
+      "bytes": 3488,
+      "sha256": "a71f62bad401eb073ef8845f345d9184bea94b97038ad9593ea722b142c80796"
+    },
+    {
+      "path": "config.json",
+      "bytes": 1980,
+      "sha256": "ce45d3b557b58dc26f9ed0d6872357cff230b369d358d831082c75bdb67bc11f"
+    },
+    {
+      "path": "model.safetensors",
+      "bytes": 526156876,
+      "sha256": "29bc505e54b7bd1a214f9041081a73b62b0a6b16cee1efc438f777e5bf1a4943"
+    },
+    {
+      "path": "processor_config.json",
+      "bytes": 446,
+      "sha256": "8fa05e736692dce1cc88167a2cd2ab72966dfca81ea350c18e7766b31de2cc86"
+    },
+    {
+      "path": "tokenizer.json",
+      "bytes": 10178610,
+      "sha256": "d9f456ff493b39e9bae05ec7fec6faf9db5807d4d906ddbf4e74f060ac974892"
+    },
+    {
+      "path": "tokenizer_config.json",
+      "bytes": 515,
+      "sha256": "5496edf183a648b74aaa7c50ab37b98329e92bcb20c16d6cdb00fc78a7f40164"
+    }
+  ]
+}
