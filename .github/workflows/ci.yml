@@ -48,7 +48,7 @@ jobs:
           )
           from second_brain.neomme import LOCK_PATH, PUBLIC_CORPUS_SHA256
 
-          assert __version__ == importlib.metadata.version("szl-second-brain") == "1.4.0"
+          assert __version__ == importlib.metadata.version("szl-second-brain") == "1.4.1"
           assert LOCK_PATH.is_file()
           assert "torch" not in sys.modules
           brain = index()

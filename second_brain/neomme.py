@@ -15,10 +15,11 @@ import os
 import tempfile
 from pathlib import Path
 from threading import RLock
-from typing import Any
+from typing import Any, Callable
 
 from second_brain.corpus import CorpusIntegrityError, load_corpus, strict_json
 from second_brain.hybrid import HybridSecondBrain, RetrievalBoundaryError
+from second_brain.embedding_cache import EmbeddingCache
 from second_brain.retrieve import CORPUS, SecondBrainIndex, bounded_int
 
 PUBLIC_CORPUS_SHA256 = "387337acbd8fe443637102fe7ea75387fa4c3d9d746d8ab6e2d14d6c138aad8f"
@@ -107,28 +108,65 @@ class PublicNeuralBrain:
     authority from the index. Reload never mixes different corpus generations.
     No private path or private content admission is provided by this class.
     """
-    def __init__(self, encoder: NeoMME) -> None:
+    def __init__(self, encoder: NeoMME, *, token_cache_bytes: int = 256 * 1024 * 1024) -> None:
         self.corpus = load_corpus(CORPUS, PUBLIC_CORPUS_SHA256)
         self.sparse = SecondBrainIndex(CORPUS, expected_sha256=PUBLIC_CORPUS_SHA256).snapshot()
         if not self.sparse.built:
             raise CorpusIntegrityError("public sparse generation unavailable")
         self.encoder = encoder
+        self._encoder_identity = canonical(encoder.identity)
+        self._token_cache = EmbeddingCache(token_cache_bytes)
         self.generation_sha256 = self.corpus.file_sha256
         self._rows = {row.node_id: row for row in self.corpus.rows}
         self._vectors: tuple[tuple[float, ...], ...] | None = None
         self.index_sha256: str | None = None
 
+    def _check_encoder(self):
+        if canonical(self.encoder.identity) != self._encoder_identity:
+            raise CorpusIntegrityError("encoder identity changed; rebuild a separately admitted generation")
+
     @property
     def binding(self):
-        return {"encoder": dict(self.encoder.identity), "index_sha256": self.index_sha256,
-                "corpus_sha256": self.generation_sha256, "scope": "EXACT_PACKAGED_PUBLIC_CORPUS_ONLY"}
+        self._check_encoder()
+        return {"encoder": json.loads(self._encoder_identity), "index_sha256": self.index_sha256,
+                "corpus_sha256": self.generation_sha256, "scope": "EXACT_PACKAGED_PUBLIC_CORPUS_ONLY",
+                "body_cache_budget_bytes": self._token_cache.max_bytes}
 
     def _payload(self, vectors):
+        self._check_encoder()
         return {"schema": SCHEMA, "corpus_sha256": self.generation_sha256,
-                "encoder": self.encoder.identity, "node_ids": list(self._rows), "vectors": vectors}
+                "encoder": json.loads(self._encoder_identity), "node_ids": list(self._rows), "vectors": vectors}
 
-    def build(self, destination: Path) -> str:
-        vectors = [self.encoder.encode(row.title + "\n" + row.text, "document")[0] for row in self.corpus.rows]
+    def _cache_key(self, row):
+        self._check_encoder()
+        return (self.generation_sha256, hashlib.sha256(self._encoder_identity).hexdigest(),
+                row.node_id, row.sha256, hashlib.sha256(row.title.encode()).hexdigest())
+
+    def _remember(self, row, tokens):
+        if tokens is not None:
+            self._token_cache.put(self._cache_key(row), tokens,
+                                  byte_size=tokens.numel() * tokens.element_size())
+
+    def _document_tokens(self, row):
+        tokens = self._token_cache.get(self._cache_key(row))
+        if tokens is None:
+            _, tokens = self.encoder.encode(row.title + "\n" + row.text, "document")
+            if tokens is None:
+                raise RetrievalBoundaryError("document token embeddings missing")
+            self._remember(row, tokens)
+        return tokens
+
+    def cache_stats(self):
+        return self._token_cache.stats()
+
+    def build(self, destination: Path, *, progress: Callable[[int, int], None] | None = None) -> str:
+        vectors = []
+        for position, row in enumerate(self.corpus.rows, 1):
+            dense, tokens = self.encoder.encode(row.title + "\n" + row.text, "document")
+            vectors.append(dense)
+            self._remember(row, tokens)
+            if progress is not None:
+                progress(position, len(self.corpus.rows))
         self._validate_vectors(vectors)
         raw = canonical(self._payload(vectors)) + b"\n"
         destination.parent.mkdir(parents=True, exist_ok=True)
@@ -171,7 +209,9 @@ class PublicNeuralBrain:
         if self._vectors is None:
             raise RetrievalBoundaryError("neural index has not been built or loaded")
         vectors = self._vectors
+        self._check_encoder()
         dense, _ = self.encoder.encode(query, "query")
+        self._check_encoder()
         if self._vectors is not vectors:
             raise RetrievalBoundaryError("neural index changed during the query")
         scored = [(sum(a * b for a, b in zip(dense, vector)), row)
@@ -190,7 +230,7 @@ class PublicNeuralBrain:
             row = self._rows.get(candidate.get("node_id"))
             if row is None or candidate.get("sha256") != row.sha256 or candidate.get("source") != row.source:
                 raise RetrievalBoundaryError("body hydration identity mismatch")
-            _, document_tokens = self.encoder.encode(row.title + "\n" + row.text, "document")
+            document_tokens = self._document_tokens(row)
             score = float((query_tokens @ document_tokens.T).max(dim=1).values.mean())
             if not math.isfinite(score):
                 raise RetrievalBoundaryError("non-finite late-interaction score")
