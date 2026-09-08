@@ -1,0 +1,115 @@
+{
+  "schema": "szl.brain.cache-restart-observation/v1",
+  "observed_at": "2026-09-08T12:11:43.128Z",
+  "provider": {
+    "service": "hugging-face-jobs",
+    "namespace": "SZLHOLDINGS",
+    "job_id": "6a9ff8ff8e5f7b7fd14cbbe3",
+    "flavor": "cpu-upgrade",
+    "status": "COMPLETED"
+  },
+  "source": {
+    "repository": "szl-holdings/szl-second-brain",
+    "candidate_revision": "76e1eb42a115b41724fa469ba238f1d81bd13583",
+    "merged_pull_request": 19,
+    "protected_main_merge": "74aea2a4103fcf9cd6d013b69fbe51e5472f4bb6",
+    "installed_package_version": "1.4.1"
+  },
+  "model": {
+    "repository": "Hcompany/NeoMME-260M-Retriever",
+    "revision": "0dcb6c924435bd0bf5d504dba9ba2bb63acd8595",
+    "model_lock_sha256": "957e56a53a74e51ec75a679524eab07769806734caedfce9e5263521bd42f65a",
+    "torch_version": "2.8.0+cpu",
+    "transformers_revision": "cdfdcad31314fe4f23b40ab374e860a62403f72a",
+    "device": "cpu",
+    "dtype": "float32",
+    "normalization": "l2"
+  },
+  "corpus": {
+    "scope": "EXACT_PACKAGED_PUBLIC_CORPUS_ONLY",
+    "corpus_sha256": "387337acbd8fe443637102fe7ea75387fa4c3d9d746d8ab6e2d14d6c138aad8f",
+    "indexed_rows": 575,
+    "dense_dimensions": 1024,
+    "diagnostic_queries_each_process": 8
+  },
+  "persisted_index": {
+    "sha256": "f6c98283b5a19ea79aef468874b1ac945c2bb84351e224451dbcab91d5287ef5",
+    "bytes": 12480582,
+    "build_seconds": 388.19100568816066,
+    "restore_seconds": 0.29764229292050004,
+    "fresh_process_rankings_identical": true,
+    "uncached_observed_rankings_identical": true,
+    "all_hydration_digests_match": true
+  },
+  "warm_process": {
+    "query_seconds": [
+      0.4145006281323731,
+      0.4216133370064199,
+      0.3258501049131155,
+      0.3272834522649646,
+      0.3278303788974881,
+      0.3294465560466051,
+      0.30277827475219965,
+      0.33868777472525835
+    ],
+    "median_seconds": 0.3286384674720466,
+    "cache": {
+      "entries": 575,
+      "hits": 192,
+      "misses": 0,
+      "evictions": 0,
+      "payload_bytes": 63686144,
+      "max_bytes": 268435456
+    },
+    "max_rss_bytes_including_dependencies": 3639939072
+  },
+  "fresh_process_after_index_restore": {
+    "query_seconds": [
+      12.527020398061723,
+      44.730568415950984,
+      17.576067209243774,
+      13.903937797062099,
+      17.20339138712734,
+      21.54420702625066,
+      14.0594716030173,
+      14.227870354428887
+    ],
+    "cache": {
+      "entries": 157,
+      "hits": 35,
+      "misses": 157,
+      "evictions": 0,
+      "payload_bytes": 24506880,
+      "max_bytes": 268435456
+    },
+    "max_rss_bytes_including_dependencies": 3618758656
+  },
+  "uncached_reference": {
+    "query_seconds": [
+      12.868604151066393,
+      49.4582295822911,
+      48.1939970436506,
+      19.22450071014464,
+      37.559976167045534,
+      21.914924653247,
+      48.38224717089906,
+      49.47519046859816
+    ],
+    "median_seconds": 42.876986605348065
+  },
+  "receipts": {
+    "build_sha256": "7ad792ce9301f4bd25a3ffc01d06e1a50bba553a6519bb27bc59763c7fbdf5aa",
+    "restore_sha256": "c9a7cde5bed89435d7db9cfcdcba98fe4ff09eac7d8be9a01298c8b14d0a682f",
+    "kind": "UNSIGNED_EXECUTION_RECORD_NOT_AUTHORIZATION"
+  },
+  "truth_boundary": {
+    "status": "PASS",
+    "training_performed": false,
+    "production_promoted": false,
+    "private_graph_loaded": false,
+    "independent_relevance_evaluation": false,
+    "runtime_qualification_implied": false,
+    "sla_claimed": false,
+    "private_memory_durability_claimed": false
+  }
+}
