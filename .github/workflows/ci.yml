@@ -35,6 +35,7 @@ jobs:
             cd "$RUNNER_TEMP"
             "$venv/bin/python" - <<'PY'
           import importlib.metadata
+          import sys
           from second_brain import (
               AuthorizedFrontierHydrator,
               AuthorizedHydrator,
@@ -45,11 +46,15 @@ jobs:
               hybrid_context,
               index,
           )
+          from second_brain.neomme import LOCK_PATH, PUBLIC_CORPUS_SHA256
 
-          assert __version__ == importlib.metadata.version("szl-second-brain") == "1.3.0"
+          assert __version__ == importlib.metadata.version("szl-second-brain") == "1.4.0"
+          assert LOCK_PATH.is_file()
+          assert "torch" not in sys.modules
           brain = index()
           assert brain.built is True, brain.load_error
           assert brain.n == 575
+          assert brain.generation_sha256 == PUBLIC_CORPUS_SHA256
           assert brain.path.is_file()
           assert brain.path.name == "brain-corpus.public.jsonl"
 
