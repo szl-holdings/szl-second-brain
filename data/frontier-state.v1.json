@@ -1,6 +1,6 @@
 {
-  "candidate_count": 129,
-  "candidate_set_sha256": "fb15e2d2822a9afb445c3eae7e077a7c250a59565fdd395a9e11f2247b12a884",
+  "candidate_count": 131,
+  "candidate_set_sha256": "6d985854915292b5b236e93c8c5ad3300f4427ed00ceeefbe5b7c20d1a7923ce",
   "controller_content_access": "AUTHORIZED_CONTROLLER_ONLY",
   "execution_authority": "NONE",
   "lambda": "CONJECTURE_1",
@@ -26,21 +26,21 @@
   "source_kind_counts": {
     "attributed-formula": 30,
     "estate-authority": 1,
-    "estate-surface": 6,
+    "estate-surface": 7,
     "executable-formula": 21,
     "formula-authority": 1,
     "python-contract": 5,
     "quant-domain": 9,
-    "source-document": 56
+    "source-document": 57
   },
   "sources": [
     {
-      "candidate_count": 7,
-      "content_sha256": "44aaf9654efde3008aae5c1e2f6a5d78f7047dd08bd40e5c6792d272e0c57935",
+      "candidate_count": 8,
+      "content_sha256": "121884029bad18403dd02cebb88ea54ab00ff6d17bd75cb70980fdd7d2e1dabf",
       "parser": "public_estate",
       "path": "governance/public-estate.v1.json",
       "repository": "szl-holdings/a11oy",
-      "revision": "b37fa90cc48921f15883c23932cc6ded9152f9f1",
+      "revision": "dddf649beb7f189c4c05dc062875cf6d4c4d215d",
       "source_id": "a11oy_public_estate"
     },
     {
@@ -71,12 +71,12 @@
       "source_id": "governed_kernel_suite"
     },
     {
-      "candidate_count": 20,
-      "content_sha256": "129ce416948ad14ec8b9edd31450690c4fa7cbcb464430c9cb403c4c4b118420",
+      "candidate_count": 21,
+      "content_sha256": "f8868bc7687603ab69b066bd6d8294d2e0bcbe3723656bbfad9f9af323a6f876",
       "parser": "markdown",
       "path": "README.md",
       "repository": "szl-holdings/anatomy",
-      "revision": "6422274e284c443f640c3899fc4dbb7947bd5b30",
+      "revision": "8ef34ed6a63936394dc62b15b6288f6c2cff73ab",
       "source_id": "living_anatomy"
     },
     {
@@ -90,15 +90,15 @@
     },
     {
       "candidate_count": 4,
-      "content_sha256": "a4be2532660eb18dee173263218c36dfef54624713ac0c97dc3e0382ba7c62f1",
+      "content_sha256": "07308890832e365ef092ec971744e46d8d3a6d3b6a87098f0d2d3ceb8dce863a",
       "parser": "markdown",
       "path": "README.md",
       "repository": "szl-holdings/szl-ouroboros",
-      "revision": "cd8a451ca2be19f71653dcb4ef50e15e6836e697",
+      "revision": "425cd6d3a868d77cde481879d576430369ea8e2e",
       "source_id": "ouroboros_runtime"
     }
   ],
   "state": "REVIEW_REQUIRED",
-  "state_sha256": "ce9878c839bdb2a36d3891e2c8b53fa399367a053efea6cb21a889e7a3839dab",
+  "state_sha256": "58aa506888376aadf187211f48e9ee5c6805577285328652778e5e73941f2f16",
   "training_authority": "NONE"
 }
