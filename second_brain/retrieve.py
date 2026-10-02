@@ -143,9 +143,15 @@ class SecondBrainIndex:
         return True
 
     def handle(self, row: Mapping[str, Any]) -> dict[str, Any]:
-        return {"nodeId": row["id"], "nodeKind": "INDEX", "label": "DECLARED",
-                "note": (row.get("title") or "")[:160], "source": row.get("source"),
-                "sha256": row.get("sha256")}
+        handle = {"nodeId": row["id"], "nodeKind": "INDEX", "label": "DECLARED",
+                  "note": (row.get("title") or "")[:160], "source": row.get("source"),
+                  "sha256": row.get("sha256")}
+        # The corpus file digest already binds sourceId. Return it on public
+        # retrieval handles so a reviewer can follow an admitted citation;
+        # navigator model handles still carry only their bounded four fields.
+        if row.get("sourceId"):
+            handle["sourceId"] = row["sourceId"]
+        return handle
 
     def model_handle(self, row: Mapping[str, Any]) -> dict[str, Any]:
         handle = self.handle(row)
