@@ -15,8 +15,9 @@ import threading
 from collections import Counter
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
-from importlib.resources import files
 from typing import Any
+
+from second_brain._data import data_dir
 
 _TOKEN_RE = re.compile(r"[a-z0-9][a-z0-9_.:/+-]{1,63}")
 _HEX_40 = re.compile(r"^[0-9a-f]{40}$")
@@ -111,7 +112,7 @@ class FrontierIndex:
             if self._loaded:
                 return
             try:
-                package = files("data")
+                package = data_dir()
                 state = json.loads(
                     package.joinpath("frontier-state.v1.json").read_text(
                         encoding="utf-8"

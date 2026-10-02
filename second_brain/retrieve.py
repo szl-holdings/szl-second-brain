@@ -19,10 +19,11 @@ from threading import RLock
 from types import MappingProxyType
 from typing import Any, Mapping
 
+from second_brain._data import data_file
 from second_brain.corpus import CorpusIntegrityError, load_corpus
 
 ROOT = Path(__file__).resolve().parent.parent
-CORPUS = ROOT / "data" / "brain-corpus.public.jsonl"
+CORPUS = data_file("brain-corpus.public.jsonl")
 TOKEN = re.compile(r"[a-z0-9λ]+", re.I)
 STOP = {
     "the", "is", "a", "an", "of", "and", "or", "to", "in", "for", "on", "at",
