@@ -11,6 +11,7 @@ from scripts.refresh_frontier_memory import (
     RefreshError,
     SOURCES,
     candidate_id,
+    forum_pilot_candidates,
     reject_secrets,
 )
 from second_brain.frontier import (
@@ -31,7 +32,10 @@ def test_frontier_state_is_exact_and_review_required() -> None:
     assert state["ready"] is True
     assert state["state"] == "REVIEW_REQUIRED"
     assert state["candidate_count"] >= 70
-    assert state["source_count"] == len(SOURCES) == 7
+    assert state["source_count"] == len(SOURCES) == 8
+    forum = next(source for source in state["sources"] if source["source_id"] == "science_forum_pilot")
+    assert forum["candidate_count"] == 1
+    assert forum["content_sha256"] == "3edf511b4d021c7eb8286035c8fa444031abe6eb04f06e8718dc0bf29bfba0f9"
     assert len(state["candidate_set_sha256"]) == 64
     assert state["public_content_access"] == "HANDLES_ONLY"
     assert state["controller_content_access"] == "AUTHORIZED_CONTROLLER_ONLY"
@@ -61,6 +65,39 @@ def test_public_frontier_search_is_handles_only() -> None:
         assert handle["contentAccess"] == "HANDLES_ONLY"
         assert len(handle["sha256"]) == 64
         assert len(handle["revision"]) == 40
+
+
+def test_forum_pilot_is_a_review_required_cited_handle() -> None:
+    result = frontier_search("provenance-aware GitHub skill imports", k=24)
+    forum = [handle for handle in result["handles"] if handle["kind"] == "forum-insight"]
+    assert len(forum) == 1
+    assert forum[0]["repository"] == "szl-holdings/szl-science-forum-corpus"
+    assert forum[0]["path"] == "dataset/sources.public.jsonl"
+    assert forum[0]["candidate_state"] == "DISCOVERED_REVIEW_REQUIRED"
+    assert forum[0]["contentAccess"] == "HANDLES_ONLY"
+    assert '"content"' not in json.dumps(forum[0])
+
+
+def test_forum_pilot_parser_rejects_unreviewed_or_raw_posts() -> None:
+    spec = next(source for source in SOURCES if source.source_id == "science_forum_pilot")
+    row = {
+        "source_id": "ai4science:426:1",
+        "source_url": "https://ai4science.discourse.group/t/three-testable-science-skills-and-provenance-aware-github-imports/426",
+        "topic_id": 426, "post_number": 1,
+        "title": "Three testable science skills and provenance-aware GitHub imports",
+        "summary": "Operator-authored research-workflow summary.",
+        "need_ids": ["artifact_replay", "blocked_allocation", "measurement_harmonization", "skill_import_provenance"],
+        "review_state": "operator_labeled", "attribution": "betterwithage",
+        "observed_at": "2026-10-02", "posted_at": None,
+        "publication_rights": "operator_authorized", "rights_evidence": "Operator-authored summary",
+    }
+    def encode(value):
+        return (json.dumps(value) + "\n").encode("utf-8")
+    assert len(forum_pilot_candidates(spec, "a" * 40, encode(row))) == 1
+    with pytest.raises(RefreshError, match="rights or source binding"):
+        forum_pilot_candidates(spec, "a" * 40, encode({**row, "publication_rights": "unknown"}))
+    with pytest.raises(RefreshError, match="metadata fields"):
+        forum_pilot_candidates(spec, "a" * 40, encode({**row, "body": "unapproved text"}))
 
 
 def test_anatomy_feed_is_read_only_and_contains_formula_or_quant_handles() -> None:

@@ -83,6 +83,12 @@ SOURCES = (
         "README.md",
         "markdown",
     ),
+    SourceSpec(
+        "science_forum_pilot",
+        "szl-holdings/szl-science-forum-corpus",
+        "dataset/sources.public.jsonl",
+        "forum_pilot",
+    ),
 )
 
 _SECRET_PATTERNS = (
@@ -469,11 +475,69 @@ def python_contract_candidates(
     return rows
 
 
+def forum_pilot_candidates(
+    spec: SourceSpec, revision: str, payload: bytes
+) -> list[dict[str, Any]]:
+    """Admit only the operator's reviewed pilot summary, never forum post bodies."""
+    lines = [line for line in payload.decode("utf-8").splitlines() if line.strip()]
+    if len(lines) != 1:
+        raise RefreshError("forum pilot source count drifted")
+
+    def unique_pairs(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
+        result: dict[str, Any] = {}
+        for key, value in pairs:
+            if key in result:
+                raise RefreshError("duplicate forum metadata key")
+            result[key] = value
+        return result
+
+    try:
+        row = json.loads(lines[0], object_pairs_hook=unique_pairs)
+    except (ValueError, TypeError) as exc:
+        raise RefreshError("invalid forum pilot JSON") from exc
+    expected = {
+        "source_id", "source_url", "topic_id", "post_number", "title",
+        "summary", "need_ids", "review_state", "attribution", "observed_at",
+        "posted_at", "publication_rights", "rights_evidence",
+    }
+    if not isinstance(row, dict) or set(row) != expected:
+        raise RefreshError("forum pilot metadata fields drifted")
+    if (
+        row["source_id"] != "ai4science:426:1"
+        or type(row["topic_id"]) is not int or row["topic_id"] != 426
+        or type(row["post_number"]) is not int or row["post_number"] != 1
+        or row["source_url"] != "https://ai4science.discourse.group/t/three-testable-science-skills-and-provenance-aware-github-imports/426"
+        or row["publication_rights"] != "operator_authorized"
+        or row["review_state"] != "operator_labeled"
+        or row["attribution"] != "betterwithage"
+        or not isinstance(row["rights_evidence"], str)
+        or not row["rights_evidence"].strip()
+        or row["need_ids"] != [
+            "artifact_replay", "blocked_allocation", "measurement_harmonization",
+            "skill_import_provenance",
+        ]
+    ):
+        raise RefreshError("forum pilot rights or source binding drifted")
+    title, summary = row["title"], row["summary"]
+    if (
+        not isinstance(title, str) or not title.strip() or len(title) > 240
+        or not isinstance(summary, str) or not summary.strip() or len(summary) > 1000
+    ):
+        raise RefreshError("forum pilot annotation is invalid")
+    return [make_candidate(
+        spec, revision, stable_key=row["source_id"],
+        title=f"Forum research pilot · {title}",
+        content=f"Independent operator summary: {summary}\nOriginal source: {row['source_url']}",
+        source_kind="forum-insight",
+    )]
+
+
 PARSERS: dict[str, Callable[[SourceSpec, str, bytes], list[dict[str, Any]]]] = {
     "formula_atlas": formula_candidates,
     "markdown": markdown_candidates,
     "public_estate": public_estate_candidates,
     "python_contract": python_contract_candidates,
+    "forum_pilot": forum_pilot_candidates,
 }
 
 

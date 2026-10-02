@@ -1,6 +1,6 @@
 {
-  "candidate_count": 129,
-  "candidate_set_sha256": "fb15e2d2822a9afb445c3eae7e077a7c250a59565fdd395a9e11f2247b12a884",
+  "candidate_count": 130,
+  "candidate_set_sha256": "85d3f0d422d1bd0988e2a7d83d4823db7e043a3e7454c3453dba129c27e5414a",
   "controller_content_access": "AUTHORIZED_CONTROLLER_ONLY",
   "execution_authority": "NONE",
   "lambda": "CONJECTURE_1",
@@ -22,13 +22,14 @@
   },
   "raw_graph_nodes_admitted_to_gradients": 0,
   "schema": "szl.second-brain.frontier-state/v1",
-  "source_count": 7,
+  "source_count": 8,
   "source_kind_counts": {
     "attributed-formula": 30,
     "estate-authority": 1,
     "estate-surface": 6,
     "executable-formula": 21,
     "formula-authority": 1,
+    "forum-insight": 1,
     "python-contract": 5,
     "quant-domain": 9,
     "source-document": 56
@@ -96,9 +97,18 @@
       "repository": "szl-holdings/szl-ouroboros",
       "revision": "cd8a451ca2be19f71653dcb4ef50e15e6836e697",
       "source_id": "ouroboros_runtime"
+    },
+    {
+      "candidate_count": 1,
+      "content_sha256": "3edf511b4d021c7eb8286035c8fa444031abe6eb04f06e8718dc0bf29bfba0f9",
+      "parser": "forum_pilot",
+      "path": "dataset/sources.public.jsonl",
+      "repository": "szl-holdings/szl-science-forum-corpus",
+      "revision": "ac85ddde85c1ae494803c2b16421688c6d3fe7de",
+      "source_id": "science_forum_pilot"
     }
   ],
   "state": "REVIEW_REQUIRED",
-  "state_sha256": "ce9878c839bdb2a36d3891e2c8b53fa399367a053efea6cb21a889e7a3839dab",
+  "state_sha256": "2b66cd87f4cb293d2c1f20b494174c70754e7cb229430858ef956a67264b585a",
   "training_authority": "NONE"
 }
