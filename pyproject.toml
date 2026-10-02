@@ -10,21 +10,45 @@ readme = "README.md"
 license = "Apache-2.0"
 requires-python = ">=3.11"
 authors = [{ name = "SZL Holdings" }]
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Framework :: FastAPI",
+  "Operating System :: OS Independent",
+]
 dependencies = [
   "fastapi>=0.115.0",
   "uvicorn[standard]>=0.32.0",
 ]
 
-[project.optional-dependencies]
-test = ["pytest>=8.0", "build>=1.2"]
+[project.urls]
+Homepage = "https://github.com/szl-holdings/szl-second-brain"
+Source = "https://github.com/szl-holdings/szl-second-brain"
+Issues = "https://github.com/szl-holdings/szl-second-brain/issues"
 
+[project.optional-dependencies]
+# fastapi.testclient -> starlette.testclient needs an HTTP client. Starlette 1.x imports httpx2
+# (httpx there is deprecated); older Starlette releases inside the fastapi>=0.115 floor import httpx.
+test = ["pytest>=8.0", "httpx2>=2.0.0", "httpx>=0.28.1", "build>=1.2"]
+
+# The repository keeps the public data files in ./data (container and source checkout layout).
+# The wheel installs them as package data under second_brain/data, so no top-level `data`
+# package is ever written into site-packages.
 [tool.setuptools]
-packages = ["second_brain", "data"]
+packages = ["second_brain", "second_brain.data"]
+
+[tool.setuptools.package-dir]
+"second_brain.data" = "data"
 
 [tool.setuptools.package-data]
-data = ["*.json", "*.jsonl"]
+"second_brain.data" = ["*.json", "*.jsonl"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-q"
 pythonpath = ["."]
+
+[tool.szl.release]
+import_names = ["second_brain"]

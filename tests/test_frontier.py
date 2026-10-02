@@ -163,9 +163,9 @@ def test_secret_like_material_is_rejected_without_echoing_it() -> None:
 def test_candidate_set_digest_matches_committed_canonical_lines() -> None:
     index = frontier_index()
     state = index.status()
-    from importlib.resources import files
+    from second_brain._data import data_file
 
-    lines = files("data").joinpath("frontier-candidates.public.jsonl").read_bytes()
+    lines = data_file("frontier-candidates.public.jsonl").read_bytes()
     rows = [json.loads(line) for line in lines.splitlines() if line.strip()]
     canonical = b"".join(
         json.dumps(row, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")
