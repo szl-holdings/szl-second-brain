@@ -27,6 +27,15 @@ is not published, is not queried by this package, and is never admitted to
 gradients. The index is data, not model weights. Lambda uniqueness remains
 **Conjecture 1**.
 
+Public retrieval handles now retain an admitted row's `sourceId` so a reviewer
+can follow its citation. This is an additive handle field; model-facing
+navigator handles still omit it and never expose text. The separate
+[science-forum corpus pilot](https://github.com/szl-holdings/szl-science-forum-corpus/tree/ac85ddde85c1ae494803c2b16421688c6d3fe7de)
+emits a compatible, rights-gated candidate row. That row is **not admitted** to
+this 575-chunk corpus or its Hugging Face/Anatomy projections. Admission needs
+a reviewed source PR, updated manifests, a governed dataset mirror, and an
+exact-revision Anatomy readback.
+
 ## Installed-mode guarantee
 
 Version 1.3 packages the public corpus, schemas, and the review-gated frontier
