@@ -31,10 +31,13 @@ Public retrieval handles now retain an admitted row's `sourceId` so a reviewer
 can follow its citation. This is an additive handle field; model-facing
 navigator handles still omit it and never expose text. The separate
 [science-forum corpus pilot](https://github.com/szl-holdings/szl-science-forum-corpus/tree/ac85ddde85c1ae494803c2b16421688c6d3fe7de)
-emits a compatible, rights-gated candidate row. That row is **not admitted** to
-this 575-chunk corpus or its Hugging Face/Anatomy projections. Admission needs
-a reviewed source PR, updated manifests, a governed dataset mirror, and an
-exact-revision Anatomy readback.
+emits a compatible, rights-gated candidate row. Its one operator-authored
+summary is now included in the separate **review-required frontier** at an exact
+source revision. It is **not admitted** to this 575-chunk retrieval corpus,
+model weights, or the existing Hugging Face/Anatomy projections. The source
+index is also [mirrored on Hugging Face at an exact revision](https://huggingface.co/datasets/SZLHOLDINGS/szl-science-forum-corpus/tree/d8f8fec38361d988fddebec0be7898138af15275);
+that mirror does not grant training or promotion authority. An Anatomy source
+refresh and provider readback are separate release steps.
 
 ## Installed-mode guarantee
 
@@ -57,7 +60,7 @@ controller decisions and must pass the same per-row digest checks.
 ## Continuous frontier memory
 
 The hourly `Continuous frontier memory` workflow is a bounded discovery loop,
-not autonomous retraining. It reads only seven fixed public source contracts:
+not autonomous retraining. It reads only eight fixed public source contracts:
 
 - the exact `szl-formulas` formula/quant atlas;
 - the canonical `szl-ouroboros` bounded-loop kernel README;
@@ -65,7 +68,8 @@ not autonomous retraining. It reads only seven fixed public source contracts:
 - the Living Anatomy README;
 - the A11oy public-estate manifest;
 - the Forge production-controller contract;
-- the Nemo witness README.
+- the Nemo witness README;
+- the reviewed, operator-authored science-forum insight index.
 
 Each source is resolved to the latest exact commit that changed its admitted
 path, fetched from immutable raw GitHub, scanned for secret-like material, and
@@ -74,6 +78,10 @@ exact candidate count and digest, including 30 attributed formulas, 21
 executable formulas, nine quant domains, the active kernel/model truth cards,
 the A11oy public topology, Forge controller contracts, and source-document
 sections.
+The forum parser accepts only the current one-topic, reviewed metadata shape
+and rejects unapproved rights, extra raw-post fields, or a changed source count.
+It contributes one `forum-insight` candidate while preserving the previous 129
+candidate rows byte-for-byte and keeping all candidates review-required.
 
 A changed candidate set creates one content-addressed review branch and attempts
 to open its pull request. When organization policy blocks Actions from opening
