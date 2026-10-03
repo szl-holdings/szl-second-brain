@@ -24,7 +24,7 @@ configs:
 
 | What is present | What it means |
 |---|---|
-| 131 reviewed Git-sourced candidates | Fixed public source contracts, including two operator-authored science forum summaries. |
+| 131 Git-sourced candidates requiring review | Fixed public source contracts, including two operator-authored science forum summaries. |
 | 6 research metadata candidates | Bounded public Crossref and arXiv metadata captures; paper full text was not downloaded. |
 | `frontier-handles.public.jsonl` | Public citation handles with exact source revisions and content digests. Raw candidate excerpts are omitted. |
 | `frontier-state.v1.json` | The exact reviewed state bytes from GitHub, retaining source counts and review status. |

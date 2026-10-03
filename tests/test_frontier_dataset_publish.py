@@ -3,7 +3,10 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import sys
+import types
 from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import patch
 
 import pytest
@@ -77,3 +80,85 @@ def test_mismatched_research_snapshot_fails_before_provider_write() -> None:
     data[path] = json.dumps(snapshot, ensure_ascii=False, sort_keys=True).encode()
     with pytest.raises((ValueError, publisher.PublicationError)):
         render(data)
+
+
+def test_guarded_update_requires_current_hub_head(monkeypatch: pytest.MonkeyPatch) -> None:
+    hub = types.ModuleType("huggingface_hub")
+    hub.CommitOperationAdd = lambda **kwargs: kwargs
+    hub.hf_hub_download = lambda *args, **kwargs: (_ for _ in ()).throw(
+        AssertionError("stale Hub revision must fail before download")
+    )
+    utils = types.ModuleType("huggingface_hub.utils")
+    utils.RepositoryNotFoundError = type("RepositoryNotFoundError", (Exception,), {})
+    monkeypatch.setitem(sys.modules, "huggingface_hub", hub)
+    monkeypatch.setitem(sys.modules, "huggingface_hub.utils", utils)
+
+    class FakeApi:
+        def whoami(self):
+            return {"orgs": [{"name": "SZLHOLDINGS", "roleInOrg": "admin"}]}
+
+        def repo_info(self, *args, **kwargs):
+            return SimpleNamespace(sha="b" * 40)
+
+        def create_commit(self, **kwargs):
+            raise AssertionError("provider write must not happen")
+
+    monkeypatch.setattr(publisher, "_readback", lambda *_: (_ for _ in ()).throw(ValueError("different")))
+    with pytest.raises(publisher.PublicationError, match="exact current Hub revision required"):
+        publisher.publish(FakeApi(), {"publication.json": b"{}"}, expected_hub_revision="c" * 40)
+
+
+def test_guarded_update_verifies_old_source_and_uses_hub_parent(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    hub = types.ModuleType("huggingface_hub")
+    hub.CommitOperationAdd = lambda **kwargs: kwargs
+    utils = types.ModuleType("huggingface_hub.utils")
+    utils.RepositoryNotFoundError = type("RepositoryNotFoundError", (Exception,), {})
+    monkeypatch.setitem(sys.modules, "huggingface_hub", hub)
+    monkeypatch.setitem(sys.modules, "huggingface_hub.utils", utils)
+    old_source, new_source, old_hub, new_hub = "a" * 40, "b" * 40, "c" * 40, "d" * 40
+    old_manifest = {
+        "schema": "szl.second-brain.hf-frontier-publication/v1",
+        "source_repository": publisher.GITHUB_REPO,
+        "target_dataset": publisher.HF_REPO,
+        "content_projection": "HANDLES_ONLY",
+        "source_revision": old_source,
+        "training_authority": "NONE", "promotion_authority": "NONE", "execution_authority": "NONE",
+    }
+    marker = tmp_path / "prior-publication.json"
+    marker.write_text(json.dumps(old_manifest), encoding="utf-8")
+    hub.hf_hub_download = lambda *args, **kwargs: str(marker)
+    old_expected = {"publication.json": b"old"}
+    new_expected = {"publication.json": json.dumps({"source_revision": new_source}).encode()}
+    calls = []
+
+    def check_bytes(_api, revision, expected):
+        calls.append(("readback", revision, expected))
+        if len([item for item in calls if item[0] == "readback"]) == 1:
+            raise ValueError("new bytes differ")
+
+    monkeypatch.setattr(publisher, "_readback", check_bytes)
+    monkeypatch.setattr(publisher, "build", lambda revision: old_expected if revision == old_source else None)
+    monkeypatch.setattr(publisher, "git", lambda *args: calls.append(("git", *args)) or b"")
+    monkeypatch.setattr(publisher, "gh_verified", lambda *args, **kwargs: calls.append(("signature", args, kwargs)))
+
+    class FakeApi:
+        def whoami(self):
+            return {"orgs": [{"name": "SZLHOLDINGS", "roleInOrg": "admin"}]}
+
+        def repo_info(self, *args, **kwargs):
+            return SimpleNamespace(sha=old_hub)
+
+        def create_commit(self, **kwargs):
+            calls.append(("commit", kwargs))
+            return SimpleNamespace(oid=new_hub)
+
+    assert publisher.publish(FakeApi(), new_expected, expected_hub_revision=old_hub) == (
+        "UPDATED_AND_VERIFIED", new_hub
+    )
+    assert ("git", "merge-base", "--is-ancestor", old_source, new_source) in calls
+    assert ("signature", (old_source,), {"require_current_main": False}) in calls
+    assert ("readback", old_hub, old_expected) in calls
+    assert next(item[1] for item in calls if item[0] == "commit")["parent_commit"] == old_hub
+    assert ("readback", new_hub, new_expected) in calls
