@@ -48,7 +48,7 @@ jobs:
           )
           from second_brain.neomme import LOCK_PATH, PUBLIC_CORPUS_SHA256
 
-          assert __version__ == importlib.metadata.version("szl-second-brain") == "1.4.1"
+          assert __version__ == importlib.metadata.version("szl-second-brain") == "1.5.0"
           assert LOCK_PATH.is_file()
           assert "torch" not in sys.modules
           brain = index()
@@ -80,7 +80,8 @@ jobs:
           assert frontier["ready"] is True
           assert frontier["state"] == "REVIEW_REQUIRED"
           assert frontier["candidate_count"] >= 70
-          assert frontier["source_count"] == 7
+          assert frontier["source_count"] == 9
+          assert frontier["source_kind_counts"]["research-metadata"] == 6
           assert frontier["training_authority"] == "NONE"
           assert frontier["promotion_authority"] == "NONE"
           assert frontier["execution_authority"] == "NONE"
@@ -106,5 +107,11 @@ jobs:
           assert review_content["training_authority"] == "NONE"
           assert review_content["promotion_authority"] == "NONE"
           assert review_content["execution_authority"] == "NONE"
+
+          research = frontier_search("Wigner mathematics natural sciences", k=4)
+          research_handles = [handle for handle in research["handles"] if handle["kind"] == "research-metadata"]
+          assert research_handles
+          assert all(handle["revisionKind"] == "metadata-capture-sha256" for handle in research_handles)
+          assert all(handle["sourceIdentity"]["fullTextLicence"] == "NOT_INFERRED" for handle in research_handles)
           PY
           )

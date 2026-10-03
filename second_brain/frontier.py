@@ -15,6 +15,7 @@ import threading
 from collections import Counter
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from importlib.resources import files
 from typing import Any
 
@@ -59,6 +60,18 @@ def _tokenize(value: str) -> list[str]:
     return _TOKEN_RE.findall(value.lower())
 
 
+def _validate_research_provenance(provenance: dict[str, Any], *, now: str) -> None:
+    import base64
+    from second_brain.public_research import SCHEMA, canonical_bytes, validate_snapshot
+
+    record = {
+        **provenance,
+        "capture_base64": base64.b64encode(canonical_bytes(provenance.get("metadata"))).decode("ascii"),
+        "candidate_state": "DISCOVERED_REVIEW_REQUIRED",
+    }
+    validate_snapshot({"schema": SCHEMA, "state": "DISCOVERED_REVIEW_REQUIRED", "records": [record], "training_authority": "NONE", "promotion_authority": "NONE", "execution_authority": "NONE"}, now=now)
+
+
 @dataclass(frozen=True)
 class FrontierCandidate:
     candidate_id: str
@@ -71,6 +84,8 @@ class FrontierCandidate:
     source_kind: str
     quant_domain: str | None
     admission: str
+    revision_kind: str = "git-sha1"
+    provenance: dict[str, Any] | None = None
 
     def handle(self) -> dict[str, Any]:
         payload: dict[str, Any] = {
@@ -88,6 +103,19 @@ class FrontierCandidate:
         }
         if self.quant_domain:
             payload["quantDomain"] = self.quant_domain
+        if self.revision_kind != "git-sha1":
+            payload["revisionKind"] = self.revision_kind
+            provenance = self.provenance or {}
+            metadata = provenance.get("metadata", {})
+            payload["sourceIdentity"] = {
+                "provider": provenance.get("provider"),
+                "identifier": provenance.get("identifier"),
+                "canonicalUrl": metadata.get("canonical_url"),
+                "observedAt": provenance.get("observed_at"),
+                "metadataLicence": metadata.get("metadata_licence"),
+                "fullTextLicence": "NOT_INFERRED",
+                "sourceAuthentication": provenance.get("source_authentication"),
+            }
         return payload
 
 
@@ -141,6 +169,8 @@ class FrontierIndex:
                             else None
                         ),
                         admission=str(row["admission"]),
+                        revision_kind=str(row.get("source_revision_kind", "git-sha1")),
+                        provenance=row.get("provenance"),
                     )
                     for row in rows
                 )
@@ -212,7 +242,15 @@ class FrontierIndex:
             if candidate_id in seen:
                 raise ValueError("duplicate frontier candidate id")
             seen.add(candidate_id)
-            if not _HEX_40.fullmatch(str(row["source_revision"])):
+            revision_kind = row.get("source_revision_kind", "git-sha1")
+            if revision_kind == "metadata-capture-sha256":
+                provenance = row.get("provenance")
+                if not isinstance(provenance, dict) or row["source_kind"] != "research-metadata":
+                    raise ValueError("research provenance missing")
+                _validate_research_provenance(provenance, now=datetime.now(timezone.utc).isoformat())
+                if row["source_revision"] != provenance["capture_sha256"] or row["source_repository"] != f"public-metadata/{provenance['provider']}" or row["source_path"] != provenance["identifier"]:
+                    raise ValueError("research source binding mismatch")
+            elif revision_kind != "git-sha1" or not _HEX_40.fullmatch(str(row["source_revision"])):
                 raise ValueError("frontier source revision is not exact")
             content = str(row["content"])
             measured = hashlib.sha256(content.encode("utf-8")).hexdigest()
@@ -230,13 +268,22 @@ class FrontierIndex:
         sources = state.get("sources")
         if not isinstance(sources, list) or not sources:
             raise ValueError("frontier source receipts are missing")
+        if state.get("source_count") != len(sources):
+            raise ValueError("frontier source receipt count mismatch")
         for source in sources:
             if not isinstance(source, dict):
                 raise ValueError("invalid frontier source receipt")
-            if not _HEX_40.fullmatch(str(source.get("revision") or "")):
+            revision_pattern = _HEX_64 if source.get("revision_kind") == "metadata-capture-sha256" else _HEX_40
+            if source.get("revision_kind", "git-sha1") not in {"git-sha1", "metadata-capture-sha256"} or not revision_pattern.fullmatch(str(source.get("revision") or "")):
                 raise ValueError("frontier source receipt revision is not exact")
             if not _HEX_64.fullmatch(str(source.get("content_sha256") or "")):
                 raise ValueError("frontier source receipt digest is malformed")
+            if source.get("revision_kind") == "metadata-capture-sha256":
+                bound = [row["provenance"]["metadata"] for row in rows if row.get("source_revision_kind") == "metadata-capture-sha256" and row["source_repository"] == source.get("repository")]
+                bound.sort(key=lambda metadata: (metadata["provider"], metadata["identifier"], hashlib.sha256(_canonical_bytes(metadata)).hexdigest()))
+                measured = hashlib.sha256(_canonical_bytes(bound)).hexdigest()
+                if not bound or source["revision"] != measured or source["content_sha256"] != measured or source.get("candidate_count") != len(bound):
+                    raise ValueError("research source receipt binding mismatch")
 
     @property
     def ready(self) -> bool:
@@ -352,11 +399,22 @@ class AuthorizedFrontierHydrator:
             raise FrontierBoundaryError("controller identity and policy are required")
         documents: list[dict[str, Any]] = []
         public_handles: list[dict[str, Any]] = []
+        seen: set[str] = set()
         for handle in handles:
             candidate_id = str(handle.get("nodeId") or "")
             candidate = self._index.candidate(candidate_id)
             if handle.get("sha256") != candidate.content_sha256:
                 raise FrontierBoundaryError("frontier handle digest mismatch")
+            if candidate_id in seen or dict(handle) != candidate.handle():
+                raise FrontierBoundaryError("frontier handle is duplicated or source binding changed")
+            seen.add(candidate_id)
+            if candidate.revision_kind == "metadata-capture-sha256":
+                from second_brain.public_research import ResearchBoundaryError
+
+                try:
+                    _validate_research_provenance(candidate.provenance or {}, now=datetime.now(timezone.utc).isoformat())
+                except ResearchBoundaryError as exc:
+                    raise FrontierBoundaryError("research metadata capture is expired or invalid") from exc
             allowed = self._authorizer(
                 principal_id,
                 tenant_id,
@@ -373,6 +431,7 @@ class AuthorizedFrontierHydrator:
                     "title": candidate.title,
                     "source_repository": candidate.source_repository,
                     "source_revision": candidate.source_revision,
+                    "source_revision_kind": candidate.revision_kind,
                     "source_path": candidate.source_path,
                     "sha256": candidate.content_sha256,
                     "content": candidate.content,

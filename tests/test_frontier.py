@@ -31,7 +31,9 @@ def test_frontier_state_is_exact_and_review_required() -> None:
     assert state["ready"] is True
     assert state["state"] == "REVIEW_REQUIRED"
     assert state["candidate_count"] >= 70
-    assert state["source_count"] == len(SOURCES) == 7
+    assert len(SOURCES) == 7
+    assert state["source_count"] == len(SOURCES) + 2
+    assert state["source_kind_counts"]["research-metadata"] == 6
     assert len(state["candidate_set_sha256"]) == 64
     assert state["public_content_access"] == "HANDLES_ONLY"
     assert state["controller_content_access"] == "AUTHORIZED_CONTROLLER_ONLY"
@@ -41,7 +43,7 @@ def test_frontier_state_is_exact_and_review_required() -> None:
     assert state["private_graph_present"] is False
     assert state["raw_graph_nodes_admitted_to_gradients"] == 0
     assert state["lambda"] == "CONJECTURE_1"
-    assert all(len(source["revision"]) == 40 for source in state["sources"])
+    assert all(len(source["revision"]) == (64 if source.get("revision_kind") == "metadata-capture-sha256" else 40) for source in state["sources"])
 
 
 def test_public_frontier_search_is_handles_only() -> None:
@@ -60,7 +62,7 @@ def test_public_frontier_search_is_handles_only() -> None:
         assert handle["candidate_state"] == "DISCOVERED_REVIEW_REQUIRED"
         assert handle["contentAccess"] == "HANDLES_ONLY"
         assert len(handle["sha256"]) == 64
-        assert len(handle["revision"]) == 40
+        assert len(handle["revision"]) == (64 if handle.get("revisionKind") == "metadata-capture-sha256" else 40)
 
 
 def test_anatomy_feed_is_read_only_and_contains_formula_or_quant_handles() -> None:
