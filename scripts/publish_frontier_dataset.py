@@ -52,7 +52,7 @@ def git(*args: str) -> bytes:
     return result.stdout
 
 
-def gh_verified(revision: str) -> None:
+def gh_verified(revision: str, *, require_current_main: bool = True) -> None:
     query = (
         "query($owner:String!,$name:String!,$oid:GitObjectID!){"
         "repository(owner:$owner,name:$name){"
@@ -72,7 +72,8 @@ def gh_verified(revision: str) -> None:
     repository = proof.get("data", {}).get("repository", {})
     commit = repository.get("object") or {}
     main_oid = repository.get("defaultBranchRef", {}).get("target", {}).get("oid")
-    if main_oid != revision or commit.get("oid") != revision or commit.get("signature") != {"isValid": True, "state": "VALID"}:
+    if ((require_current_main and main_oid != revision) or commit.get("oid") != revision
+            or commit.get("signature") != {"isValid": True, "state": "VALID"}):
         raise PublicationError("GitHub source signature is not valid")
 
 
@@ -215,8 +216,9 @@ def _readback(api: Any, revision: str, expected: dict[str, bytes]) -> None:
             raise PublicationError(f"Hub byte mismatch: {path}")
 
 
-def publish(api: Any, expected: dict[str, bytes]) -> tuple[str, str]:
+def publish(api: Any, expected: dict[str, bytes], *, expected_hub_revision: str | None = None) -> tuple[str, str]:
     from huggingface_hub import CommitOperationAdd
+    from huggingface_hub import hf_hub_download
     from huggingface_hub.utils import RepositoryNotFoundError
 
     identity = api.whoami()
@@ -231,8 +233,41 @@ def publish(api: Any, expected: dict[str, bytes]) -> tuple[str, str]:
         try:
             _readback(api, prior.sha, expected)
         except Exception as exc:
-            raise PublicationError("target dataset exists with different or incomplete bytes") from exc
+            if expected_hub_revision is None or prior.sha != expected_hub_revision:
+                raise PublicationError("target dataset differs; exact current Hub revision required") from exc
+            manifest_path = Path(hf_hub_download(
+                HF_REPO, "publication.json", repo_type="dataset", revision=prior.sha,
+                force_download=True,
+            ))
+            prior_manifest = strict_json(manifest_path.read_bytes())
+            prior_source = prior_manifest.get("source_revision")
+            if (prior_manifest.get("schema") != "szl.second-brain.hf-frontier-publication/v1"
+                    or prior_manifest.get("source_repository") != GITHUB_REPO
+                    or prior_manifest.get("target_dataset") != HF_REPO
+                    or prior_manifest.get("content_projection") != "HANDLES_ONLY"
+                    or not isinstance(prior_source, str) or not SHA40.fullmatch(prior_source)
+                    or any(prior_manifest.get(key) != "NONE" for key in
+                           ("training_authority", "promotion_authority", "execution_authority"))):
+                raise PublicationError("prior Hub publication ownership is invalid")
+            current_source = strict_json(expected["publication.json"])["source_revision"]
+            git("merge-base", "--is-ancestor", prior_source, current_source)
+            gh_verified(prior_source, require_current_main=False)
+            _readback(api, prior.sha, build(prior_source))
+            operations = [
+                CommitOperationAdd(path_in_repo=path, path_or_fileobj=io.BytesIO(data))
+                for path, data in expected.items()
+            ]
+            commit = api.create_commit(
+                repo_id=HF_REPO, repo_type="dataset", operations=operations,
+                commit_message="Correct Second Brain frontier review status",
+                parent_commit=prior.sha,
+            )
+            _readback(api, commit.oid, expected)
+            return "UPDATED_AND_VERIFIED", commit.oid
         return "ALREADY_PUBLISHED", prior.sha
+
+    if expected_hub_revision is not None:
+        raise PublicationError("expected Hub revision supplied but dataset is absent")
 
     api.create_repo(HF_REPO, repo_type="dataset", private=False, exist_ok=False)
     empty = api.repo_info(HF_REPO, repo_type="dataset")
@@ -254,8 +289,11 @@ def publish(api: Any, expected: dict[str, bytes]) -> tuple[str, str]:
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--apply", action="store_true", help="create and publish the fixed dataset")
+    parser.add_argument("--expected-hub-revision", help="exact current Hub SHA for a guarded update")
     parser.add_argument("--receipt", type=Path, required=True, help="new receipt path outside the source checkout")
     args = parser.parse_args()
+    if args.expected_hub_revision is not None and not SHA40.fullmatch(args.expected_hub_revision):
+        raise PublicationError("expected Hub revision is malformed")
     if args.receipt.resolve().is_relative_to(ROOT.resolve()):
         raise PublicationError("receipt must be outside the source checkout")
     if args.receipt.exists():
@@ -275,13 +313,16 @@ def main() -> int:
             "state": "APPLY_REQUESTED_NO_PROVIDER_PROOF",
             "source_revision": revision,
             "target_dataset": HF_REPO,
+            "expected_hub_revision": args.expected_hub_revision,
             "published_file_sha256": {path: sha256(data) for path, data in expected.items()},
         }
         with intent_path.open("x", encoding="utf-8") as stream:
             json.dump(intent, stream, sort_keys=True, indent=2)
             stream.write("\n")
         try:
-            state, hub_revision = publish(HfApi(), expected)
+            state, hub_revision = publish(
+                HfApi(), expected, expected_hub_revision=args.expected_hub_revision
+            )
         except Exception as exc:
             failure = {
                 **intent,
@@ -301,7 +342,8 @@ def main() -> int:
         "source_revision": revision,
         "target_dataset": HF_REPO,
         "hub_revision": hub_revision,
-        "provider_mutation": bool(args.apply and state == "PUBLISHED_AND_VERIFIED"),
+        "provider_mutation": bool(args.apply and state in {"PUBLISHED_AND_VERIFIED", "UPDATED_AND_VERIFIED"}),
+        "expected_hub_revision": args.expected_hub_revision,
         "published_file_sha256": {path: sha256(data) for path, data in expected.items()},
     }
     with args.receipt.open("x", encoding="utf-8") as stream:

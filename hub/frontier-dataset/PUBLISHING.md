@@ -17,6 +17,12 @@ After the publisher source is merged and the main revision is verified:
    success. A failure receipt marks the provider outcome unknown; inspect the
    target before another attempt.
 
+To update this same dataset after a new protected source merge, pass
+`--expected-hub-revision` with the exact current dataset SHA to both plan and
+apply. The publisher first rechecks every prior Hub byte against its signed
+GitHub source ancestor, then uses that Hub SHA as the commit parent. A moved or
+unowned target fails before the write.
+
 The destination is only
 `SZLHOLDINGS/szl-second-brain-frontier-candidates` (dataset). Its viewer file
 contains handles, not candidate excerpts or paper full text. The exact reviewed
