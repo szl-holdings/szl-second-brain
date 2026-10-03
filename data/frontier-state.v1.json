@@ -1,6 +1,6 @@
 {
-  "candidate_count": 130,
-  "candidate_set_sha256": "85d3f0d422d1bd0988e2a7d83d4823db7e043a3e7454c3453dba129c27e5414a",
+  "candidate_count": 131,
+  "candidate_set_sha256": "570fb020f5b8684a0c54ab0f682be1f9ddc975b50cc79f441f399deed5dc862e",
   "controller_content_access": "AUTHORIZED_CONTROLLER_ONLY",
   "execution_authority": "NONE",
   "lambda": "CONJECTURE_1",
@@ -29,7 +29,7 @@
     "estate-surface": 6,
     "executable-formula": 21,
     "formula-authority": 1,
-    "forum-insight": 1,
+    "forum-insight": 2,
     "python-contract": 5,
     "quant-domain": 9,
     "source-document": 56
@@ -99,16 +99,16 @@
       "source_id": "ouroboros_runtime"
     },
     {
-      "candidate_count": 1,
-      "content_sha256": "3edf511b4d021c7eb8286035c8fa444031abe6eb04f06e8718dc0bf29bfba0f9",
+      "candidate_count": 2,
+      "content_sha256": "833b9e312b9ff4fafaaca636b6b2dce4436e16fbe181934ba0ed933e305882d9",
       "parser": "forum_pilot",
       "path": "dataset/sources.public.jsonl",
       "repository": "szl-holdings/szl-science-forum-corpus",
-      "revision": "ac85ddde85c1ae494803c2b16421688c6d3fe7de",
+      "revision": "330f519c8208eb2d6ba29492c778a0a40018195b",
       "source_id": "science_forum_pilot"
     }
   ],
   "state": "REVIEW_REQUIRED",
-  "state_sha256": "2b66cd87f4cb293d2c1f20b494174c70754e7cb229430858ef956a67264b585a",
+  "state_sha256": "a23e3b61ae4710a2616157a5ad53952e153339a243a8b098fb47f5e6dc6068ba",
   "training_authority": "NONE"
 }
