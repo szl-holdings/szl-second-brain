@@ -48,7 +48,7 @@ jobs:
           python -m pip install --disable-pip-version-check --no-cache-dir
           -e ".[test]" "pytest<9" "build<2"
 
-      - name: Refresh the seven fixed public source contracts
+      - name: Refresh fixed public contracts and the reviewed research metadata snapshot
         id: refresh
         env:
           GITHUB_TOKEN: ${{ github.token }}

@@ -14,6 +14,7 @@ import hashlib
 import json
 import os
 import re
+import sys
 import tempfile
 import urllib.error
 import urllib.parse
@@ -24,6 +25,7 @@ from pathlib import Path
 from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT))
 DEFAULT_CANDIDATES = ROOT / "data" / "frontier-candidates.public.jsonl"
 DEFAULT_STATE = ROOT / "data" / "frontier-state.v1.json"
 USER_AGENT = "szl-second-brain-frontier-refresh/1.0"
@@ -575,6 +577,9 @@ PARSERS: dict[str, Callable[[SourceSpec, str, bytes], list[dict[str, Any]]]] = {
 
 def build_snapshot(
     source_fetcher: Callable[[SourceSpec], tuple[str, bytes]],
+    *,
+    research_snapshot: dict[str, Any] | None = None,
+    now: str | None = None,
 ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     all_rows: list[dict[str, Any]] = []
     source_receipts: list[dict[str, Any]] = []
@@ -603,6 +608,63 @@ def build_snapshot(
                 "candidate_count": len(rows),
             }
         )
+
+    if research_snapshot is not None:
+        from second_brain.public_research import canonical_bytes as metadata_bytes
+        from second_brain.public_research import validate_snapshot
+
+        records = validate_snapshot(research_snapshot, now=now)
+        for record in records:
+            metadata = record["metadata"]
+            spec = SourceSpec(
+                f"public_research_{record['provider']}",
+                f"public-metadata/{record['provider']}",
+                metadata["identifier"],
+                "public_research_metadata",
+            )
+            content = "\n".join(
+                (
+                    metadata["title"],
+                    "Authors: " + ", ".join(metadata["authors"]),
+                    "Identifier: " + metadata["identifier"],
+                    "Publication date: " + str(metadata["published"]),
+                    "Categories: " + ", ".join(metadata["categories"]),
+                    "Metadata licence: " + metadata["metadata_licence"],
+                    "Full text licence: NOT_INFERRED",
+                    "Source: " + metadata["canonical_url"],
+                )
+            )
+            row = make_candidate(
+                spec, record["capture_sha256"],
+                stable_key=record["capture_sha256"], title=metadata["title"],
+                content=content, source_kind="research-metadata",
+            )
+            row["source_revision_kind"] = "metadata-capture-sha256"
+            row["provenance"] = {
+                key: record[key]
+                for key in (
+                    "provider", "identifier", "capture_sha256", "response_sha256",
+                    "response_bytes", "request_url", "observed_at", "source_authentication",
+                )
+            }
+            row["provenance"]["metadata"] = metadata
+            if row["id"] in seen_ids:
+                raise RefreshError("duplicate research candidate")
+            seen_ids.add(row["id"])
+            all_rows.append(row)
+        for provider in sorted({record["provider"] for record in records}):
+            captured = [record["metadata"] for record in records if record["provider"] == provider]
+            source_receipts.append(
+                {
+                    "source_id": f"public_research_{provider}",
+                    "repository": f"public-metadata/{provider}",
+                    "revision": sha256_bytes(metadata_bytes(captured)),
+                    "revision_kind": "metadata-capture-sha256",
+                    "path": "data/public-research-metadata.v1.json",
+                    "parser": "public_research_metadata", "content_sha256": sha256_bytes(metadata_bytes(captured)),
+                    "candidate_count": len(captured),
+                }
+            )
 
     all_rows.sort(key=lambda row: row["id"])
     source_receipts.sort(key=lambda row: row["source_id"])
@@ -696,6 +758,7 @@ def main() -> int:
     parser.add_argument("--candidates", type=Path, default=DEFAULT_CANDIDATES)
     parser.add_argument("--state", type=Path, default=DEFAULT_STATE)
     parser.add_argument("--fixture-dir", type=Path)
+    parser.add_argument("--research-snapshot", type=Path, help="Reviewed public metadata snapshot; default package snapshot when present; no network fetch occurs")
     parser.add_argument(
         "--api-url",
         default=os.environ.get("GITHUB_API_URL", "https://api.github.com"),
@@ -716,7 +779,20 @@ def main() -> int:
                 raw_url=args.raw_url,
             )
 
-    rows, state = build_snapshot(fetcher)
+    research = None
+    research_path = args.research_snapshot or ROOT / "data/public-research-metadata.v1.json"
+    if args.research_snapshot is not None or research_path.exists():
+        from datetime import datetime, timezone
+        from second_brain.public_research import MAX_SNAPSHOT_BYTES, strict_json
+
+        raw = research_path.read_bytes()
+        if len(raw) > MAX_SNAPSHOT_BYTES:
+            raise RefreshError("research snapshot exceeds byte bound")
+        research = strict_json(raw)
+        now = datetime.now(timezone.utc).isoformat()
+    else:
+        now = None
+    rows, state = build_snapshot(fetcher, research_snapshot=research, now=now)
     write_snapshot(
         rows,
         state,

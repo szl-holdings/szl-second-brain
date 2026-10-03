@@ -1,6 +1,6 @@
 {
-  "candidate_count": 131,
-  "candidate_set_sha256": "570fb020f5b8684a0c54ab0f682be1f9ddc975b50cc79f441f399deed5dc862e",
+  "candidate_count": 137,
+  "candidate_set_sha256": "c6dd7ce0d1379da74eb2456f4ab4b750ec9dd481bf57941240f4a98d771e6163",
   "controller_content_access": "AUTHORIZED_CONTROLLER_ONLY",
   "execution_authority": "NONE",
   "lambda": "CONJECTURE_1",
@@ -22,7 +22,7 @@
   },
   "raw_graph_nodes_admitted_to_gradients": 0,
   "schema": "szl.second-brain.frontier-state/v1",
-  "source_count": 8,
+  "source_count": 10,
   "source_kind_counts": {
     "attributed-formula": 30,
     "estate-authority": 1,
@@ -32,6 +32,7 @@
     "forum-insight": 2,
     "python-contract": 5,
     "quant-domain": 9,
+    "research-metadata": 6,
     "source-document": 56
   },
   "sources": [
@@ -100,6 +101,26 @@
     },
     {
       "candidate_count": 2,
+      "content_sha256": "8ad4e045d2b17de9bc0b3f1ed90dfe008386b50ca954e8a57ec1fb642d5ef7ff",
+      "parser": "public_research_metadata",
+      "path": "data/public-research-metadata.v1.json",
+      "repository": "public-metadata/arxiv",
+      "revision": "8ad4e045d2b17de9bc0b3f1ed90dfe008386b50ca954e8a57ec1fb642d5ef7ff",
+      "revision_kind": "metadata-capture-sha256",
+      "source_id": "public_research_arxiv"
+    },
+    {
+      "candidate_count": 4,
+      "content_sha256": "2cc781090308a208c340594afa6e647b2e8257b14ff455ad91ca14b63251472c",
+      "parser": "public_research_metadata",
+      "path": "data/public-research-metadata.v1.json",
+      "repository": "public-metadata/crossref",
+      "revision": "2cc781090308a208c340594afa6e647b2e8257b14ff455ad91ca14b63251472c",
+      "revision_kind": "metadata-capture-sha256",
+      "source_id": "public_research_crossref"
+    },
+    {
+      "candidate_count": 2,
       "content_sha256": "833b9e312b9ff4fafaaca636b6b2dce4436e16fbe181934ba0ed933e305882d9",
       "parser": "forum_pilot",
       "path": "dataset/sources.public.jsonl",
@@ -109,6 +130,6 @@
     }
   ],
   "state": "REVIEW_REQUIRED",
-  "state_sha256": "a23e3b61ae4710a2616157a5ad53952e153339a243a8b098fb47f5e6dc6068ba",
+  "state_sha256": "892f605bfb6a32807b5f79d98cd0e793aa118841db360206fab7fc9033ecd6c0",
   "training_authority": "NONE"
 }

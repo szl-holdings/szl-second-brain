@@ -32,7 +32,10 @@ def test_frontier_state_is_exact_and_review_required() -> None:
     assert state["ready"] is True
     assert state["state"] == "REVIEW_REQUIRED"
     assert state["candidate_count"] >= 70
-    assert state["source_count"] == len(SOURCES) == 8
+    assert len(SOURCES) == 8
+    assert state["source_count"] == len(SOURCES) + 2
+    assert state["source_kind_counts"]["research-metadata"] == 6
+    assert state["source_kind_counts"]["forum-insight"] == 2
     forum = next(source for source in state["sources"] if source["source_id"] == "science_forum_pilot")
     assert forum["candidate_count"] == 2
     assert forum["revision"] == "330f519c8208eb2d6ba29492c778a0a40018195b"
@@ -46,7 +49,7 @@ def test_frontier_state_is_exact_and_review_required() -> None:
     assert state["private_graph_present"] is False
     assert state["raw_graph_nodes_admitted_to_gradients"] == 0
     assert state["lambda"] == "CONJECTURE_1"
-    assert all(len(source["revision"]) == 40 for source in state["sources"])
+    assert all(len(source["revision"]) == (64 if source.get("revision_kind") == "metadata-capture-sha256" else 40) for source in state["sources"])
 
 
 def test_public_frontier_search_is_handles_only() -> None:
@@ -65,7 +68,7 @@ def test_public_frontier_search_is_handles_only() -> None:
         assert handle["candidate_state"] == "DISCOVERED_REVIEW_REQUIRED"
         assert handle["contentAccess"] == "HANDLES_ONLY"
         assert len(handle["sha256"]) == 64
-        assert len(handle["revision"]) == 40
+        assert len(handle["revision"]) == (64 if handle.get("revisionKind") == "metadata-capture-sha256" else 40)
 
 
 def test_forum_pilot_is_a_review_required_cited_handle() -> None:

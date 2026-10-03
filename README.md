@@ -41,7 +41,7 @@ refresh and provider readback are separate release steps.
 
 ## Installed-mode guarantee
 
-Version 1.3 packages the public corpus, schemas, and the review-gated frontier
+Version 1.5 packages the public corpus, schemas, and the review-gated frontier
 candidate index into the wheel. Installing `szl-second-brain` in a clean
 environment can build the 575-chunk index, run governed hybrid retrieval, inspect
 the exact frontier state, search review candidates by handles, and perform
@@ -110,6 +110,52 @@ human-governed acceptance or rejection
 ```
 
 It is continuous evidence acquisition, not silent model self-modification.
+
+## Public research metadata
+
+The reviewed research snapshot adds six real metadata nodes to the existing 131
+frontier candidates: Shannon on communication, Wigner on mathematics in natural
+science, LeCun/Bengio/Hinton on deep learning, LeCun and colleagues on document
+recognition, Angelopoulos/Bates on conformal uncertainty, and Cranmer on symbolic
+regression for science. The eight reviewed Git source contracts remain exact;
+the two metadata providers bring the current source count to ten.
+
+`scripts/collect_public_research.py` accepts explicit DOI and arXiv identifiers.
+It uses the public HTTPS APIs with no credentials, one connection, no redirects,
+and limits of twelve requests, 256 KiB per response, 32 authors, and 96 retained
+record versions. It records titles, authors, publication dates, categories,
+source links and declared metadata licences. It does not download paper text,
+follow supplied links, train a model, or grant execution authority. A missing
+full-text licence remains `NOT_INFERRED`.
+
+```sh
+python scripts/collect_public_research.py \
+  --doi 10.1002/cpa.3160130102 --report reports/research-collection.json
+python scripts/refresh_frontier_memory.py
+```
+
+The collector writes `data/public-research-metadata.v1.json` atomically only
+after all requested records pass. Its changes still require normal Git review;
+the hourly frontier refresh consumes the reviewed snapshot without making
+research API calls. Identical metadata preserves the first capture and creates
+no extra node. Changed projected bytes retain the earlier capture and create a
+new content-addressed version. An arXiv run also requires `--exclusive-arxiv`
+after coordinating the single collector across all controlled machines; calls
+are at least three seconds apart, including failures.
+
+Research handles declare `revisionKind: metadata-capture-sha256` and include a
+source identity, canonical link, observation time, and licence status. Git
+handles retain exact Git revisions. Captured-byte integrity is separate from
+independent source attestation. Public handles never contain paper abstracts or
+captured raw bytes. Authorized hydration requires the complete offered handle,
+rejects duplicate or altered source bindings, and rechecks the 180-day metadata
+age even when the index has been loaded for a long time. Expired captures fail
+closed; they do not grant a freshness or correctness claim.
+
+The public research nodes use the existing lexical relevance index. There is no
+new embedding model or dense-vector qualification in this release. Small local
+retrieval fixtures establish software integration; they are not a general
+retrieval benchmark, scientific proof, or AGI result.
 
 ## Formula and quant authority
 
