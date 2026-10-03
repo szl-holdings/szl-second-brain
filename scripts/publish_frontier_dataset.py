@@ -115,8 +115,14 @@ def projection(revision: str, source: dict[str, bytes]) -> dict[str, bytes]:
     records = validate_snapshot(snapshot)
     if state.get("source_count") != 10 or len(rows) != 137 or len(records) != 6:
         raise PublicationError("reviewed snapshot count changed")
-    if sum(row.get("source_kind") == "research-metadata" for row in rows) != len(records):
-        raise PublicationError("research rows do not match metadata records")
+    research_rows = [row["provenance"] for row in rows if row.get("source_kind") == "research-metadata"]
+    snapshot_rows = [
+        {key: value for key, value in record.items()
+         if key not in {"capture_base64", "candidate_state"}}
+        for record in records
+    ]
+    if sorted(map(canonical_bytes, research_rows)) != sorted(map(canonical_bytes, snapshot_rows)):
+        raise PublicationError("research rows do not match the reviewed metadata snapshot")
     stated_digest = state.get("state_sha256")
     state_without_digest = {key: value for key, value in state.items() if key != "state_sha256"}
     if stated_digest != sha256(canonical_bytes(state_without_digest)):
@@ -250,12 +256,44 @@ def main() -> int:
     parser.add_argument("--apply", action="store_true", help="create and publish the fixed dataset")
     parser.add_argument("--receipt", type=Path, required=True, help="new receipt path outside the source checkout")
     args = parser.parse_args()
+    if args.receipt.resolve().is_relative_to(ROOT.resolve()):
+        raise PublicationError("receipt must be outside the source checkout")
+    if args.receipt.exists():
+        raise PublicationError("receipt path already exists")
+    intent_path = args.receipt.with_name(args.receipt.stem + ".intent" + args.receipt.suffix)
+    if args.apply and intent_path.exists():
+        raise PublicationError("apply intent path already exists")
     revision = canonical_source()
     expected = build(revision)
     state, hub_revision = "PLAN_VERIFIED_SOURCE", None
+    args.receipt.parent.mkdir(parents=True, exist_ok=True)
     if args.apply:
         from huggingface_hub import HfApi
-        state, hub_revision = publish(HfApi(), expected)
+        intent = {
+            "schema": "szl.second-brain.hf-frontier-publication-intent/v1",
+            "observed_at": datetime.now(timezone.utc).isoformat(),
+            "state": "APPLY_REQUESTED_NO_PROVIDER_PROOF",
+            "source_revision": revision,
+            "target_dataset": HF_REPO,
+            "published_file_sha256": {path: sha256(data) for path, data in expected.items()},
+        }
+        with intent_path.open("x", encoding="utf-8") as stream:
+            json.dump(intent, stream, sort_keys=True, indent=2)
+            stream.write("\n")
+        try:
+            state, hub_revision = publish(HfApi(), expected)
+        except Exception as exc:
+            failure = {
+                **intent,
+                "schema": "szl.second-brain.hf-frontier-publication-receipt/v1",
+                "state": "PROVIDER_OUTCOME_UNKNOWN",
+                "provider_mutation": "UNKNOWN_AFTER_APPLY_REQUEST",
+                "error_type": type(exc).__name__,
+            }
+            with args.receipt.open("x", encoding="utf-8") as stream:
+                json.dump(failure, stream, sort_keys=True, indent=2)
+                stream.write("\n")
+            raise
     receipt = {
         "schema": "szl.second-brain.hf-frontier-publication-receipt/v1",
         "observed_at": datetime.now(timezone.utc).isoformat(),
@@ -266,9 +304,6 @@ def main() -> int:
         "provider_mutation": bool(args.apply and state == "PUBLISHED_AND_VERIFIED"),
         "published_file_sha256": {path: sha256(data) for path, data in expected.items()},
     }
-    if args.receipt.resolve().is_relative_to(ROOT.resolve()):
-        raise PublicationError("receipt must be outside the source checkout")
-    args.receipt.parent.mkdir(parents=True, exist_ok=True)
     with args.receipt.open("x", encoding="utf-8") as stream:
         json.dump(receipt, stream, sort_keys=True, indent=2)
         stream.write("\n")

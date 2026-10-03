@@ -66,3 +66,14 @@ def test_authority_drift_fails_before_provider_write() -> None:
     data[path] = data[path].replace(b'"training_authority": "NONE"', b'"training_authority": "YES"')
     with pytest.raises((ValueError, publisher.PublicationError)):
         render(data)
+
+
+def test_mismatched_research_snapshot_fails_before_provider_write() -> None:
+    data = source()
+    path = "data/public-research-metadata.v1.json"
+    snapshot = json.loads(data[path])
+    snapshot["records"] = list(reversed(snapshot["records"]))
+    snapshot["records"][0]["metadata"]["title"] = "Changed research title"
+    data[path] = json.dumps(snapshot, ensure_ascii=False, sort_keys=True).encode()
+    with pytest.raises((ValueError, publisher.PublicationError)):
+        render(data)

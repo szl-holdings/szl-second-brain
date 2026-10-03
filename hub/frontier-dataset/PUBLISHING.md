@@ -12,8 +12,10 @@ After the publisher source is merged and the main revision is verified:
    source/published hashes in the plan. The plan does not mutate Hugging Face.
 4. Run `python scripts/publish_frontier_dataset.py --apply --receipt /outside/source/apply.json`
    using the existing SZLHOLDINGS admin session.
-5. Retain the receipt and immutable Hub revision. The script compares every
-   published file byte at that revision before reporting success.
+5. Retain the pre-write intent, result receipt, and immutable Hub revision. The
+   script compares every published file byte at that revision before reporting
+   success. A failure receipt marks the provider outcome unknown; inspect the
+   target before another attempt.
 
 The destination is only
 `SZLHOLDINGS/szl-second-brain-frontier-candidates` (dataset). Its viewer file
