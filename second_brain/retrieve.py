@@ -19,10 +19,11 @@ from threading import RLock
 from types import MappingProxyType
 from typing import Any, Mapping
 
+from second_brain._data import data_file
 from second_brain.corpus import CorpusIntegrityError, load_corpus
 
 ROOT = Path(__file__).resolve().parent.parent
-CORPUS = ROOT / "data" / "brain-corpus.public.jsonl"
+CORPUS = data_file("brain-corpus.public.jsonl")
 TOKEN = re.compile(r"[a-z0-9λ]+", re.I)
 STOP = {
     "the", "is", "a", "an", "of", "and", "or", "to", "in", "for", "on", "at",
@@ -142,9 +143,15 @@ class SecondBrainIndex:
         return True
 
     def handle(self, row: Mapping[str, Any]) -> dict[str, Any]:
-        return {"nodeId": row["id"], "nodeKind": "INDEX", "label": "DECLARED",
-                "note": (row.get("title") or "")[:160], "source": row.get("source"),
-                "sha256": row.get("sha256")}
+        handle = {"nodeId": row["id"], "nodeKind": "INDEX", "label": "DECLARED",
+                  "note": (row.get("title") or "")[:160], "source": row.get("source"),
+                  "sha256": row.get("sha256")}
+        # The corpus file digest already binds sourceId. Return it on public
+        # retrieval handles so a reviewer can follow an admitted citation;
+        # navigator model handles still carry only their bounded four fields.
+        if row.get("sourceId"):
+            handle["sourceId"] = row["sourceId"]
+        return handle
 
     def model_handle(self, row: Mapping[str, Any]) -> dict[str, Any]:
         handle = self.handle(row)

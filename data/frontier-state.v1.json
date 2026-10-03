@@ -1,6 +1,6 @@
 {
-  "candidate_count": 135,
-  "candidate_set_sha256": "bcc16b433be7c52dc999b791f8d47b329f33eeb10440e3dce474dc120fead0ea",
+  "candidate_count": 137,
+  "candidate_set_sha256": "c6dd7ce0d1379da74eb2456f4ab4b750ec9dd481bf57941240f4a98d771e6163",
   "controller_content_access": "AUTHORIZED_CONTROLLER_ONLY",
   "execution_authority": "NONE",
   "lambda": "CONJECTURE_1",
@@ -22,13 +22,14 @@
   },
   "raw_graph_nodes_admitted_to_gradients": 0,
   "schema": "szl.second-brain.frontier-state/v1",
-  "source_count": 9,
+  "source_count": 10,
   "source_kind_counts": {
     "attributed-formula": 30,
     "estate-authority": 1,
     "estate-surface": 6,
     "executable-formula": 21,
     "formula-authority": 1,
+    "forum-insight": 2,
     "python-contract": 5,
     "quant-domain": 9,
     "research-metadata": 6,
@@ -117,9 +118,18 @@
       "revision": "2cc781090308a208c340594afa6e647b2e8257b14ff455ad91ca14b63251472c",
       "revision_kind": "metadata-capture-sha256",
       "source_id": "public_research_crossref"
+    },
+    {
+      "candidate_count": 2,
+      "content_sha256": "833b9e312b9ff4fafaaca636b6b2dce4436e16fbe181934ba0ed933e305882d9",
+      "parser": "forum_pilot",
+      "path": "dataset/sources.public.jsonl",
+      "repository": "szl-holdings/szl-science-forum-corpus",
+      "revision": "330f519c8208eb2d6ba29492c778a0a40018195b",
+      "source_id": "science_forum_pilot"
     }
   ],
   "state": "REVIEW_REQUIRED",
-  "state_sha256": "d13c360f8ab20ccb8a68201a3705d0e03ae16b3cbc134ad8374df92fb016c6b5",
+  "state_sha256": "892f605bfb6a32807b5f79d98cd0e793aa118841db360206fab7fc9033ecd6c0",
   "training_authority": "NONE"
 }

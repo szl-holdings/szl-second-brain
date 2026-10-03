@@ -27,6 +27,18 @@ is not published, is not queried by this package, and is never admitted to
 gradients. The index is data, not model weights. Lambda uniqueness remains
 **Conjecture 1**.
 
+Public retrieval handles now retain an admitted row's `sourceId` so a reviewer
+can follow its citation. This is an additive handle field; model-facing
+navigator handles still omit it and never expose text. The separate
+[science-forum corpus pilot](https://github.com/szl-holdings/szl-science-forum-corpus/tree/330f519c8208eb2d6ba29492c778a0a40018195b)
+emits compatible, rights-gated candidate rows. Its two operator-authored
+summaries are included in the separate **review-required frontier** at an exact
+source revision. It is **not admitted** to this 575-chunk retrieval corpus,
+model weights, or the existing Hugging Face/Anatomy projections. The source
+index is also [mirrored on Hugging Face at an exact revision](https://huggingface.co/datasets/SZLHOLDINGS/szl-science-forum-corpus/tree/76e90b85678b501d14090c2964f50c01907dfe1b);
+that mirror does not grant training or promotion authority. An Anatomy source
+refresh and provider readback are separate release steps.
+
 ## Installed-mode guarantee
 
 Version 1.5 packages the public corpus, schemas, and the review-gated frontier
@@ -48,7 +60,7 @@ controller decisions and must pass the same per-row digest checks.
 ## Continuous frontier memory
 
 The hourly `Continuous frontier memory` workflow is a bounded discovery loop,
-not autonomous retraining. It reads only seven fixed public source contracts:
+not autonomous retraining. It reads only eight fixed public source contracts:
 
 - the exact `szl-formulas` formula/quant atlas;
 - the canonical `szl-ouroboros` bounded-loop kernel README;
@@ -56,7 +68,8 @@ not autonomous retraining. It reads only seven fixed public source contracts:
 - the Living Anatomy README;
 - the A11oy public-estate manifest;
 - the Forge production-controller contract;
-- the Nemo witness README.
+- the Nemo witness README;
+- the reviewed, operator-authored science-forum insight index.
 
 Each source is resolved to the latest exact commit that changed its admitted
 path, fetched from immutable raw GitHub, scanned for secret-like material, and
@@ -65,6 +78,14 @@ exact candidate count and digest, including 30 attributed formulas, 21
 executable formulas, nine quant domains, the active kernel/model truth cards,
 the A11oy public topology, Forge controller contracts, and source-document
 sections.
+The forum parser accepts exactly the two reviewed operator records for topics
+#396 and #426 in either order. It rejects unknown or duplicate topics, unapproved
+rights, duplicate JSON keys, extra raw-post fields, and a changed source count.
+It contributes two `forum-insight` candidates while preserving the other 129
+candidate rows byte-for-byte and keeping all candidates review-required.
+This convenience sample is not a forum-wide scrape. Topic #396 comes from the
+operator's text supplied in the corpus task; its forum page was not independently
+accessible. Source links and original summaries grant no model-training authority.
 
 A changed candidate set creates one content-addressed review branch and attempts
 to open its pull request. When organization policy blocks Actions from opening
@@ -92,12 +113,12 @@ It is continuous evidence acquisition, not silent model self-modification.
 
 ## Public research metadata
 
-The reviewed research snapshot adds six real metadata nodes to the existing 129
+The reviewed research snapshot adds six real metadata nodes to the existing 131
 frontier candidates: Shannon on communication, Wigner on mathematics in natural
 science, LeCun/Bengio/Hinton on deep learning, LeCun and colleagues on document
 recognition, Angelopoulos/Bates on conformal uncertainty, and Cranmer on symbolic
-regression for science. The original seven Git source contracts remain exact;
-the two metadata providers bring the current source count to nine.
+regression for science. The eight reviewed Git source contracts remain exact;
+the two metadata providers bring the current source count to ten.
 
 `scripts/collect_public_research.py` accepts explicit DOI and arXiv identifiers.
 It uses the public HTTPS APIs with no credentials, one connection, no redirects,

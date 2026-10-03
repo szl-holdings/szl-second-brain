@@ -1,6 +1,9 @@
 """SOFTWARE retrieve tests. Handles only. Never LIVE. Never 9464-in-gradients."""
 from __future__ import annotations
 
+import hashlib
+import json
+
 from fastapi.testclient import TestClient
 
 from app import app
@@ -29,6 +32,32 @@ def test_search_returns_handles_without_text() -> None:
         assert h["nodeId"]
         assert h["nodeKind"] == "INDEX"
         assert h["label"] == "DECLARED"
+
+
+def test_external_insight_candidate_keeps_citation_outside_model_handle(tmp_path) -> None:
+    """A separately reviewed candidate can retain its source URL without admission."""
+    source_id = "https://ai4science.discourse.group/t/three-testable-science-skills-and-provenance-aware-github-imports/426"
+    summary = "Synthetic citation-provenance workflow for a research skill import."
+    row = {
+        "id": "forum_insight:426:1", "source": "forum_insight",
+        "sourceId": source_id, "title": "Citation provenance pilot",
+        "text": summary, "sha256": hashlib.sha256(summary.encode()).hexdigest(),
+    }
+    candidate = tmp_path / "candidate.jsonl"
+    candidate.write_text(json.dumps(row) + "\n", encoding="utf-8")
+    idx = SecondBrainIndex(candidate)
+    assert idx.built is True
+    assert idx.n == 1
+
+    hit = idx.search("citation provenance", k=1)
+    assert hit["ready"] is True
+    assert hit["handles"][0]["sourceId"] == source_id
+    assert "text" not in hit["handles"][0]
+
+    context = idx.navigator_context("citation provenance", k=1)
+    assert context["ready"] is True
+    assert all("sourceId" not in handle for handle in context["handles"])
+    assert all("text" not in handle for handle in context["handles"])
 
 
 def test_empty_query_abstains() -> None:

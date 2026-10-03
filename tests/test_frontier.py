@@ -11,6 +11,7 @@ from scripts.refresh_frontier_memory import (
     RefreshError,
     SOURCES,
     candidate_id,
+    forum_pilot_candidates,
     reject_secrets,
 )
 from second_brain.frontier import (
@@ -31,9 +32,14 @@ def test_frontier_state_is_exact_and_review_required() -> None:
     assert state["ready"] is True
     assert state["state"] == "REVIEW_REQUIRED"
     assert state["candidate_count"] >= 70
-    assert len(SOURCES) == 7
+    assert len(SOURCES) == 8
     assert state["source_count"] == len(SOURCES) + 2
     assert state["source_kind_counts"]["research-metadata"] == 6
+    assert state["source_kind_counts"]["forum-insight"] == 2
+    forum = next(source for source in state["sources"] if source["source_id"] == "science_forum_pilot")
+    assert forum["candidate_count"] == 2
+    assert forum["revision"] == "330f519c8208eb2d6ba29492c778a0a40018195b"
+    assert forum["content_sha256"] == "833b9e312b9ff4fafaaca636b6b2dce4436e16fbe181934ba0ed933e305882d9"
     assert len(state["candidate_set_sha256"]) == 64
     assert state["public_content_access"] == "HANDLES_ONLY"
     assert state["controller_content_access"] == "AUTHORIZED_CONTROLLER_ONLY"
@@ -63,6 +69,87 @@ def test_public_frontier_search_is_handles_only() -> None:
         assert handle["contentAccess"] == "HANDLES_ONLY"
         assert len(handle["sha256"]) == 64
         assert len(handle["revision"]) == (64 if handle.get("revisionKind") == "metadata-capture-sha256" else 40)
+
+
+def test_forum_pilot_is_a_review_required_cited_handle() -> None:
+    result = frontier_search("provenance-aware GitHub skill imports", k=24)
+    forum = [handle for handle in result["handles"] if handle["kind"] == "forum-insight"]
+    assert len(forum) == 2
+    assert any("easier skill sharing" in handle["title"] for handle in forum)
+    assert any("Three testable science skills" in handle["title"] for handle in forum)
+    for handle in forum:
+        assert handle["repository"] == "szl-holdings/szl-science-forum-corpus"
+        assert handle["path"] == "dataset/sources.public.jsonl"
+        assert handle["candidate_state"] == "DISCOVERED_REVIEW_REQUIRED"
+        assert handle["contentAccess"] == "HANDLES_ONLY"
+        assert '"content"' not in json.dumps(handle)
+
+
+def forum_rows() -> list[dict]:
+    row = {
+        "source_id": "ai4science:426:1",
+        "source_url": "https://ai4science.discourse.group/t/three-testable-science-skills-and-provenance-aware-github-imports/426",
+        "topic_id": 426, "post_number": 1,
+        "title": "Three testable science skills and provenance-aware GitHub imports",
+        "summary": "Operator-authored research-workflow summary.",
+        "need_ids": ["artifact_replay", "blocked_allocation", "measurement_harmonization", "skill_import_provenance"],
+        "review_state": "operator_labeled", "attribution": "betterwithage",
+        "observed_at": "2026-10-02", "posted_at": None,
+        "publication_rights": "operator_authorized", "rights_evidence": "Operator-authored summary",
+    }
+    sharing = {
+        **row,
+        "source_id": "ai4science:396:1", "topic_id": 396,
+        "source_url": "https://ai4science.discourse.group/t/feature-request-easier-skill-sharing-in-claude-science-from-a-real-attempt/396/1",
+        "title": "Feature request: easier skill sharing in Claude Science (from a real attempt)",
+        "need_ids": ["skill_import_provenance", "skill_import_slice", "skill_name_collision",
+                     "skill_service_disclosure", "skill_share_action", "skill_update_notice"],
+    }
+    return [sharing, row]
+
+
+def encode_forum(rows: list[dict]) -> bytes:
+    return "".join(json.dumps(row) + "\n" for row in rows).encode("utf-8")
+
+
+def test_forum_pilot_parser_accepts_two_reviewed_topics_in_either_order() -> None:
+    spec = next(source for source in SOURCES if source.source_id == "science_forum_pilot")
+    rows = forum_rows()
+    candidates = forum_pilot_candidates(spec, "a" * 40, encode_forum(rows))
+    assert len(candidates) == 2
+    assert candidates == forum_pilot_candidates(spec, "a" * 40, encode_forum(rows[::-1]))
+    assert len({row["id"] for row in candidates}) == 2
+
+
+@pytest.mark.parametrize("field,value,match", [
+    ("publication_rights", "unknown", "rights or source binding"),
+    ("review_state", "unreviewed", "rights or source binding"),
+    ("source_id", "ai4science:999:1", "rights or source binding"),
+    ("source_url", "https://example.com", "rights or source binding"),
+    ("topic_id", True, "rights or source binding"),
+    ("body", "unapproved text", "metadata fields"),
+    ("raw", "unapproved text", "metadata fields"),
+    ("cooked", "unapproved text", "metadata fields"),
+    ("summary", "x" * 1001, "annotation is invalid"),
+])
+def test_forum_pilot_parser_rejects_drift_in_either_topic(field, value, match) -> None:
+    spec = next(source for source in SOURCES if source.source_id == "science_forum_pilot")
+    for position in (0, 1):
+        rows = forum_rows()
+        rows[position][field] = value
+        with pytest.raises(RefreshError, match=match):
+            forum_pilot_candidates(spec, "a" * 40, encode_forum(rows))
+
+
+def test_forum_pilot_parser_rejects_duplicates_and_source_count_drift() -> None:
+    spec = next(source for source in SOURCES if source.source_id == "science_forum_pilot")
+    rows = forum_rows()
+    for invalid in (rows[:1], rows + [rows[0]], [rows[0], rows[0]]):
+        with pytest.raises(RefreshError):
+            forum_pilot_candidates(spec, "a" * 40, encode_forum(invalid))
+    duplicate_key = encode_forum(rows).replace(b'{', b'{"topic_id":396,', 1)
+    with pytest.raises(RefreshError, match="duplicate forum metadata key"):
+        forum_pilot_candidates(spec, "a" * 40, duplicate_key)
 
 
 def test_anatomy_feed_is_read_only_and_contains_formula_or_quant_handles() -> None:
@@ -165,9 +252,9 @@ def test_secret_like_material_is_rejected_without_echoing_it() -> None:
 def test_candidate_set_digest_matches_committed_canonical_lines() -> None:
     index = frontier_index()
     state = index.status()
-    from importlib.resources import files
+    from second_brain._data import data_file
 
-    lines = files("data").joinpath("frontier-candidates.public.jsonl").read_bytes()
+    lines = data_file("frontier-candidates.public.jsonl").read_bytes()
     rows = [json.loads(line) for line in lines.splitlines() if line.strip()]
     canonical = b"".join(
         json.dumps(row, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")
