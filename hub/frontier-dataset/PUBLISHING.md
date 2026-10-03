@@ -27,9 +27,8 @@ The destination is only
 `SZLHOLDINGS/szl-second-brain-frontier-candidates` (dataset). Its viewer file
 contains handles, not candidate excerpts or paper full text. The exact reviewed
 `frontier-state.v1.json` is copied from GitHub; `publication.json` binds its
-source and projection hashes. If the destination already exists with different
-or incomplete bytes, the script stops without overwriting it. A later snapshot
-requires an explicit, separately reviewed update mechanism and one writer.
+source and projection hashes. A changed existing dataset fails unless its
+current Hub revision is supplied and the previous publication is verified.
 
 This publication does not create a Space, run inference, train, promote,
 hydrate content, or update the separate 575-chunk Alloy dataset. The source
