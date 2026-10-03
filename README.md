@@ -30,12 +30,12 @@ gradients. The index is data, not model weights. Lambda uniqueness remains
 Public retrieval handles now retain an admitted row's `sourceId` so a reviewer
 can follow its citation. This is an additive handle field; model-facing
 navigator handles still omit it and never expose text. The separate
-[science-forum corpus pilot](https://github.com/szl-holdings/szl-science-forum-corpus/tree/ac85ddde85c1ae494803c2b16421688c6d3fe7de)
-emits a compatible, rights-gated candidate row. Its one operator-authored
-summary is now included in the separate **review-required frontier** at an exact
+[science-forum corpus pilot](https://github.com/szl-holdings/szl-science-forum-corpus/tree/330f519c8208eb2d6ba29492c778a0a40018195b)
+emits compatible, rights-gated candidate rows. Its two operator-authored
+summaries are included in the separate **review-required frontier** at an exact
 source revision. It is **not admitted** to this 575-chunk retrieval corpus,
 model weights, or the existing Hugging Face/Anatomy projections. The source
-index is also [mirrored on Hugging Face at an exact revision](https://huggingface.co/datasets/SZLHOLDINGS/szl-science-forum-corpus/tree/d8f8fec38361d988fddebec0be7898138af15275);
+index is also [mirrored on Hugging Face at an exact revision](https://huggingface.co/datasets/SZLHOLDINGS/szl-science-forum-corpus/tree/76e90b85678b501d14090c2964f50c01907dfe1b);
 that mirror does not grant training or promotion authority. An Anatomy source
 refresh and provider readback are separate release steps.
 
@@ -78,10 +78,14 @@ exact candidate count and digest, including 30 attributed formulas, 21
 executable formulas, nine quant domains, the active kernel/model truth cards,
 the A11oy public topology, Forge controller contracts, and source-document
 sections.
-The forum parser accepts only the current one-topic, reviewed metadata shape
-and rejects unapproved rights, extra raw-post fields, or a changed source count.
-It contributes one `forum-insight` candidate while preserving the previous 129
+The forum parser accepts exactly the two reviewed operator records for topics
+#396 and #426 in either order. It rejects unknown or duplicate topics, unapproved
+rights, duplicate JSON keys, extra raw-post fields, and a changed source count.
+It contributes two `forum-insight` candidates while preserving the other 129
 candidate rows byte-for-byte and keeping all candidates review-required.
+This convenience sample is not a forum-wide scrape. Topic #396 comes from the
+operator's text supplied in the corpus task; its forum page was not independently
+accessible. Source links and original summaries grant no model-training authority.
 
 A changed candidate set creates one content-addressed review branch and attempts
 to open its pull request. When organization policy blocks Actions from opening
