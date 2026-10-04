@@ -1,6 +1,6 @@
 {
-  "candidate_count": 137,
-  "candidate_set_sha256": "c6dd7ce0d1379da74eb2456f4ab4b750ec9dd481bf57941240f4a98d771e6163",
+  "candidate_count": 141,
+  "candidate_set_sha256": "a54296b57f3418907b6a63d4ccaff02bd6e651312619a4721e51d3918ce75c77",
   "controller_content_access": "AUTHORIZED_CONTROLLER_ONLY",
   "execution_authority": "NONE",
   "lambda": "CONJECTURE_1",
@@ -26,23 +26,23 @@
   "source_kind_counts": {
     "attributed-formula": 30,
     "estate-authority": 1,
-    "estate-surface": 6,
+    "estate-surface": 7,
     "executable-formula": 21,
     "formula-authority": 1,
     "forum-insight": 2,
     "python-contract": 5,
     "quant-domain": 9,
     "research-metadata": 6,
-    "source-document": 56
+    "source-document": 59
   },
   "sources": [
     {
-      "candidate_count": 7,
-      "content_sha256": "44aaf9654efde3008aae5c1e2f6a5d78f7047dd08bd40e5c6792d272e0c57935",
+      "candidate_count": 8,
+      "content_sha256": "121884029bad18403dd02cebb88ea54ab00ff6d17bd75cb70980fdd7d2e1dabf",
       "parser": "public_estate",
       "path": "governance/public-estate.v1.json",
       "repository": "szl-holdings/a11oy",
-      "revision": "b37fa90cc48921f15883c23932cc6ded9152f9f1",
+      "revision": "dddf649beb7f189c4c05dc062875cf6d4c4d215d",
       "source_id": "a11oy_public_estate"
     },
     {
@@ -56,47 +56,47 @@
     },
     {
       "candidate_count": 61,
-      "content_sha256": "765b9e5c9dd8d4fc5c7518a5b2f70cd6008918591cfa5edfc9868453cb30b7a2",
+      "content_sha256": "ff8b0c8e1513ae140eccbf14e359aaaf2ca46a0c018a99a2ccbb35a278a8e602",
       "parser": "formula_atlas",
       "path": "atlas/formula-atlas.v1.json",
       "repository": "szl-holdings/szl-formulas",
-      "revision": "174c5e2f468158f89d5e2ebf656ad596b2c9a9bb",
+      "revision": "a3f9dcab6e3564ce384bd3c095f64cc2121059f9",
       "source_id": "formula_quant_atlas"
     },
     {
       "candidate_count": 21,
-      "content_sha256": "dddf9569fbd2e3fdff4fa43c822979a81e7c7925db74263a28936dbbae3ac28d",
+      "content_sha256": "f616ef60771dc1682707f46bf086daa1298536c36ae5f092f1aabbdb5f09d150",
       "parser": "markdown",
       "path": "README.md",
       "repository": "szl-holdings/szl-kernels",
-      "revision": "45a56d0b132945e06a2d88a104f26c4840abebe2",
+      "revision": "a7cbbdff6aa28ba68541e99f11087f299a7b2464",
       "source_id": "governed_kernel_suite"
     },
     {
-      "candidate_count": 20,
-      "content_sha256": "129ce416948ad14ec8b9edd31450690c4fa7cbcb464430c9cb403c4c4b118420",
+      "candidate_count": 21,
+      "content_sha256": "a686b45e78f21e15501197d4ca25316359c729aefa72dd028f5de9f7f431a94b",
       "parser": "markdown",
       "path": "README.md",
       "repository": "szl-holdings/anatomy",
-      "revision": "6422274e284c443f640c3899fc4dbb7947bd5b30",
+      "revision": "ad04d55d10a83be6dac54db7c1c0451156964f9b",
       "source_id": "living_anatomy"
     },
     {
-      "candidate_count": 11,
-      "content_sha256": "f6d704ffd36bbbda2cb59ead28a9946646383ed635a5349fb031f4c799a8a43d",
+      "candidate_count": 12,
+      "content_sha256": "748d375c7f1fa3c1a2626ed00b8dbfffbd2ec63e9638bf5b2c67f1f448abd878",
       "parser": "markdown",
       "path": "README.md",
       "repository": "szl-holdings/szl-nemo",
-      "revision": "810231a531188bb569e3faa17396386eb0a5e260",
+      "revision": "7c0bc1599e8a000ad5fe9736339789e1ba18d7e5",
       "source_id": "nemo_witness"
     },
     {
-      "candidate_count": 4,
-      "content_sha256": "a4be2532660eb18dee173263218c36dfef54624713ac0c97dc3e0382ba7c62f1",
+      "candidate_count": 5,
+      "content_sha256": "a7dabab2ac10bf2eb96ef7f6d7de199c2d495f18afd8d338a1209b52ff6ac8d5",
       "parser": "markdown",
       "path": "README.md",
       "repository": "szl-holdings/szl-ouroboros",
-      "revision": "cd8a451ca2be19f71653dcb4ef50e15e6836e697",
+      "revision": "5a7806ebbd39b74dbb1ef25a33498f8410dd9a01",
       "source_id": "ouroboros_runtime"
     },
     {
@@ -130,6 +130,6 @@
     }
   ],
   "state": "REVIEW_REQUIRED",
-  "state_sha256": "892f605bfb6a32807b5f79d98cd0e793aa118841db360206fab7fc9033ecd6c0",
+  "state_sha256": "e1e77abfa9e878b6b038415203d28bea37edeed7dd7fc8ce1312550d6d0e5557",
   "training_authority": "NONE"
 }
