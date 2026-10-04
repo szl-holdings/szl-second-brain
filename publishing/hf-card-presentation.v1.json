@@ -1,0 +1,103 @@
+{
+  "_notice": "SPDX-License-Identifier: Apache-2.0; (c) 2026 SZL Holdings",
+  "schema": "szl.hf.dataset-card-presentation.v1",
+  "source_repository": "szl-holdings/szl-second-brain",
+  "cards": [
+    {
+      "kind": "datasets",
+      "repo_id": "SZLHOLDINGS/szl-second-brain-frontier-candidates",
+      "source_repository": "szl-holdings/szl-second-brain",
+      "source_revision_before_presentation": "bb51e48b525569f546838dde3d25345fafd2998c",
+      "source_path": "hub/frontier-dataset/README.template.md",
+      "source_url": "https://github.com/szl-holdings/szl-second-brain/blob/bb51e48b525569f546838dde3d25345fafd2998c/hub/frontier-dataset/README.template.md",
+      "presentation": {
+        "kind": "datasets",
+        "repo_id": "SZLHOLDINGS/szl-second-brain-frontier-candidates",
+        "title": "Second Brain \u00b7 Frontier Review Handles",
+        "summary": "Inspect 137 attributed review candidates through public citation handles, source references and reproducible digests.",
+        "artifact_type": "Public research and repository citation handles",
+        "stage": "DISCOVERED_REVIEW_REQUIRED",
+        "visible_limits": [
+          "The fixed snapshot covers 10 source contracts and six research metadata records. Raw excerpts, paper full text and private graph content are excluded.",
+          "Training, promotion and execution authority remain NONE. This index does not establish model or retrieval quality; \u039b remains Conjecture 1.",
+          "Digests establish byte identity, not independent accuracy or authenticity. Rights vary by source; no blanket open-data or paper full-text licence is asserted."
+        ],
+        "build_url": "https://github.com/szl-holdings/szl-second-brain",
+        "evidence_url": "https://github.com/szl-holdings/szl-second-brain/blob/bb51e48b525569f546838dde3d25345fafd2998c/hub/frontier-dataset/README.template.md"
+      },
+      "before_sha256": "0f954f7fd8b6e69343d7ce73c65c78408b1d3afa87477239e72cf13a814386ac",
+      "after_sha256": "11e614896942367fecab10cc9c9dd0a77c3b86e57cfde2885ccb9d7595e2d2ac",
+      "front_matter_sha256": "8bf1a42919034ddaa7e8b0fe6a77d8e62724a4aa2376b573af6986097ff61dd5",
+      "preserved_body_sha256": "603f9be94d1362e37d7920d48a3dd58d7ede64d405b06642d034cfefebd8feb1",
+      "bytes_before": 3440,
+      "bytes_after": 5046,
+      "front_matter_preserved": true,
+      "original_body_preserved": true,
+      "source_artifact_kind": "CARD_TEMPLATE_WITH_SIX_UNCHANGED_SOURCE_DIGEST_MARKERS",
+      "expected_hub_card_sha256": null,
+      "hub_output_digest_boundary": "The after hash above describes template bytes. The existing publisher substitutes its actual admitted source revision and five data digests, so the final Hub README hash must be recomputed from that source; no template hash is asserted as the published README hash.",
+      "review_projection": {
+        "source_revision": "bb51e48b525569f546838dde3d25345fafd2998c",
+        "purpose": "Offline before/after projection comparison at one identical reviewed revision; not a publishable current-main plan.",
+        "rendered_preservation": {
+          "before_sha256": "711d5e31a3cb8077c79c94c14c8973d0caf9deec5a88698341daf06daafb33c6",
+          "after_sha256": "76a9389dc8103d51d67ef183e157dcddf7f734d20a4f94ba4941bfd5a66383bb",
+          "front_matter_sha256": "8bf1a42919034ddaa7e8b0fe6a77d8e62724a4aa2376b573af6986097ff61dd5",
+          "preserved_body_sha256": "08a7351f58e0ef0340263d51fdb909be200f10ba53ca815f9a3b65a4f035c872",
+          "bytes_before": 3690,
+          "bytes_after": 5296,
+          "front_matter_preserved": true,
+          "original_body_preserved": true
+        },
+        "published_files_after": {
+          "frontier-handles.public.jsonl": {
+            "sha256": "61cf7182c0115263b80566a73b72b0d588984dd46e0b2847100bc53bb5c129e2",
+            "bytes": 73959
+          },
+          "frontier-state.v1.json": {
+            "sha256": "9eeb6e883463669770ebe0a2cf663ec6ee6bd22da0276b9fee70696015214d74",
+            "bytes": 5157
+          },
+          "README.md": {
+            "sha256": "76a9389dc8103d51d67ef183e157dcddf7f734d20a4f94ba4941bfd5a66383bb",
+            "bytes": 5296
+          },
+          "publication.json": {
+            "sha256": "fd6fdeb925abf8d143374f7b3d2c1e099cdddd1e9425ceeb4236e0f91a67b9aa",
+            "bytes": 1549
+          }
+        },
+        "handles_and_state_unchanged": true,
+        "publication_manifest_delta": "Only published_files.README.md changes at the same review revision; an actual later source also updates source_revision as required."
+      },
+      "unchanged_template_markers": [
+        "__SOURCE_SHA__",
+        "__CANDIDATE_SHA256__",
+        "__HANDLE_SHA256__",
+        "__STATE_SHA256__",
+        "__RESEARCH_SHA256__",
+        "__CANDIDATE_SET_SHA256__"
+      ],
+      "hub_observation": {
+        "hub_revision": "ca899882a0e0a4c287c7c6bd245db4c359bbe19b",
+        "source_url": "https://huggingface.co/datasets/SZLHOLDINGS/szl-second-brain-frontier-candidates/resolve/ca899882a0e0a4c287c7c6bd245db4c359bbe19b/README.md",
+        "observed_at": "2026-10-04T16:10:26.660830+00:00",
+        "sha256": "37163a0d934ce0e77675fa29b865becb7758f985e491306c4df3259b63c3b54b",
+        "bytes": 3690,
+        "state": "EXACT_PUBLIC_CARD"
+      },
+      "source_template_is_distinct_from_rendered_hub_card": true,
+      "publisher_repository": "szl-holdings/szl-second-brain",
+      "publisher_source_path": "scripts/publish_frontier_dataset.py",
+      "publisher_source_url": "https://github.com/szl-holdings/szl-second-brain/blob/bb51e48b525569f546838dde3d25345fafd2998c/scripts/publish_frontier_dataset.py",
+      "publisher_readme_mapping": "projection() substitutes exactly one of each six existing markers in the committed template and includes README.md in its complete fixed four-file publication.",
+      "publication_trigger": "EXISTING_MANUAL_FIXED_FOUR_FILE_PUBLISHER",
+      "publication_boundary": "Clean canonical fetched/current signed main, valid prior signed source ancestry, existing authorized SZLHOLDINGS admin identity, exact expected current Hub revision, complete prior-byte verification, one parent-bound fixed four-file commit and immutable readback remain required.",
+      "publication_state_at_preparation": "SOURCE_CANDIDATE_ONLY_NO_PUBLISHER_EVENT",
+      "writer_or_workflow_changed": false,
+      "data_or_runtime_changed": false,
+      "training_or_qualification_changed": false,
+      "central_apply_allowed": false
+    }
+  ]
+}

@@ -18,6 +18,29 @@ configs:
     data_files: frontier-handles.public.jsonl
 ---
 
+<p><a href="https://huggingface.co/spaces/SZLHOLDINGS/szl-command-lab"><img src="https://raw.githubusercontent.com/szl-holdings/.github/main/profile/assets/szl/logos/szl_mark_holographic.svg" alt="SZL Holdings" width="112" /></a></p>
+
+# Second Brain · Frontier Review Handles
+
+Inspect 137 attributed review candidates through public citation handles, source references and reproducible digests.
+
+**Artifact:** Public research and repository citation handles · **Stage:** DISCOVERED\_REVIEW\_REQUIRED
+
+[Explore in Command Lab](https://huggingface.co/spaces/SZLHOLDINGS/szl-command-lab) · [Build](https://github.com/szl-holdings/szl-second-brain) · [Evidence](https://github.com/szl-holdings/szl-second-brain/blob/bb51e48b525569f546838dde3d25345fafd2998c/hub/frontier-dataset/README.template.md)
+
+## Before you use it
+
+- The fixed snapshot covers 10 source contracts and six research metadata records. Raw excerpts, paper full text and private graph content are excluded.
+- Training, promotion and execution authority remain NONE. This index does not establish model or retrieval quality; Λ remains Conjecture 1.
+- Digests establish byte identity, not independent accuracy or authenticity. Rights vary by source; no blanket open-data or paper full-text licence is asserted.
+
+<details>
+<summary>Technical details and original evidence</summary>
+
+The retained source below is exact and may contain historical observations. Its dates, use restrictions, licenses and evidence boundaries continue to apply.
+
+<!-- SZL-PRESERVED-TECHNICAL-BODY:START -->
+
 # SZL Second Brain · Frontier review handles
 
 **137 attributed candidates · 10 source contracts · review required.** This is a public index of handles, titles, digests, and source references. It is a data publication, not model weights or an inference service. The separate [575-chunk Alloy in-repo corpus](https://huggingface.co/datasets/SZLHOLDINGS/szl-second-brain-inrepo) is a different dataset.
@@ -45,3 +68,7 @@ The rows aggregate references to several public repositories and public research
 ## Reproduce the publication
 
 From the verified GitHub main revision shown above, run `python scripts/publish_frontier_dataset.py --receipt /path/to/new-plan.json` to validate the source and preview the fixed publication. The explicit `--apply` form writes only this dataset and compares every published byte at the immutable Hub revision. No API key is needed for reading this public dataset; publishing uses an existing authorized organization session.
+
+<!-- SZL-PRESERVED-TECHNICAL-BODY:END -->
+
+</details>
