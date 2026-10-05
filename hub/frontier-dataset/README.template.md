@@ -22,7 +22,7 @@ configs:
 
 # Second Brain · Frontier Review Handles
 
-Inspect 137 attributed review candidates through public citation handles, source references and reproducible digests.
+Inspect __CANDIDATE_COUNT__ attributed review candidates through public citation handles, source references and reproducible digests.
 
 **Artifact:** Public research and repository citation handles · **Stage:** DISCOVERED\_REVIEW\_REQUIRED
 
@@ -43,11 +43,11 @@ The retained source below is exact and may contain historical observations. Its 
 
 # SZL Second Brain · Frontier review handles
 
-**137 attributed candidates · 10 source contracts · review required.** This is a public index of handles, titles, digests, and source references. It is a data publication, not model weights or an inference service. The separate [575-chunk Alloy in-repo corpus](https://huggingface.co/datasets/SZLHOLDINGS/szl-second-brain-inrepo) is a different dataset.
+**__DETAIL_CANDIDATE_COUNT__ attributed candidates · 10 source contracts · review required.** This is a public index of handles, titles, digests, and source references. It is a data publication, not model weights or an inference service. The separate [575-chunk Alloy in-repo corpus](https://huggingface.co/datasets/SZLHOLDINGS/szl-second-brain-inrepo) is a different dataset.
 
 | What is present | What it means |
 |---|---|
-| 131 Git-sourced candidates requiring review | Fixed public source contracts, including two operator-authored science forum summaries. |
+| __GIT_CANDIDATE_COUNT__ Git-sourced candidates requiring review | Fixed public source contracts, including two operator-authored science forum summaries. |
 | 6 research metadata candidates | Bounded public Crossref and arXiv metadata captures; paper full text was not downloaded. |
 | `frontier-handles.public.jsonl` | Public citation handles with exact source revisions and content digests. Raw candidate excerpts are omitted. |
 | `frontier-state.v1.json` | The exact reviewed state bytes from GitHub, retaining source counts and review status. |
