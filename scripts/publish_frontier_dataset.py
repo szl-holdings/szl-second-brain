@@ -33,6 +33,22 @@ CARD_TEMPLATE = "hub/frontier-dataset/README.template.md"
 MAX_SOURCE_BYTES = 2 * 1024 * 1024
 SHA40 = re.compile(r"^[0-9a-f]{40}$")
 
+# Exact input triples for structural review-handle projection only.
+# These pins do not approve candidate claims, training, promotion, or execution.
+# Retain historical inputs: guarded Hub updates rebuild the prior publication.
+REVIEWED_INPUTS: dict[tuple[str, str, str], tuple[int, int, int]] = {
+    (
+        'c6dd7ce0d1379da74eb2456f4ab4b750ec9dd481bf57941240f4a98d771e6163',
+        '9eeb6e883463669770ebe0a2cf663ec6ee6bd22da0276b9fee70696015214d74',
+        'd63cb1e11373807362632cae45b51263eb97ecbc8168a2ea6af85958a3f74c86',
+    ): (137, 10, 6),
+    (
+        '440473ee67851ad8897d2e2e20e0025b95b202844cdabe0b1acdd5e5619d177f',
+        '9443f9bb522e27650b93d42ac9cb225d11fa2b21e52f81dd161269c9511a756c',
+        'd63cb1e11373807362632cae45b51263eb97ecbc8168a2ea6af85958a3f74c86',
+    ): (141, 10, 6),
+}
+
 
 class PublicationError(RuntimeError):
     """A source, ownership, or provider boundary prevented publication."""
@@ -102,7 +118,22 @@ def committed_bytes(revision: str, path: str) -> bytes:
     return data
 
 
+def reviewed_source_counts(source: dict[str, bytes]) -> tuple[int, int, int]:
+    """Accept exact source sets, never a matching row count alone."""
+    if set(source) != set(SOURCE_PATHS):
+        raise PublicationError("publication source file set changed")
+    if any(type(data) is not bytes or not 0 < len(data) <= MAX_SOURCE_BYTES
+           for data in source.values()):
+        raise PublicationError("publication source bytes are invalid or oversized")
+    identity = tuple(sha256(source[path]) for path in SOURCE_PATHS)
+    counts = REVIEWED_INPUTS.get(identity)
+    if counts is None:
+        raise PublicationError("source set has not been reviewed for handle projection")
+    return counts
+
+
 def projection(revision: str, source: dict[str, bytes]) -> dict[str, bytes]:
+    expected_counts = reviewed_source_counts(source)
     rows_bytes = source[SOURCE_PATHS[0]]
     lines = rows_bytes.splitlines(keepends=True)
     if not lines or any(not line.endswith(b"\n") for line in lines):
@@ -114,7 +145,7 @@ def projection(revision: str, source: dict[str, bytes]) -> dict[str, bytes]:
     snapshot = strict_json(source[SOURCE_PATHS[2]])
     FrontierIndex._validate(state, rows)
     records = validate_snapshot(snapshot)
-    if state.get("source_count") != 10 or len(rows) != 137 or len(records) != 6:
+    if (len(rows), state.get("source_count"), len(records)) != expected_counts:
         raise PublicationError("reviewed snapshot count changed")
     research_rows = [row["provenance"] for row in rows if row.get("source_kind") == "research-metadata"]
     snapshot_rows = [
@@ -152,6 +183,20 @@ def projection(revision: str, source: dict[str, bytes]) -> dict[str, bytes]:
     }
 
     template = committed_bytes(revision, CARD_TEMPLATE).decode("utf-8")
+    count_markers = {
+        "__CANDIDATE_COUNT__": str(len(rows)),
+        "__DETAIL_CANDIDATE_COUNT__": str(len(rows)),
+        "__GIT_CANDIDATE_COUNT__": str(len(rows) - len(records)),
+    }
+    if any(marker in template for marker in count_markers):
+        for marker, value in count_markers.items():
+            if template.count(marker) != 1:
+                raise PublicationError(f"card count marker absent or duplicated: {marker}")
+            template = template.replace(marker, value)
+    elif expected_counts != (137, 10, 6):
+        # Historical signed 137-row cards predate these markers. Preserve their
+        # exact bytes when rebuilding the previous source-owned publication.
+        raise PublicationError("current card count markers are absent")
     replacements = {
         "__SOURCE_SHA__": revision,
         "__CANDIDATE_SHA256__": sha256(rows_bytes),
