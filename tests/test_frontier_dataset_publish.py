@@ -39,7 +39,7 @@ def test_publication_is_handle_only_and_binds_exact_source_bytes() -> None:
         "README.md", "publication.json",
     }
     handles = [json.loads(line) for line in output["frontier-handles.public.jsonl"].splitlines()]
-    assert len(handles) == 137
+    assert len(handles) == 141
     assert all(row["candidate_state"] == "DISCOVERED_REVIEW_REQUIRED" for row in handles)
     assert all(row["contentAccess"] == "HANDLES_ONLY" for row in handles)
     assert all("content" not in row and "provenance" not in row for row in handles)
@@ -162,3 +162,66 @@ def test_guarded_update_verifies_old_source_and_uses_hub_parent(
     assert ("readback", old_hub, old_expected) in calls
     assert next(item[1] for item in calls if item[0] == "commit")["parent_commit"] == old_hub
     assert ("readback", new_hub, new_expected) in calls
+
+
+@pytest.mark.parametrize("path", publisher.SOURCE_PATHS)
+def test_reviewed_source_requires_each_exact_input_blob(path: str) -> None:
+    data = source()
+    data[path] += b"\n"
+    with pytest.raises(publisher.PublicationError, match="source set has not been reviewed"):
+        render(data)
+
+
+def test_extra_source_file_cannot_enter_public_manifest() -> None:
+    data = source()
+    data["unreviewed/private.json"] = b"{}"
+    with pytest.raises(publisher.PublicationError, match="source file set changed"):
+        render(data)
+
+
+def test_self_consistent_same_count_change_remains_unreviewed() -> None:
+    data = source()
+    rows = [publisher.strict_json(line) for line in data[publisher.SOURCE_PATHS[0]].splitlines()]
+    rows[0]["title"] += " (unreviewed)"
+    data[publisher.SOURCE_PATHS[0]] = b"".join(publisher.canonical_bytes(row) + b"\n" for row in rows)
+    state = publisher.strict_json(data[publisher.SOURCE_PATHS[1]])
+    state["candidate_set_sha256"] = publisher.sha256(data[publisher.SOURCE_PATHS[0]])
+    state["state_sha256"] = publisher.sha256(publisher.canonical_bytes({
+        key: value for key, value in state.items() if key != "state_sha256"
+    }))
+    data[publisher.SOURCE_PATHS[1]] = publisher.canonical_bytes(state) + b"\n"
+    publisher.FrontierIndex._validate(state, rows)
+    assert len(rows) == 141
+    with pytest.raises(publisher.PublicationError, match="source set has not been reviewed"):
+        render(data)
+
+
+def test_public_card_counts_match_the_projected_handles() -> None:
+    output = render(source())
+    card = output["README.md"].decode()
+    assert "Inspect 141 attributed" in card
+    assert "**141 attributed candidates" in card
+    assert "| 135 Git-sourced candidates" in card
+    assert "__CANDIDATE_COUNT__" not in card
+    assert "__DETAIL_CANDIDATE_COUNT__" not in card
+    assert "__GIT_CANDIDATE_COUNT__" not in card
+
+
+@pytest.mark.parametrize("marker", [
+    "__CANDIDATE_COUNT__", "__DETAIL_CANDIDATE_COUNT__", "__GIT_CANDIDATE_COUNT__"
+])
+def test_missing_or_duplicate_card_count_marker_is_rejected(marker: str) -> None:
+    data = source()
+    template = (ROOT / publisher.CARD_TEMPLATE).read_bytes()
+    for replacement in (b"", marker.encode() * 2):
+        broken = template.replace(marker.encode(), replacement)
+        with patch.object(publisher, "committed_bytes", return_value=broken):
+            with pytest.raises(publisher.PublicationError, match="card count marker"):
+                publisher.projection("a" * 40, data)
+
+
+def test_legacy_and_current_source_policies_remain_distinct() -> None:
+    assert len(publisher.REVIEWED_INPUTS) == 2
+    assert set(publisher.REVIEWED_INPUTS.values()) == {(137, 10, 6), (141, 10, 6)}
+    assert all(len(identities) == 3 and all(len(digest) == 64 for digest in identities)
+               for identities in publisher.REVIEWED_INPUTS)
