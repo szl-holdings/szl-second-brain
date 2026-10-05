@@ -8,8 +8,8 @@ from __future__ import annotations
 
 import hashlib
 import json
-import re
 import sqlite3
+from contextlib import closing
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
@@ -20,7 +20,6 @@ MAX_DB_BYTES = 16 * 1024 * 1024
 MAX_IMPORT_BYTES = 1024 * 1024
 MAX_RECORDS = 1000
 MAX_TEXT_BYTES = 64 * 1024
-_TOKENS = re.compile(r"\w+", re.UNICODE)
 
 
 class MemoryLimitError(ValueError):
@@ -222,14 +221,23 @@ class LocalMemory:
             raise ValueError("query must fit in 256 UTF-8 bytes")
         if type(limit) is not int or not 1 <= limit <= 20:
             raise ValueError("limit must be 1..20")
-        tokens = _TOKENS.findall(query)
+        # Use the same tokenizer as the stored index, including its handling
+        # of combining marks and private-use characters. The helper contains
+        # only the bounded query and never writes to the persistent store.
+        with closing(sqlite3.connect(":memory:")) as tokenizer:
+            tokenizer.execute("CREATE VIRTUAL TABLE query_fts USING fts5(body, tokenize='unicode61')")
+            tokenizer.execute("CREATE VIRTUAL TABLE query_vocab USING fts5vocab(query_fts, 'instance')")
+            tokenizer.execute("INSERT INTO query_fts(body) VALUES (?)", (query,))
+            tokens = [row[0] for row in tokenizer.execute(
+                "SELECT term FROM query_vocab ORDER BY offset LIMIT 13"
+            )]
         if len(tokens) > 12 or any(len(token.encode("utf-8")) > 64 for token in tokens):
             raise ValueError("query has too many or oversized terms")
         if not tokens:
             return []
         # Every term is a quoted literal. MATCH operators from the caller never
         # become FTS syntax, and the resulting expression is bound as a value.
-        expression = " AND ".join('"' + token + '"' for token in tokens)
+        expression = " AND ".join('"' + token.replace('"', '""') + '"' for token in tokens)
         rows = self._db.execute("""
             SELECT r.record_id, r.source_uri, r.source_revision, r.title,
                    r.observed_at, r.rights_status, r.rights_basis,
@@ -300,11 +308,11 @@ class LocalMemory:
 
     def import_jsonl(self, source: TextIO) -> dict[str, int]:
         records, total, seen = [], 0, set()
-        while line := source.readline(128 * 1024):
+        # JSON escaping can expand a valid 64 KiB body well past 128 KiB.
+        # Bound the read by the remaining total budget, then count UTF-8 bytes.
+        while line := source.readline(MAX_IMPORT_BYTES - total + 1):
             if type(line) is not str:
                 raise ValueError("import must be UTF-8 text")
-            if len(line) >= 128 * 1024 and not line.endswith("\n"):
-                raise MemoryLimitError("import line exceeds 128 KiB")
             total += len(line.encode("utf-8"))
             if total > MAX_IMPORT_BYTES or len(records) >= MAX_RECORDS:
                 raise MemoryLimitError("import exceeds 1 MiB or 1000 records")

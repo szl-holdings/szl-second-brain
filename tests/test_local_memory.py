@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import io
 import json
-import os
+import sqlite3
 import sys
 import unittest
 from pathlib import Path
@@ -219,6 +219,89 @@ class LocalMemoryTests(unittest.TestCase):
                     with self.assertRaises(MemoryLimitError):
                         memory.import_jsonl(io.StringIO(exported.getvalue()))
                     self.assertEqual(memory.count(), 0)
+
+    def test_valid_escaped_text_survives_export_and_reimport(self) -> None:
+        text = "\u0001" * 22000
+        with TemporaryDirectory() as directory:
+            with LocalMemory(Path(directory) / "source.sqlite") as source:
+                source.upsert(fixture(13, text=text))
+                exported = io.StringIO()
+                source.export_jsonl(exported)
+            self.assertGreater(len(exported.getvalue()), 128 * 1024)
+            self.assertLess(len(exported.getvalue().encode("utf-8")), MAX_IMPORT_BYTES)
+            with LocalMemory(Path(directory) / "target.sqlite") as target:
+                self.assertEqual(target.import_jsonl(io.StringIO(exported.getvalue())),
+                                 {"inserted": 1, "updated": 0, "unchanged": 0})
+                hydrated = target.hydrate("synthetic-013", authorizer=lambda *_: True,
+                                          principal_id="owner", tenant_id="local",
+                                          policy_revision="v1")
+                self.assertEqual(hydrated["text"], text)
+
+    def test_import_failure_rolls_back_an_earlier_update_and_its_index(self) -> None:
+        with TemporaryDirectory() as directory:
+            with LocalMemory(Path(directory) / "source.sqlite") as source:
+                source.upsert(fixture(18, text="replacementword"))
+                source.upsert(fixture(20))
+                exported = io.StringIO()
+                source.export_jsonl(exported)
+            with LocalMemory(Path(directory) / "target.sqlite") as target:
+                target.upsert(fixture(18, text="originalword"))
+                target.upsert(fixture(19))
+                before = io.StringIO()
+                target.export_jsonl(before)
+                with patch("second_brain.local_memory.MAX_RECORDS", 2):
+                    with self.assertRaises(MemoryLimitError):
+                        target.import_jsonl(io.StringIO(exported.getvalue()))
+                after = io.StringIO()
+                target.export_jsonl(after)
+                self.assertEqual(after.getvalue(), before.getvalue())
+                self.assertEqual(len(target.search("originalword")), 1)
+                self.assertEqual(target.search("replacementword"), [])
+
+    def test_hydration_holds_an_independent_writer_until_authorization_finishes(self) -> None:
+        with TemporaryDirectory() as directory, LocalMemory(Path(directory) / "memory.sqlite") as memory:
+            memory.upsert(fixture(16, text="authorizedword"))
+            writer = sqlite3.connect(memory.path, timeout=0)
+            try:
+                def authorize(*_args):
+                    with self.assertRaisesRegex(sqlite3.OperationalError, "locked"):
+                        writer.execute("UPDATE memory_record SET title=? WHERE record_id=?",
+                                       ("Changed during authorization", "synthetic-016"))
+                    writer.rollback()
+                    return True
+
+                hydrated = memory.hydrate("synthetic-016", authorizer=authorize,
+                                          principal_id="owner", tenant_id="local",
+                                          policy_revision="v1")
+                self.assertEqual(hydrated["text"], "authorizedword")
+                self.assertEqual(hydrated["title"], "Microscopy sample 16")
+                with writer:
+                    writer.execute("UPDATE memory_record SET title=? WHERE record_id=?",
+                                   ("Lock released", "synthetic-016"))
+                self.assertEqual(memory.search("released")[0]["title"], "Lock released")
+            finally:
+                writer.close()
+
+    def test_query_terms_use_the_same_unicode_tokenizer_as_the_index(self) -> None:
+        cases = (
+            ("re\u0301sume\u0301", ("re\u0301sume\u0301", "r\u00e9sum\u00e9")),
+            ("x\u0301y", ("x\u0301y",)),
+            ("x\u20ddy", ("x\u20ddy",)),
+            ("a\ue000b", ("a\ue000b",)),
+            ("alpha intervening beta", ("beta_alpha", "beta alpha")),
+        )
+        with TemporaryDirectory() as directory, LocalMemory(Path(directory) / "memory.sqlite") as memory:
+            for text, queries in cases:
+                with self.subTest(text=text):
+                    memory.upsert(fixture(14, text=text))
+                    for query in queries:
+                        self.assertEqual([row["record_id"] for row in memory.search(query)],
+                                         ["synthetic-014"])
+            self.assertEqual(memory.search("***"), [])
+            with self.assertRaises(ValueError):
+                memory.search("alpha " * 13)
+            with self.assertRaises(ValueError):
+                memory.search("a" * 65)
 
 
 if __name__ == "__main__":

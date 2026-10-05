@@ -51,11 +51,13 @@ The prototype limits are:
 
 - 16 MiB main database, enforced through SQLite's page limit;
 - 1,000 records and 64 KiB UTF-8 text per cleared record;
-- 1 MiB per import, with a 128 KiB line-read bound;
+- 1 MiB per import, with each read bounded by the remaining import budget;
 - 256 UTF-8 bytes, 12 literal terms and at most 20 results per search.
 
 SQL values are parameterized. Search terms are quoted literals joined by AND,
-so caller-supplied FTS operators do not become query syntax. SQLite uses a
+so caller-supplied FTS operators do not become query syntax. A bounded in-memory
+helper uses the same SQLite `unicode61` tokenizer as the stored index, including
+combining marks and separator characters. SQLite uses a
 rollback journal; `storage_bytes()` counts the database and journal files,
 and `peak_storage_bytes` samples them during adapter writes. The main database
 cap does not include a transient journal, a backup, or caller-owned exports.
@@ -66,7 +68,7 @@ are logical deletion guarantees. Old filesystem copies, backups and SQLite
 FTS segments are outside a secure-erasure guarantee.
 
 This is a single-controller prototype. It has no encryption, tenant isolation,
-external rights verification, concurrent-writer acceptance testing, or crash
+external rights verification, broader concurrency testing, or crash
 recovery testing. The authorizer is supplied by the owning controller. Keep
 database and export files within that controller's trusted storage.
 
@@ -79,4 +81,6 @@ python -m unittest discover -s tests -p test_local_memory.py -v
 It uses 50 synthetic records, less than 1 MiB of input, and reports observed
 database-plus-journal bytes and process peak memory. It covers reopen/search,
 idempotent writes, rights downgrade, authorization denial, literal query
-handling, export/reimport, tamper rejection and deletion.
+handling, escaped-text export/reimport, tamper rejection, transactional rollback
+and deletion. A second SQLite connection verifies that hydration blocks its
+writer until authorization finishes; broader concurrency remains untested.
