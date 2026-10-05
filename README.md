@@ -81,6 +81,10 @@ sections.
 The forum parser accepts exactly the two reviewed operator records for topics
 #396 and #426 in either order. It rejects unknown or duplicate topics, unapproved
 rights, duplicate JSON keys, extra raw-post fields, and a changed source count.
+It consumes the producer's attribution-free public projection; private reviewer
+attribution is not a required field and is rejected if reintroduced. The exact
+reviewed producer bytes are retained as a regression fixture. Scheduled source
+receipts bind each candidate to the discovered immutable source revision.
 It contributes two `forum-insight` candidates while preserving the other 129
 candidate rows byte-for-byte and keeping all candidates review-required.
 This convenience sample is not a forum-wide scrape. Topic #396 comes from the

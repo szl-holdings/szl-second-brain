@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 
 import pytest
 from fastapi.testclient import TestClient
@@ -38,8 +39,25 @@ def test_frontier_state_is_exact_and_review_required() -> None:
     assert state["source_kind_counts"]["forum-insight"] == 2
     forum = next(source for source in state["sources"] if source["source_id"] == "science_forum_pilot")
     assert forum["candidate_count"] == 2
-    assert forum["revision"] == "330f519c8208eb2d6ba29492c778a0a40018195b"
-    assert forum["content_sha256"] == "833b9e312b9ff4fafaaca636b6b2dce4436e16fbe181934ba0ed933e305882d9"
+    spec = next(source for source in SOURCES if source.source_id == "science_forum_pilot")
+    assert forum["repository"] == spec.repository
+    assert forum["path"] == spec.path
+    assert forum["parser"] == spec.parser
+    assert re.fullmatch(r"[0-9a-f]{40}", forum["revision"])
+    assert re.fullmatch(r"[0-9a-f]{64}", forum["content_sha256"])
+    # Scheduled discovery resolves a new exact path revision before running
+    # this suite. Bind the loaded rows to that receipt, not a historical SHA.
+    # The immutable producer bytes are tested in test_forum_public_projection.
+    from second_brain._data import data_file
+
+    forum_rows = [
+        row for line in data_file("frontier-candidates.public.jsonl").read_bytes().splitlines()
+        if (row := json.loads(line))["source_kind"] == "forum-insight"
+    ]
+    assert len(forum_rows) == forum["candidate_count"] == 2
+    assert {row["source_repository"] for row in forum_rows} == {spec.repository}
+    assert {row["source_path"] for row in forum_rows} == {spec.path}
+    assert {row["source_revision"] for row in forum_rows} == {forum["revision"]}
     assert len(state["candidate_set_sha256"]) == 64
     assert state["public_content_access"] == "HANDLES_ONLY"
     assert state["controller_content_access"] == "AUTHORIZED_CONTROLLER_ONLY"
@@ -93,7 +111,7 @@ def forum_rows() -> list[dict]:
         "title": "Three testable science skills and provenance-aware GitHub imports",
         "summary": "Operator-authored research-workflow summary.",
         "need_ids": ["artifact_replay", "blocked_allocation", "measurement_harmonization", "skill_import_provenance"],
-        "review_state": "operator_labeled", "attribution": "betterwithage",
+        "review_state": "operator_labeled",
         "observed_at": "2026-10-02", "posted_at": None,
         "publication_rights": "operator_authorized", "rights_evidence": "Operator-authored summary",
     }
@@ -130,6 +148,7 @@ def test_forum_pilot_parser_accepts_two_reviewed_topics_in_either_order() -> Non
     ("body", "unapproved text", "metadata fields"),
     ("raw", "unapproved text", "metadata fields"),
     ("cooked", "unapproved text", "metadata fields"),
+    ("attribution", "private reviewer", "metadata fields"),
     ("summary", "x" * 1001, "annotation is invalid"),
 ])
 def test_forum_pilot_parser_rejects_drift_in_either_topic(field, value, match) -> None:
