@@ -85,6 +85,11 @@ external rights verification, broader concurrency testing, or crash
 recovery testing. The authorizer is supplied by the owning controller. Keep
 database and export files within that controller's trusted storage.
 
+Upsert and nonempty import acquire SQLite's writer lock before checking record
+capacity, so separate connections cannot both consume the same remaining slot.
+A two-connection regression covers this admission limit for both operations;
+it does not qualify broader concurrency or crash recovery.
+
 Run the small offline acceptance suite without extra dependencies:
 
 ```text

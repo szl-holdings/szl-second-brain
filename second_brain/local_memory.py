@@ -204,6 +204,9 @@ class LocalMemory:
     def upsert(self, record: MemoryRecord) -> str:
         try:
             with self._db:
+                # Bind the capacity read and write under one SQLite writer lock.
+                if not self._db.in_transaction:
+                    self._db.execute("BEGIN IMMEDIATE")
                 outcome = self._upsert(record)
                 self._sample_storage()
             self._sample_storage()
@@ -354,6 +357,9 @@ class LocalMemory:
             return counts
         try:
             with self._db:
+                # A second connection must observe our committed capacity use.
+                if not self._db.in_transaction:
+                    self._db.execute("BEGIN IMMEDIATE")
                 for record in records:
                     counts[self._upsert(record)] += 1
                 self._sample_storage()

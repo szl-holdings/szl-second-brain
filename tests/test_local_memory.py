@@ -2,12 +2,15 @@
 from __future__ import annotations
 
 import io
+import hashlib
 import json
 import sqlite3
 import sys
 import unittest
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from tempfile import TemporaryDirectory
+from threading import Barrier, BrokenBarrierError
 from unittest.mock import patch
 
 from second_brain.local_memory import (
@@ -373,6 +376,49 @@ class LocalMemoryTests(unittest.TestCase):
                 target.export_jsonl(after)
                 self.assertEqual(after.getvalue(), before.getvalue())
                 self.assertEqual(len(target.search("retainedword")), 1)
+
+    def test_two_connections_cannot_admit_beyond_the_record_cap(self) -> None:
+        # Force both unguarded capacity readers to rendezvous before writing.
+        # With a writer lock, the first reader's rendezvous expires, then the
+        # second connection observes the committed row and rejects admission.
+        for operation in ("upsert", "import"):
+            with self.subTest(operation=operation), TemporaryDirectory() as directory:
+                path = Path(directory) / "memory.sqlite"
+                with LocalMemory(path):
+                    pass
+                ready, capacity = Barrier(2), Barrier(2)
+
+                class RendezvousMemory(LocalMemory):
+                    def count(self):
+                        count = super().count()
+                        try:
+                            capacity.wait(timeout=0.25)
+                        except BrokenBarrierError:
+                            pass
+                        return count
+
+                def admit(number):
+                    record = fixture(number)
+                    with RendezvousMemory(path) as memory:
+                        ready.wait(timeout=5)
+                        try:
+                            if operation == "upsert":
+                                return memory.upsert(record)
+                            payload = {**record.__dict__, "schema": "szl.second-brain.local-memory/v1",
+                                       "training_allowed": False,
+                                       "content_sha256": hashlib.sha256(
+                                           record.text.encode("utf-8")).hexdigest()}
+                            return memory.import_jsonl(io.StringIO(json.dumps(payload) + "\n"))
+                        except MemoryLimitError:
+                            return "capacity-rejected"
+
+                with patch("second_brain.local_memory.MAX_RECORDS", 1):
+                    with ThreadPoolExecutor(max_workers=2) as executor:
+                        outcomes = list(executor.map(admit, (31, 32)))
+                self.assertEqual(outcomes.count("capacity-rejected"), 1)
+                with LocalMemory(path) as memory:
+                    self.assertEqual(memory.count(), 1)
+                    self.assertEqual(len(memory.search("microscopy")), 1)
 
     def test_empty_export_reimports_as_an_additive_noop(self) -> None:
         with TemporaryDirectory() as directory:
