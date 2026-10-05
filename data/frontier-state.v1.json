@@ -1,6 +1,6 @@
 {
   "candidate_count": 141,
-  "candidate_set_sha256": "440473ee67851ad8897d2e2e20e0025b95b202844cdabe0b1acdd5e5619d177f",
+  "candidate_set_sha256": "efa7bddf8526aaabada77e27257dc0f0128f151a7e97ebe51d5eafede8f04f7c",
   "controller_content_access": "AUTHORIZED_CONTROLLER_ONLY",
   "execution_authority": "NONE",
   "lambda": "CONJECTURE_1",
@@ -92,11 +92,11 @@
     },
     {
       "candidate_count": 5,
-      "content_sha256": "a7dabab2ac10bf2eb96ef7f6d7de199c2d495f18afd8d338a1209b52ff6ac8d5",
+      "content_sha256": "42fd166f609e7749b5f3839c6b1d0cb3313500e15ea8fc2963775fb28bda4fc9",
       "parser": "markdown",
       "path": "README.md",
       "repository": "szl-holdings/szl-ouroboros",
-      "revision": "5a7806ebbd39b74dbb1ef25a33498f8410dd9a01",
+      "revision": "9ae23a9d46bc526b7e665aade505c2eaedb66c75",
       "source_id": "ouroboros_runtime"
     },
     {
@@ -130,6 +130,6 @@
     }
   ],
   "state": "REVIEW_REQUIRED",
-  "state_sha256": "c59e387d5ff83c9c893d177a87b15acb3ac334dac5f123be5a1b33620c14450a",
+  "state_sha256": "0048aa89a04b3142a92692b112a47dfe0c47a217d0bfd2844953b916cf7ef49e",
   "training_authority": "NONE"
 }
