@@ -303,6 +303,99 @@ class LocalMemoryTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 memory.search("a" * 65)
 
+    def test_export_import_share_an_inclusive_utf8_byte_budget(self) -> None:
+        with TemporaryDirectory() as directory:
+            with LocalMemory(Path(directory) / "source.sqlite") as source:
+                source.upsert(fixture(21, text="\u0001 escaped \u00e9 microscopy"))
+                exported = io.StringIO()
+                source.export_jsonl(exported)
+                payload = exported.getvalue()
+                budget = len(payload.encode("utf-8"))
+                self.assertGreater(budget, len(payload))
+                with patch("second_brain.local_memory.MAX_IMPORT_BYTES", budget):
+                    exact = io.StringIO()
+                    self.assertEqual(source.export_jsonl(exact), 1)
+                    self.assertEqual(exact.getvalue(), payload)
+                    with LocalMemory(Path(directory) / "target.sqlite") as target:
+                        self.assertEqual(target.import_jsonl(io.StringIO(payload)),
+                                         {"inserted": 1, "updated": 0, "unchanged": 0})
+                        self.assertEqual(target.import_jsonl(io.StringIO(payload)),
+                                         {"inserted": 0, "updated": 0, "unchanged": 1})
+                output = io.StringIO("existing output")
+                output.seek(4)
+                with patch("second_brain.local_memory.MAX_IMPORT_BYTES", budget - 1):
+                    with self.assertRaises(MemoryLimitError):
+                        source.export_jsonl(output)
+                self.assertEqual(output.getvalue(), "existing output")
+                self.assertEqual(output.tell(), 4)
+
+    def test_escaped_store_over_transfer_cap_rejects_without_partial_output_or_import(self) -> None:
+        text = "\u0001" * MAX_TEXT_BYTES
+        with TemporaryDirectory() as directory:
+            with LocalMemory(Path(directory) / "source.sqlite") as source:
+                source.upsert(fixture(22, text=text))
+                source.upsert(fixture(23, text=text))
+                exported = io.StringIO()
+                self.assertEqual(source.export_jsonl(exported), 2)
+                bounded = exported.getvalue()
+                self.assertLessEqual(len(bounded.encode("utf-8")), MAX_IMPORT_BYTES)
+                source.upsert(fixture(24, text=text))
+                output = io.StringIO("existing output")
+                output.seek(4)
+                with self.assertRaises(MemoryLimitError):
+                    source.export_jsonl(output)
+                self.assertEqual(output.getvalue(), "existing output")
+                self.assertEqual(output.tell(), 4)
+                self.assertEqual(source.count(), 3)
+                for number in (22, 23, 24):
+                    hydrated = source.hydrate(f"synthetic-{number:03}", authorizer=lambda *_: True,
+                                              principal_id="owner", tenant_id="local",
+                                              policy_revision="v1")
+                    self.assertEqual(hydrated["text"], text)
+            with LocalMemory(Path(directory) / "target.sqlite") as target:
+                self.assertEqual(target.import_jsonl(io.StringIO(bounded)),
+                                 {"inserted": 2, "updated": 0, "unchanged": 0})
+                self.assertEqual(target.import_jsonl(io.StringIO(bounded)),
+                                 {"inserted": 0, "updated": 0, "unchanged": 2})
+            with LocalMemory(Path(directory) / "rejected.sqlite") as target:
+                budget = len(bounded.encode("utf-8")) - 1
+                with patch("second_brain.local_memory.MAX_IMPORT_BYTES", budget):
+                    with self.assertRaises(MemoryLimitError):
+                        target.import_jsonl(io.StringIO(bounded))
+                self.assertEqual(target.count(), 0)
+                target.upsert(fixture(25, text="retainedword"))
+                before = io.StringIO()
+                target.export_jsonl(before)
+                with patch("second_brain.local_memory.MAX_IMPORT_BYTES", budget):
+                    with self.assertRaises(MemoryLimitError):
+                        target.import_jsonl(io.StringIO(bounded))
+                after = io.StringIO()
+                target.export_jsonl(after)
+                self.assertEqual(after.getvalue(), before.getvalue())
+                self.assertEqual(len(target.search("retainedword")), 1)
+
+    def test_empty_export_reimports_as_an_additive_noop(self) -> None:
+        with TemporaryDirectory() as directory:
+            with LocalMemory(Path(directory) / "empty.sqlite") as source:
+                exported = io.StringIO()
+                self.assertEqual(source.export_jsonl(exported), 0)
+                self.assertEqual(exported.getvalue(), "")
+                self.assertEqual(source.import_jsonl(io.StringIO("")),
+                                 {"inserted": 0, "updated": 0, "unchanged": 0})
+                with self.assertRaises(ValueError):
+                    source.import_jsonl(io.BytesIO(b""))
+            with LocalMemory(Path(directory) / "populated.sqlite") as target:
+                target.upsert(fixture(26, text="retainedword"))
+                before = io.StringIO()
+                target.export_jsonl(before)
+                for _ in range(2):
+                    self.assertEqual(target.import_jsonl(io.StringIO(exported.getvalue())),
+                                     {"inserted": 0, "updated": 0, "unchanged": 0})
+                after = io.StringIO()
+                target.export_jsonl(after)
+                self.assertEqual(after.getvalue(), before.getvalue())
+                self.assertEqual(len(target.search("retainedword")), 1)
+
 
 if __name__ == "__main__":
     unittest.main()

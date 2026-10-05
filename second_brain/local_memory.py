@@ -293,26 +293,46 @@ class LocalMemory:
         return deleted
 
     def export_jsonl(self, output: TextIO) -> int:
-        count = 0
-        for row in self._db.execute("SELECT * FROM memory_record ORDER BY record_id"):
-            exported = {"schema": SCHEMA, "record_id": row["record_id"],
-                        "source_uri": row["source_uri"], "source_revision": row["source_revision"],
-                        "title": row["title"], "observed_at": row["observed_at"],
-                        "rights_status": row["rights_status"], "rights_basis": row["rights_basis"],
-                        "content_sha256": row["content_sha256"], "training_allowed": False}
-            if row["body"] is not None:
-                exported["text"] = row["body"]
-            output.write(json.dumps(exported, sort_keys=True, ensure_ascii=False) + "\n")
-            count += 1
-        return count
+        """Write a complete exchange only if it fits the import byte/row caps.
+
+        Preflight validation and limit failures leave the output untouched.
+        A destination write failure can still leave partial output.
+        """
+        lines, total = [], 0
+        with closing(self._db.execute("SELECT * FROM memory_record ORDER BY record_id")) as rows:
+            for row in rows:
+                record = MemoryRecord(row["record_id"], row["source_uri"], row["source_revision"],
+                                      row["title"], row["observed_at"], row["rights_status"],
+                                      row["rights_basis"], row["body"])
+                _, digest = _validated(record)
+                if digest != row["content_sha256"] or row["training_allowed"] != 0:
+                    raise ValueError("invalid stored digest or training authority")
+                exported = {"schema": SCHEMA, "record_id": row["record_id"],
+                            "source_uri": row["source_uri"], "source_revision": row["source_revision"],
+                            "title": row["title"], "observed_at": row["observed_at"],
+                            "rights_status": row["rights_status"], "rights_basis": row["rights_basis"],
+                            "content_sha256": digest, "training_allowed": False}
+                if row["body"] is not None:
+                    exported["text"] = row["body"]
+                line = json.dumps(exported, sort_keys=True, ensure_ascii=False) + "\n"
+                total += len(line.encode("utf-8"))
+                if total > MAX_IMPORT_BYTES or len(lines) >= MAX_RECORDS:
+                    raise MemoryLimitError("export exceeds the import byte or record budget")
+                lines.append(line)
+        for line in lines:
+            output.write(line)
+        return len(lines)
 
     def import_jsonl(self, source: TextIO) -> dict[str, int]:
         records, total, seen = [], 0, set()
         # JSON escaping can expand a valid 64 KiB body well past 128 KiB.
         # Bound the read by the remaining total budget, then count UTF-8 bytes.
-        while line := source.readline(MAX_IMPORT_BYTES - total + 1):
+        while True:
+            line = source.readline(MAX_IMPORT_BYTES - total + 1)
             if type(line) is not str:
                 raise ValueError("import must be UTF-8 text")
+            if not line:
+                break
             total += len(line.encode("utf-8"))
             if total > MAX_IMPORT_BYTES or len(records) >= MAX_RECORDS:
                 raise MemoryLimitError("import exceeds 1 MiB or 1000 records")
@@ -329,9 +349,9 @@ class LocalMemory:
                 raise ValueError("import digest mismatch or duplicate record")
             records.append(record)
             seen.add(record.record_id)
-        if not records:
-            raise ValueError("empty import")
         counts = {"inserted": 0, "updated": 0, "unchanged": 0}
+        if not records:
+            return counts
         try:
             with self._db:
                 for record in records:
