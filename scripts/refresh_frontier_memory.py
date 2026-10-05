@@ -140,12 +140,8 @@ def request_bytes(url: str, *, token: str | None = None, limit: int) -> bytes:
 
 
 def _github_json(url: str, token: str | None) -> Any:
-    try:
-        raw = request_bytes(url, token=token, limit=512 * 1024)
-    except RefreshError:
-        if not token:
-            raise
-        raw = request_bytes(url, token=None, limit=512 * 1024)
+    # Keep the selected identity: errors must stop this bounded refresh pass.
+    raw = request_bytes(url, token=token, limit=512 * 1024)
     try:
         return json.loads(raw)
     except json.JSONDecodeError as exc:
