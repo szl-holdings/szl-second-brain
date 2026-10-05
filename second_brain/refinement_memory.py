@@ -12,7 +12,7 @@ import hashlib
 import json
 import math
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Any, Iterable, Mapping
 
@@ -126,8 +126,13 @@ class _Accumulator:
     confidence_count: int = 0
 
     def add_finding(self, finding: Mapping[str, Any]) -> None:
-        confidence = float(finding.get("confidence", 0.0))
-        if not math.isfinite(confidence) or not 0.0 <= confidence <= 1.0:
+        value = finding.get("confidence", 0.0)
+        if type(value) not in (int, float):
+            raise RefinementMemoryBoundaryError("finding confidence is invalid")
+        if not 0.0 <= value <= 1.0:
+            raise RefinementMemoryBoundaryError("finding confidence is invalid")
+        confidence = float(value)
+        if not math.isfinite(confidence):
             raise RefinementMemoryBoundaryError("finding confidence is invalid")
         self.confidence_sum += confidence
         self.confidence_count += 1
@@ -190,6 +195,9 @@ class RefinementMemoryIndex:
         if receipt_digest in self._receipts:
             return False
         pair_digest = self._pair_digest(payload)
+        # Work on independent accumulators: rejecting any later branch must not
+        # publish a partial receipt or modify previously admitted statistics.
+        pending = {key: replace(value) for key, value in self._patterns.items()}
         for branch in payload["branches"]:
             if not isinstance(branch, Mapping):
                 raise RefinementMemoryBoundaryError("branch receipt is invalid")
@@ -200,11 +208,11 @@ class RefinementMemoryIndex:
                 raise RefinementMemoryBoundaryError(
                     "branch findings or patches are invalid"
                 )
-            regressions = (
-                int(guard.get("changed_unflagged_step_count", 0))
-                if isinstance(guard, Mapping)
-                else 0
-            )
+            if not isinstance(guard, Mapping):
+                raise RefinementMemoryBoundaryError("regression guard is invalid")
+            regressions = guard.get("changed_unflagged_step_count", 0)
+            if type(regressions) is not int or regressions < 0:
+                raise RefinementMemoryBoundaryError("regression count is invalid")
             findings_by_code: dict[str, list[Mapping[str, Any]]] = {}
             for finding in findings:
                 if not isinstance(finding, Mapping):
@@ -214,6 +222,8 @@ class RefinementMemoryIndex:
                     continue
                 if not ERROR_CODE.fullmatch(code):
                     raise RefinementMemoryBoundaryError("finding error code is invalid")
+                # Validate even findings that have no matching patch.
+                _Accumulator(code, pair_digest).add_finding(finding)
                 findings_by_code.setdefault(code, []).append(finding)
             for patch in patches:
                 if not isinstance(patch, Mapping):
@@ -222,14 +232,18 @@ class RefinementMemoryIndex:
                 if not ERROR_CODE.fullmatch(code):
                     raise RefinementMemoryBoundaryError("patch error code is invalid")
                 key = (code, pair_digest)
-                accumulator = self._patterns.setdefault(
-                    key, _Accumulator(code, pair_digest)
-                )
+                verified = patch.get("verified")
+                if type(verified) is not bool:
+                    raise RefinementMemoryBoundaryError("patch verified must be boolean")
+                accumulator = pending.setdefault(key, _Accumulator(code, pair_digest))
                 accumulator.attempts += 1
-                accumulator.verified += int(bool(patch.get("verified")))
-                accumulator.regressions += regressions
+                accumulator.verified += int(verified)
+                # A rate measures attempts with regressions, rather than the
+                # number of changed steps per attempt.
+                accumulator.regressions += int(regressions > 0)
                 for finding in findings_by_code.get(code, ()):
                     accumulator.add_finding(finding)
+        self._patterns = pending
         self._receipts.add(receipt_digest)
         return True
 
@@ -279,22 +293,94 @@ class RefinementMemoryIndex:
         return rows[:limit]
 
 
+STATE_FIELDS = frozenset({
+    "schema", "state", "ready", "receipt_count", "pattern_count", "handles",
+    "content_access", "private_graph_present", "raw_reasoning_present",
+    "training_authority", "promotion_authority", "execution_authority",
+    "merge_authority", "state_sha256",
+})
+HANDLE_FIELDS = frozenset({
+    "schema", "id", "sha256", "error_code", "model_pair_sha256", "repair_attempts",
+    "verified_repairs", "verified_repair_rate", "regression_rate",
+    "mean_audit_confidence", "content_access", "candidate_state",
+    "training_authority", "promotion_authority", "execution_authority",
+})
+
+
+def _nonnegative_integer(value: Any, field: str) -> int:
+    if type(value) is not int or value < 0:
+        raise RefinementMemoryBoundaryError(f"{field} must be a nonnegative integer")
+    return value
+
+
+def _public_handle(handle: Any) -> None:
+    if not isinstance(handle, dict) or set(handle) != HANDLE_FIELDS:
+        raise RefinementMemoryBoundaryError("public handle fields are invalid")
+    if handle["schema"] != HANDLE_SCHEMA:
+        raise RefinementMemoryBoundaryError("public handle schema is invalid")
+    code = handle["error_code"]
+    pair = handle["model_pair_sha256"]
+    if not isinstance(code, str) or not ERROR_CODE.fullmatch(code):
+        raise RefinementMemoryBoundaryError("public handle error code is invalid")
+    if not isinstance(pair, str) or not HEX_64.fullmatch(pair):
+        raise RefinementMemoryBoundaryError("public handle model pair is invalid")
+    identity = sha256_hex(canonical_bytes({"error_code": code, "pair_sha256": pair}))
+    if handle["sha256"] != identity or handle["id"] != f"refinement:{identity[:32]}":
+        raise RefinementMemoryBoundaryError("public handle identity is invalid")
+    attempts = _nonnegative_integer(handle["repair_attempts"], "repair_attempts")
+    verified = _nonnegative_integer(handle["verified_repairs"], "verified_repairs")
+    if attempts < 1 or verified > attempts:
+        raise RefinementMemoryBoundaryError("public handle repair counts are invalid")
+    for field in ("verified_repair_rate", "regression_rate", "mean_audit_confidence"):
+        value = handle[field]
+        if type(value) not in (int, float) or not 0 <= value <= 1 or not math.isfinite(value):
+            raise RefinementMemoryBoundaryError(f"public handle {field} is invalid")
+    if handle["verified_repair_rate"] != verified / attempts:
+        raise RefinementMemoryBoundaryError("public handle verified rate is inconsistent")
+    if handle["content_access"] != "HANDLES_ONLY" or handle["candidate_state"] != "REVIEW_REQUIRED":
+        raise RefinementMemoryBoundaryError("public handle boundary is invalid")
+    for field in ("training_authority", "promotion_authority", "execution_authority"):
+        if handle[field] != "NONE":
+            raise RefinementMemoryBoundaryError("public handle authority is invalid")
+
+
 def load_public_state(path: str | Path) -> dict[str, Any]:
     payload = json.loads(Path(path).read_text(encoding="utf-8"))
     if not isinstance(payload, dict) or payload.get("schema") != STATE_SCHEMA:
         raise RefinementMemoryBoundaryError("public refinement state is invalid")
     _scan_forbidden(payload)
-    expected = str(payload.get("state_sha256") or "")
-    if not HEX_64.fullmatch(expected):
+    expected = payload.get("state_sha256")
+    if not isinstance(expected, str) or not HEX_64.fullmatch(expected):
         raise RefinementMemoryBoundaryError("public state digest is missing")
     body = dict(payload)
     body.pop("state_sha256", None)
     if sha256_hex(canonical_bytes(body)) != expected:
         raise RefinementMemoryBoundaryError("public state digest mismatch")
-    if payload.get("content_access") != "HANDLES_ONLY":
+    # A digest proves byte consistency, not permission to expose arbitrary text.
+    # Strict allowlists cover both top-level fields and every handle returned.
+    if set(payload) != STATE_FIELDS:
+        raise RefinementMemoryBoundaryError("public state fields are invalid")
+    if payload["ready"] is not True or payload["content_access"] != "HANDLES_ONLY":
         raise RefinementMemoryBoundaryError("public content boundary drifted")
-    if payload.get("private_graph_present") is not False:
+    if payload["private_graph_present"] is not False:
         raise RefinementMemoryBoundaryError("private graph entered public state")
-    if payload.get("raw_reasoning_present") is not False:
+    if payload["raw_reasoning_present"] is not False:
         raise RefinementMemoryBoundaryError("raw reasoning entered public state")
+    for field in ("training_authority", "promotion_authority", "execution_authority", "merge_authority"):
+        if payload[field] != "NONE":
+            raise RefinementMemoryBoundaryError("public state authority is invalid")
+    receipts = _nonnegative_integer(payload["receipt_count"], "receipt_count")
+    patterns = _nonnegative_integer(payload["pattern_count"], "pattern_count")
+    handles = payload["handles"]
+    if not isinstance(handles, list) or patterns != len(handles) or len(handles) > 200:
+        raise RefinementMemoryBoundaryError("public state handle count is invalid")
+    state = "REVIEW_REQUIRED" if handles else "EMPTY_REVIEW_REQUIRED"
+    if payload["state"] != state or (handles and receipts < 1):
+        raise RefinementMemoryBoundaryError("public state counts or state are inconsistent")
+    identities: set[str] = set()
+    for handle in handles:
+        _public_handle(handle)
+        if handle["id"] in identities:
+            raise RefinementMemoryBoundaryError("public state contains duplicate handles")
+        identities.add(handle["id"])
     return payload
