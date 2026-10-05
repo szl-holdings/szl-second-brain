@@ -512,9 +512,13 @@ def forum_pilot_candidates(
             result[key] = value
         return result
 
+    # The reviewed public projection omits private reviewer attribution.
+    # szl-science-forum-corpus@edf05833 removed it from both rows and public
+    # hashes; do not require or reintroduce it. Keep the public schema exact,
+    # including the topic, URL, rights and review bindings checked below.
     expected = {
         "source_id", "source_url", "topic_id", "post_number", "title",
-        "summary", "need_ids", "review_state", "attribution", "observed_at",
+        "summary", "need_ids", "review_state", "observed_at",
         "posted_at", "publication_rights", "rights_evidence",
     }
     rows: dict[str, dict[str, Any]] = {}
@@ -536,7 +540,6 @@ def forum_pilot_candidates(
             or row["need_ids"] != need_ids
             or row["publication_rights"] != "operator_authorized"
             or row["review_state"] != "operator_labeled"
-            or row["attribution"] != "betterwithage"
             or not isinstance(row["rights_evidence"], str)
             or not row["rights_evidence"].strip()
             or not isinstance(row["observed_at"], str)
