@@ -142,6 +142,52 @@ Python imports. This is scoped software evidence, not an operating-system sandbo
 certification. The static page escapes text and forbids external resources via
 Content Security Policy.
 
+## Static evidence view
+
+The renderer uses native inline SVG, CSS, fragment anchors and disclosure
+elements. There is no JavaScript, canvas, GPU framework, CDN, remote font, new
+dependency or external resource/navigation link. `render()` delegates presentation to
+`view.py`, whose hash is included when `record.py` regenerates the artifacts.
+The renderer checks that its admitted projection and report share the same
+fixture revision before displaying them together.
+
+The graph has seven entity vertices and five recorded directed edges from the
+admitted fixture. Separately, the source catalog has exactly thirteen admitted
+record cards. Record count and entity count are labeled distinctly; no artificial
+record-to-record relationship is inferred. Every edge has its original subject,
+predicate, object and source record; every source link resolves to an admitted
+card. Removing a row's admission removes its card, edge and any now-unreferenced
+entity. Excluded record identities and statements are absent from both evidence
+views. Negative-control questions remain visible as user queries in the result
+section; they do not disclose excluded source content.
+An evaluated prediction with invalid schema or evidence renders as a neutral
+failure card containing only the query and failure label. Its proposed answer,
+citations, record IDs and links are not echoed, including denied-record and
+wrong-generation citation attempts.
+Integrity-valid predictions must also pass citation selection, answer, path and
+complete-case checks before the renderer presents them as successful results.
+Failures display **UNQUALIFIED OUTPUT** and identify the unsuccessful checks.
+Their raw prediction is retained as escaped JSON in a closed disclosure labeled
+for review only; its claimed status, answer and citations are not rendered as a
+validated answer or as active source links. These presentation checks consume
+the existing evaluator results without changing its scoring or denominators.
+
+The restrained silver/violet palette keeps the `SYNTHETIC / UNVERIFIED` state
+visible. The map has a title, description and open text equivalent containing
+all five edges. A skip link, ordinary fragment links, focus outlines and native
+disclosure controls support keyboard use. The graph scrolls within its own
+focusable region rather than shrinking labels to unreadable sizes. Source and
+result cards collapse to single columns on narrow screens; long hashes wrap.
+CSS includes reduced-motion overrides without default animation.
+
+Tests validate exact record/entity/edge counts and evidence bindings, denied-row
+exclusion, local anchor targets, SVG syntax and bounded node geometry, escaping,
+the no-script/no-external-asset contract, text-color contrast against declared
+surfaces, and overflow/breakpoint/reduced-motion structure. The intended viewport
+checks cover 320, 375, 768 and 1440 pixels structurally. These are **not actual
+browser layout or accessibility certification**. Browser policy blocked local-file
+preview; it was not bypassed, and the rendered appearance remains unverified.
+
 ## Future research experiment — not executed
 
 The current tiny, developer-visible fixtures do not qualify a model or establish
