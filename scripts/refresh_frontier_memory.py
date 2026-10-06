@@ -653,6 +653,11 @@ def build_snapshot(
             all_rows.append(row)
         for provider in sorted({record["provider"] for record in records}):
             captured = [record["metadata"] for record in records if record["provider"] == provider]
+            # Match the canonical order used by FrontierIndex receipt validation.
+            captured.sort(key=lambda metadata: (
+                metadata["provider"], metadata["identifier"],
+                sha256_bytes(metadata_bytes(metadata)),
+            ))
             source_receipts.append(
                 {
                     "source_id": f"public_research_{provider}",
