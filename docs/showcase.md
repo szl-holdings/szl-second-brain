@@ -164,6 +164,13 @@ An evaluated prediction with invalid schema or evidence renders as a neutral
 failure card containing only the query and failure label. Its proposed answer,
 citations, record IDs and links are not echoed, including denied-record and
 wrong-generation citation attempts.
+Integrity-valid predictions must also pass citation selection, answer, path and
+complete-case checks before the renderer presents them as successful results.
+Failures display **UNQUALIFIED OUTPUT** and identify the unsuccessful checks.
+Their raw prediction is retained as escaped JSON in a closed disclosure labeled
+for review only; its claimed status, answer and citations are not rendered as a
+validated answer or as active source links. These presentation checks consume
+the existing evaluator results without changing its scoring or denominators.
 
 The restrained silver/violet palette keeps the `SYNTHETIC / UNVERIFIED` state
 visible. The map has a title, description and open text equivalent containing

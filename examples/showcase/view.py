@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import html
+import json
 
 from .engine import Showcase, digest
 
@@ -128,6 +129,7 @@ th,td{border-bottom:1px solid #4b405b;padding:12px 10px;vertical-align:top}th{fo
 .results{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.result-card blockquote{border-left:2px solid #aa8ecc;padding-left:14px;margin:14px 0;color:#e8dff5}
 .result-card ol{padding-left:20px}.status{display:flex;flex-wrap:wrap;gap:8px;align-items:center}.state{font-size:.7rem;font-weight:750;border:1px solid #796492;border-radius:5px;padding:3px 8px;color:#e4d4f9}
 .reason{font-size:.7rem;color:var(--muted);overflow-wrap:anywhere}.answer{font-size:1.1rem;color:#f1e9fc}.result-card small{font-size:.73rem}.result-card p{overflow-wrap:anywhere}
+.raw-output pre{white-space:pre-wrap;overflow-wrap:anywhere;word-break:break-word;margin:12px 0}
 .notice{border-left:3px solid #bda2df;padding:12px 18px;background:#221a2e;color:#ded5e8}.receipt{margin-top:20px}footer{color:var(--muted);font-size:.85rem;padding:32px 4px 0;max-width:900px}
 @media(max-width:900px){.cards{grid-template-columns:repeat(2,minmax(0,1fr))}.panel{padding:22px}}
 @media(max-width:600px){main{padding:20px 16px 40px}.hero{padding:40px 0 28px}.stats{grid-template-columns:repeat(2,minmax(0,1fr))}.cards,.results{grid-template-columns:minmax(0,1fr)}.panel{padding:18px;border-radius:16px}nav{gap:10px 18px}.wordmark{flex-basis:100%}th,td{padding:10px 4px;font-size:.82rem}}
@@ -155,6 +157,20 @@ def render_page(report: dict, *, demo: Showcase | None = None) -> str:
             failure = "INVALID OUTPUT" if not row["schema_valid"] else "INVALID EVIDENCE"
             cards.append(f'<article class="result-card" data-case-id="{esc(row["id"])}">'
                          f'<h3>{esc(row["query"])}</h3><p>{failure} — counted as failure.</p></article>')
+            continue
+        checks = (("selection_correct", "citation selection"), ("answer_correct", "answer"),
+                  ("navigation_correct", "path / answer consistency"), ("exact", "complete case match"))
+        failed = [label for key, label in checks if row.get(key) is not True]
+        if failed:
+            # Genuine evidence can still be irrelevant or used incorrectly. Keep
+            # the prediction available as escaped review data, never as a qualified answer.
+            raw = esc(json.dumps(result, indent=2, ensure_ascii=False, sort_keys=True))
+            cards.append(f'<article class="result-card" data-case-id="{esc(row["id"])}">'
+                         f'<h3>{esc(row["query"])}</h3><div class="status"><span class="state">UNQUALIFIED OUTPUT</span></div>'
+                         f'<p class="notice">Fixture evaluation unsuccessful: {esc(", ".join(failed))}. '
+                         'The raw prediction below is not a validated answer.</p>'
+                         '<details class="raw-output"><summary>Raw prediction: unsuccessful, for review only</summary>'
+                         f'<pre><code>{raw}</code></pre></details></article>')
             continue
         citations = ''.join(
             f'<li><blockquote>{esc(c["quote"])}</blockquote><a href="#{source_anchor(c["record_id"])}">{esc(c["record_id"])}</a>'

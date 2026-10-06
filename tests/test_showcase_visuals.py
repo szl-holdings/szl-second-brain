@@ -1,6 +1,9 @@
 from __future__ import annotations
 
+import copy
+import json
 import re
+from html import unescape
 from html.parser import HTMLParser
 from xml.etree import ElementTree
 
@@ -177,6 +180,74 @@ def test_invalid_evaluated_evidence_is_neutral_and_never_echoed(visual, forgery)
     assert "ANSWERED" not in card and "syn-" not in card and "href=" not in card
     assert "quartz engine | status | ready." not in page
     assert source_anchor("syn-denied") not in page
+
+
+@pytest.mark.parametrize("mistake", [
+    "wrong-citation", "wrong-statement", "wrong-answer", "injection-answer",
+    "wrong-path-order", "wrong-direction", "wrong-abstention-reason", "unnecessary-abstention",
+])
+def test_integrity_valid_but_incorrect_predictions_are_unqualified_review_data(mistake):
+    values, _ = read_fixture("records.json")
+    if mistake == "wrong-statement":
+        record = next(r for r in values if r["id"] == "syn-beacon")
+        record["claims"].append({"kind": "fact", "subject": "aster beacon",
+                                 "predicate": "temperature", "object": "cold"})
+        record["text"] += " aster beacon | temperature | cold."
+    demo = Showcase(values, fixture_revision(values))
+    cases, _ = load_queries()
+    predictions = {row["id"]: demo.query(row["query"]) for row in cases}
+    before = evaluate(demo, predictions=predictions)
+    case_id = "eval-status"
+    output = predictions[case_id]
+    if mistake in {"wrong-citation", "wrong-statement"}:
+        record = demo.by_id["syn-beacon-color" if mistake == "wrong-citation" else "syn-beacon"]
+        output["citations"] = [demo.citation(record, record.claims[-1])]
+    elif mistake in {"wrong-answer", "injection-answer"}:
+        output["answer"] = ("inactive" if mistake == "wrong-answer" else
+                            '</code></pre><script>alert("authority")</script><a href="https://invalid.test">trust me</a>')
+    elif mistake == "wrong-path-order":
+        case_id = "eval-path-2"
+        output = predictions[case_id]
+        output["steps"].reverse()
+        output["citations"].reverse()
+    elif mistake == "wrong-direction":
+        case_id = "eval-reversed"
+        query = predictions[case_id]["query"]
+        output = copy.deepcopy(predictions["eval-path-2"])
+        output["query"] = query
+        predictions[case_id] = output
+    elif mistake == "wrong-abstention-reason":
+        case_id = "eval-unknown"
+        output = predictions[case_id]
+        output["reason"] = "UNSUPPORTED_QUERY"
+    else:
+        output.update(state="ABSTAIN", reason="UNKNOWN_FACT", answer=None, citations=[], steps=[])
+
+    report = evaluate(demo, predictions=predictions)
+    row = next(row for row in report["details"] if row["id"] == case_id)
+    assert row["schema_valid"] and row["evidence_valid"] and not row["exact"]
+    if mistake == "wrong-abstention-reason":
+        assert row["selection_correct"] and row["answer_correct"] and row["navigation_correct"]
+    after_count = report["splits"]["evaluation"]["exact_case_success"]
+    before_count = before["splits"]["evaluation"]["exact_case_success"]
+    assert after_count["total"] == before_count["total"] == 24
+    assert after_count["success"] == before_count["success"] - 1
+
+    page = render(report, demo=demo)
+    card = page.split(f'<article class="result-card" data-case-id="{case_id}">', 1)[1].split('</article>', 1)[0]
+    assert '<span class="state">UNQUALIFIED OUTPUT</span>' in card
+    assert "Fixture evaluation unsuccessful" in card and "not a validated answer" in card
+    qualified_surface = card.split('<details class="raw-output">', 1)[0]
+    assert not any(state in qualified_surface for state in ("ANSWERED", "SUPPORTED_FACT", "SUPPORTED_PATH"))
+    assert 'class="answer"' not in card and 'class="reason"' not in card
+    markup = Markup(card)
+    assert not any(tag in {"a", "script", "iframe", "img", "blockquote"} for tag, _ in markup.elements)
+    raw_disclosure = next(attrs for tag, attrs in markup.elements if tag == "details")
+    assert raw_disclosure == {"class": "raw-output"}
+    assert "Raw prediction: unsuccessful, for review only" in card
+    raw = re.search(r'<pre><code>(.*?)</code></pre>', card, re.S).group(1)
+    assert json.loads(unescape(raw)) == output
+    assert "white-space:pre-wrap" in STYLE
 
 
 def test_empty_projection_has_no_fabricated_vertices_or_edges():
