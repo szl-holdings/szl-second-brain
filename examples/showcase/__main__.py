@@ -75,6 +75,7 @@ def main(argv=None) -> int:
         output = evaluate(demo, k=args.k) if args.evaluate or args.html else demo.query(args.query, args.k)
     except ValueError as exc:
         parser.error(str(exc))
+        return 2
     print(render(output) if args.html else json.dumps(output, indent=2, ensure_ascii=False))
     return 0
 

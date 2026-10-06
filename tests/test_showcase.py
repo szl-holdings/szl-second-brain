@@ -220,5 +220,17 @@ def test_cli_and_page_are_offline_and_escape_untrusted_strings(capsys, demo):
     assert '<iframe' not in page and 'src="http' not in page and 'href="http' not in page
 
 
+@pytest.mark.parametrize("argv", [[], ["private-sentinel-" * 20], ["--k", "13", "query"]])
+def test_invalid_cli_exits_without_result_or_fixture_leak(argv, capsys):
+    with pytest.raises(SystemExit) as exc:
+        main(argv)
+    assert exc.value.code == 2
+    captured = capsys.readouterr()
+    assert captured.out == ""
+    assert "error:" in captured.err
+    assert "private-sentinel" not in captured.err
+    assert "syn-" not in captured.err and "fixture_revision" not in captured.err
+
+
 def test_default_demo_output_is_deterministic(demo):
     assert evaluate(demo) == evaluate(Showcase.bundled())
