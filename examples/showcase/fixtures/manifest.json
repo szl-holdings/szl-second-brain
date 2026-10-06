@@ -1,0 +1,11 @@
+{
+  "schema": "szl.synthetic-showcase.fixtures/v1",
+  "authored_on": "2026-10-05",
+  "version": 1,
+  "origin": "Freshly authored fictional records; no collected data.",
+  "freeze": "Developer-visible software regression fixtures, not a blinded or independent model benchmark.",
+  "sha256": {
+    "records.json": "2e8e0a7e2f03602efc8040943906a3a5ab057cd9f554a4dec7e0283278f7cb15",
+    "queries.json": "ce0a4fd900eca4f508e67f96a139a4c4d3fa38ba53d46364648e39ae61f0f941"
+  }
+}
