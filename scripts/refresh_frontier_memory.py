@@ -357,7 +357,7 @@ def markdown_candidates(
         sections.append((current_title, current))
 
     rows: list[dict[str, Any]] = []
-    for index, (title, lines) in enumerate(sections[:MAX_TEXT_CANDIDATES]):
+    for index, (title, lines) in enumerate(sections):
         content = clean_text("\n".join(lines))
         if len(content) < 40:
             continue
@@ -371,6 +371,8 @@ def markdown_candidates(
                 source_kind="source-document",
             )
         )
+        if len(rows) >= MAX_TEXT_CANDIDATES:
+            break
     if not rows:
         raise RefreshError(f"no bounded sections found for {spec.source_id}")
     return rows
