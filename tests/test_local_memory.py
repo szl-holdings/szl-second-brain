@@ -394,6 +394,7 @@ class LocalMemoryTests(unittest.TestCase):
                         try:
                             capacity.wait(timeout=0.25)
                         except BrokenBarrierError:
+                            # A writer lock prevents the second reader from rendezvousing.
                             pass
                         return count
 
@@ -441,6 +442,110 @@ class LocalMemoryTests(unittest.TestCase):
                 target.export_jsonl(after)
                 self.assertEqual(after.getvalue(), before.getvalue())
                 self.assertEqual(len(target.search("retainedword")), 1)
+
+
+    def test_reopen_rejects_actual_file_bytes_over_cap(self) -> None:
+        with TemporaryDirectory() as directory, patch("second_brain.local_memory.MAX_DB_BYTES", 65536):
+            path = Path(directory) / "oversized.sqlite"
+            with LocalMemory(path):
+                pass
+            with path.open("ab") as output:
+                output.write(b"x" * 131072)
+            before = path.read_bytes()
+            with self.assertRaises(MemoryLimitError):
+                LocalMemory(path)
+            self.assertEqual(path.read_bytes(), before)
+
+    def test_storage_accounting_survives_working_directory_change(self) -> None:
+        import os
+        previous = Path.cwd()
+        with TemporaryDirectory() as directory:
+            try:
+                os.chdir(directory)
+                with LocalMemory("relative.sqlite") as memory:
+                    before = memory.storage_bytes()
+                    os.chdir(previous)
+                    self.assertEqual(memory.storage_bytes(), before)
+                    self.assertTrue(memory.path.is_absolute())
+            finally:
+                os.chdir(previous)
+
+    def test_import_reads_bounded_unicode_chunks(self) -> None:
+        class RecordingInput(io.StringIO):
+            largest = 0
+            def readline(self, size=-1):
+                value = super().readline(size)
+                self.largest = max(self.largest, len(value.encode("utf-8")))
+                return value
+        with TemporaryDirectory() as directory, LocalMemory(Path(directory) / "memory.sqlite") as memory:
+            source = RecordingInput("😀" * 80)
+            with patch("second_brain.local_memory.MAX_IMPORT_BYTES", 64):
+                with self.assertRaises(MemoryLimitError):
+                    memory.import_jsonl(source)
+            self.assertLessEqual(source.largest, 64)
+            self.assertEqual(memory.count(), 0)
+
+    def test_full_store_preserves_delete_and_rights_revocation(self) -> None:
+        import random
+        import string
+        for operation in ("delete", "revoke"):
+            with self.subTest(operation=operation), TemporaryDirectory() as directory:
+                with patch("second_brain.local_memory.MAX_DB_BYTES", 32768):
+                    with LocalMemory(Path(directory) / "memory.sqlite") as memory:
+                        rng = random.Random(17)
+                        records = []
+                        for number in range(150):
+                            text = " ".join("".join(rng.choice(string.ascii_lowercase) for _ in range(12)) for _ in range(10))
+                            record = MemoryRecord(str(number), "synthetic://" + str(number), "v1", "title",
+                                                  "2026-10-03T00:00:00Z", "cleared", "synthetic", text)
+                            try:
+                                memory.upsert(record)
+                                records.append(record)
+                            except MemoryLimitError:
+                                break
+                        self.assertTrue(records)
+                        target = records[0]
+                        if operation == "delete":
+                            self.assertTrue(memory.delete(target.record_id))
+                            self.assertEqual(memory.count(), len(records) - 1)
+                        else:
+                            revoked = MemoryRecord(target.record_id, target.source_uri, target.source_revision,
+                                                   target.title, target.observed_at, "unknown")
+                            self.assertEqual(memory.upsert(revoked), "updated")
+                            with self.assertRaises(PermissionError):
+                                memory.hydrate(target.record_id, authorizer=lambda *_: True,
+                                               principal_id="owner", tenant_id="local", policy_revision="v1")
+                        self.assertEqual(memory.search(target.text.split()[0]), [])
+                        self.assertLessEqual(memory.path.stat().st_size, 32768)
+
+
+    def test_cleanup_rebuild_failure_restores_records_and_index(self) -> None:
+        with TemporaryDirectory() as directory, LocalMemory(Path(directory) / "memory.sqlite") as memory:
+            memory.upsert(fixture(30, text="rollbackword"))
+            before = io.StringIO()
+            memory.export_jsonl(before)
+            def deny_rebuild(action, *_args):
+                return sqlite3.SQLITE_DENY if action == sqlite3.SQLITE_CREATE_VTABLE else sqlite3.SQLITE_OK
+            memory._db.set_authorizer(deny_rebuild)
+            try:
+                with self.assertRaises(sqlite3.DatabaseError):
+                    memory._cleanup_rebuild(lambda: memory._db.execute(
+                        "DELETE FROM memory_record WHERE record_id=?", ("synthetic-030",)
+                    ))
+            finally:
+                memory._db.set_authorizer(None)
+            after = io.StringIO()
+            memory.export_jsonl(after)
+            self.assertEqual(after.getvalue(), before.getvalue())
+            self.assertEqual(len(memory.search("rollbackword")), 1)
+            memory.upsert(fixture(31, text="newtriggerword"))
+            self.assertEqual(len(memory.search("newtriggerword")), 1)
+            self.assertTrue(memory.delete("synthetic-030"))
+            self.assertEqual(memory.search("rollbackword"), [])
+
+    def test_memory_special_path_is_still_rejected(self) -> None:
+        with self.assertRaises(ValueError):
+            LocalMemory(":memory:")
 
 
 if __name__ == "__main__":

@@ -271,20 +271,45 @@ class FrontierIndex:
             raise ValueError("frontier source receipts are missing")
         if state.get("source_count") != len(sources):
             raise ValueError("frontier source receipt count mismatch")
+        candidate_sources = {
+            (row.get("source_revision_kind", "git-sha1"), row["source_repository"],
+             row["source_path"] if row.get("source_revision_kind", "git-sha1") == "git-sha1" else "")
+            for row in rows
+        }
+        receipt_sources: set[tuple[str, str, str]] = set()
+        source_ids: set[str] = set()
         for source in sources:
             if not isinstance(source, dict):
                 raise ValueError("invalid frontier source receipt")
-            revision_pattern = _HEX_64 if source.get("revision_kind") == "metadata-capture-sha256" else _HEX_40
-            if source.get("revision_kind", "git-sha1") not in {"git-sha1", "metadata-capture-sha256"} or not revision_pattern.fullmatch(str(source.get("revision") or "")):
+            source_id = source.get("source_id")
+            if not isinstance(source_id, str) or not source_id or source_id in source_ids:
+                raise ValueError("frontier source receipt is not unique")
+            source_ids.add(source_id)
+            revision_kind = source.get("revision_kind", "git-sha1")
+            repository, path = source.get("repository"), source.get("path")
+            if not isinstance(repository, str) or not repository or not isinstance(path, str) or not path:
+                raise ValueError("frontier source receipt identity is invalid")
+            source_key = (revision_kind, repository, path if revision_kind == "git-sha1" else "")
+            if source_key in receipt_sources:
+                raise ValueError("frontier source receipt is not unique")
+            receipt_sources.add(source_key)
+            revision_pattern = _HEX_64 if revision_kind == "metadata-capture-sha256" else _HEX_40
+            if revision_kind not in {"git-sha1", "metadata-capture-sha256"} or not revision_pattern.fullmatch(str(source.get("revision") or "")):
                 raise ValueError("frontier source receipt revision is not exact")
             if not _HEX_64.fullmatch(str(source.get("content_sha256") or "")):
                 raise ValueError("frontier source receipt digest is malformed")
-            if source.get("revision_kind") == "metadata-capture-sha256":
-                bound = [row["provenance"]["metadata"] for row in rows if row.get("source_revision_kind") == "metadata-capture-sha256" and row["source_repository"] == source.get("repository")]
+            if revision_kind == "metadata-capture-sha256":
+                bound = [row["provenance"]["metadata"] for row in rows if row.get("source_revision_kind") == "metadata-capture-sha256" and row["source_repository"] == repository]
                 bound.sort(key=lambda metadata: (metadata["provider"], metadata["identifier"], hashlib.sha256(_canonical_bytes(metadata)).hexdigest()))
                 measured = hashlib.sha256(_canonical_bytes(bound)).hexdigest()
                 if not bound or source["revision"] != measured or source["content_sha256"] != measured or source.get("candidate_count") != len(bound):
                     raise ValueError("research source receipt binding mismatch")
+            else:
+                bound = [row for row in rows if row.get("source_revision_kind", "git-sha1") == "git-sha1" and row["source_repository"] == repository and row["source_path"] == path]
+                if not bound or source.get("candidate_count") != len(bound) or any(row["source_revision"] != source["revision"] for row in bound):
+                    raise ValueError("frontier source receipt binding mismatch")
+        if receipt_sources != candidate_sources:
+            raise ValueError("frontier candidates lack source receipts")
 
     @property
     def ready(self) -> bool:

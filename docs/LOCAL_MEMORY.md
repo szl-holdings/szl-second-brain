@@ -64,7 +64,8 @@ The prototype limits are:
 - 16 MiB main database, enforced through SQLite's page limit;
 - 1,000 records and 64 KiB UTF-8 text per cleared record;
 - 1 MiB UTF-8 per export/import, including JSON escaping and newlines;
-  each import read is bounded by the remaining import budget;
+  imports read small UTF-8-aware chunks; the final one-character overflow
+  probe uses at most four extra bytes before rejection;
 - 256 UTF-8 bytes, 12 literal terms and at most 20 results per search.
 
 SQL values are parameterized. Search terms are quoted literals joined by AND,
@@ -77,13 +78,19 @@ cap does not include a transient journal, a backup, or caller-owned exports.
 
 `delete(record_id)` removes the record and its search entry. Updating a cleared
 record to unknown rights removes its stored text and searchable body. These
+use a transactional FTS index rebuild when a full index cannot append deletion
+tombstones. The old index is freed before rebuilding survivors, without raising
+the main-file cap. If any cleanup/rebuild step fails, its whole transaction rolls
+back and the error remains visible; no successful revocation is reported. These
 are logical deletion guarantees. Old filesystem copies, backups and SQLite
 FTS segments are outside a secure-erasure guarantee.
 
 This is a single-controller prototype. It has no encryption, tenant isolation,
 external rights verification, broader concurrency testing, or crash
 recovery testing. The authorizer is supplied by the owning controller. Keep
-database and export files within that controller's trusted storage.
+database and export files within that controller's trusted storage. The adapter
+retains an absolute database path and checks actual file bytes as well as SQLite
+page accounting when opening an existing store.
 
 Upsert and nonempty import acquire SQLite's writer lock before checking record
 capacity, so separate connections cannot both consume the same remaining slot.

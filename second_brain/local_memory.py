@@ -95,11 +95,13 @@ class LocalMemory:
     """
 
     def __init__(self, path: Path | str) -> None:
-        self.path = Path(path)
-        if str(self.path) == ":memory:" or self.path.is_symlink():
+        self.path = Path(path).absolute()
+        if str(path) == ":memory:" or self.path.is_symlink():
             raise ValueError("a regular on-disk database path is required")
         if not self.path.parent.is_dir():
             raise ValueError("database parent directory must already exist")
+        if self.path.exists() and self.path.stat().st_size > MAX_DB_BYTES:
+            raise MemoryLimitError("database exceeds 16 MiB")
         new = not self.path.exists() or self.path.stat().st_size == 0
         self._db = sqlite3.connect(self.path, timeout=1)
         try:
@@ -213,8 +215,45 @@ class LocalMemory:
             return outcome
         except sqlite3.Error as exc:
             if "full" in str(exc).lower():
+                # A rights downgrade must not need spare FTS tombstone pages.
+                if (record.rights_status == "unknown" and self._db.execute(
+                        "SELECT 1 FROM memory_record WHERE record_id=?", (record.record_id,)
+                ).fetchone() is not None):
+                    return self._cleanup_rebuild(lambda: self._upsert(record))
                 raise MemoryLimitError("database reached 16 MiB") from exc
             raise
+
+    def _cleanup_rebuild(self, operation):
+        """Free the old FTS pages before cleanup, atomically rebuilding survivors.
+
+        Never increase max_page_count or expose a partial index. Any failure,
+        including rebuilding the surviving rows, rolls back the whole retry.
+        """
+        with self._db:
+            self._db.execute("BEGIN IMMEDIATE")
+            for trigger in ("memory_ai", "memory_ad", "memory_au"):
+                self._db.execute("DROP TRIGGER " + trigger)
+            self._db.execute("DROP TABLE memory_fts")
+            result = operation()
+            self._db.execute("""CREATE VIRTUAL TABLE memory_fts USING fts5(
+                title, body, content='memory_record', content_rowid='rowid', tokenize='unicode61'
+            )""")
+            self._db.execute("INSERT INTO memory_fts(memory_fts) VALUES ('rebuild')")
+            self._db.execute("""CREATE TRIGGER memory_ai AFTER INSERT ON memory_record BEGIN
+                INSERT INTO memory_fts(rowid, title, body) VALUES (new.rowid, new.title, new.body);
+            END""")
+            self._db.execute("""CREATE TRIGGER memory_ad AFTER DELETE ON memory_record BEGIN
+                INSERT INTO memory_fts(memory_fts, rowid, title, body)
+                VALUES ('delete', old.rowid, old.title, old.body);
+            END""")
+            self._db.execute("""CREATE TRIGGER memory_au AFTER UPDATE ON memory_record BEGIN
+                INSERT INTO memory_fts(memory_fts, rowid, title, body)
+                VALUES ('delete', old.rowid, old.title, old.body);
+                INSERT INTO memory_fts(rowid, title, body) VALUES (new.rowid, new.title, new.body);
+            END""")
+            self._sample_storage()
+        self._sample_storage()
+        return result
 
     def count(self) -> int:
         return self._db.execute("SELECT COUNT(*) FROM memory_record").fetchone()[0]
@@ -288,12 +327,19 @@ class LocalMemory:
 
     def delete(self, record_id: str) -> bool:
         _field(record_id, "record_id", 128)
-        with self._db:
-            deleted = self._db.execute("DELETE FROM memory_record WHERE record_id=?",
-                                       (record_id,)).rowcount == 1
+        def remove():
+            return self._db.execute("DELETE FROM memory_record WHERE record_id=?",
+                                    (record_id,)).rowcount == 1
+        try:
+            with self._db:
+                deleted = remove()
+                self._sample_storage()
             self._sample_storage()
-        self._sample_storage()
-        return deleted
+            return deleted
+        except sqlite3.Error as exc:
+            if "full" not in str(exc).lower():
+                raise
+            return self._cleanup_rebuild(remove)
 
     def export_jsonl(self, output: TextIO) -> int:
         """Write a complete exchange only if it fits the import byte/row caps.
@@ -331,13 +377,25 @@ class LocalMemory:
         # JSON escaping can expand a valid 64 KiB body well past 128 KiB.
         # Bound the read by the remaining total budget, then count UTF-8 bytes.
         while True:
-            line = source.readline(MAX_IMPORT_BYTES - total + 1)
-            if type(line) is not str:
-                raise ValueError("import must be UTF-8 text")
+            chunks = []
+            while True:
+                # A Unicode character needs at most four UTF-8 bytes. Read in
+                # small chunks; only the final one-character overflow probe can
+                # exceed the remaining allowance, by at most four bytes.
+                remaining = MAX_IMPORT_BYTES - total
+                chunk = source.readline(max(1, min(4096, remaining // 4)))
+                if type(chunk) is not str:
+                    raise ValueError("import must be UTF-8 text")
+                total += len(chunk.encode("utf-8"))
+                if total > MAX_IMPORT_BYTES:
+                    raise MemoryLimitError("import exceeds 1 MiB or 1000 records")
+                chunks.append(chunk)
+                if not chunk or chunk.endswith("\n"):
+                    break
+            line = "".join(chunks)
             if not line:
                 break
-            total += len(line.encode("utf-8"))
-            if total > MAX_IMPORT_BYTES or len(records) >= MAX_RECORDS:
+            if len(records) >= MAX_RECORDS:
                 raise MemoryLimitError("import exceeds 1 MiB or 1000 records")
             value = _strict_json(line)
             if value.pop("schema", None) != SCHEMA or value.pop("training_allowed", None) is not False:

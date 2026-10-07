@@ -1,0 +1,4 @@
+# Frozen input bytes and deterministic generated outputs must survive Windows checkout.
+fixtures/*.json -text
+baseline.json -text
+index.html -text
