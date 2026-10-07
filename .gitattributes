@@ -1,0 +1,2 @@
+# Preserve the exact retained source fixture, including its original line endings.
+tests/fixtures/forum-public-edf05833.jsonl -text

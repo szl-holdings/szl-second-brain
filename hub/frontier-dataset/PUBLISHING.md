@@ -34,3 +34,21 @@ This publication does not create a Space, run inference, train, promote,
 hydrate content, or update the separate 575-chunk Alloy dataset. The source
 package's Apache-2.0 licence does not resolve rights for every referenced work;
 the Hub card explicitly retains mixed-source review terms.
+
+
+## Refresh contract and historical replay
+
+A refresh proposal does not qualify for publication merely because its row count
+matches. The publisher binds the complete SHA-256 triple of candidate JSONL,
+state JSON and research-metadata JSON to the structurally reviewed counts. The
+137-row prior input set remains explicit so a guarded update can reconstruct and
+verify the old publication before writing. The 141-row proposal has a distinct
+input triple; combining files from the two sets or making a self-consistent,
+same-count edit remains blocked until a new source review changes these pins.
+
+Current card counts are rendered from the verified projection. Historical
+signed cards without count markers remain byte-identical on the 137-row replay
+path. This contract change approves only structural handle projection: candidate
+content review remains pending and training, promotion and execution authority
+remain NONE. Protected source admission and explicit one-target publication with
+immutable provider readback remain separate requirements.
