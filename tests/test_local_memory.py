@@ -1,0 +1,552 @@
+"""Synthetic, offline checks for the controller-owned SQLite memory adapter."""
+from __future__ import annotations
+
+import io
+import hashlib
+import json
+import sqlite3
+import sys
+import unittest
+from concurrent.futures import ThreadPoolExecutor
+from pathlib import Path
+from tempfile import TemporaryDirectory
+from threading import Barrier, BrokenBarrierError
+from unittest.mock import patch
+
+from second_brain.local_memory import (
+    MAX_DB_BYTES,
+    MAX_IMPORT_BYTES,
+    MAX_TEXT_BYTES,
+    LocalMemory,
+    MemoryLimitError,
+    MemoryRecord,
+)
+
+
+def _process_peak_bytes() -> int:
+    if sys.platform == "win32":
+        import ctypes
+
+        class Counters(ctypes.Structure):
+            _fields_ = [("cb", ctypes.c_ulong), ("PageFaultCount", ctypes.c_ulong),
+                        ("PeakWorkingSetSize", ctypes.c_size_t),
+                        ("WorkingSetSize", ctypes.c_size_t),
+                        ("QuotaPeakPagedPoolUsage", ctypes.c_size_t),
+                        ("QuotaPagedPoolUsage", ctypes.c_size_t),
+                        ("QuotaPeakNonPagedPoolUsage", ctypes.c_size_t),
+                        ("QuotaNonPagedPoolUsage", ctypes.c_size_t),
+                        ("PagefileUsage", ctypes.c_size_t),
+                        ("PeakPagefileUsage", ctypes.c_size_t)]
+
+        value = Counters()
+        value.cb = ctypes.sizeof(value)
+        ctypes.windll.kernel32.GetCurrentProcess.restype = ctypes.c_void_p
+        ctypes.windll.psapi.GetProcessMemoryInfo.argtypes = (
+            ctypes.c_void_p, ctypes.c_void_p, ctypes.c_ulong
+        )
+        process = ctypes.windll.kernel32.GetCurrentProcess()
+        if not ctypes.windll.psapi.GetProcessMemoryInfo(
+            process, ctypes.byref(value), value.cb
+        ):
+            raise OSError("GetProcessMemoryInfo failed")
+        return value.PeakWorkingSetSize
+    import resource
+
+    peak = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+    return peak if sys.platform == "darwin" else peak * 1024
+
+
+def fixture(number: int, *, rights: str = "cleared", text: str | None = None) -> MemoryRecord:
+    return MemoryRecord(
+        record_id=f"synthetic-{number:03}",
+        source_uri=f"synthetic://fixture/{number}",
+        source_revision=f"revision-{number}",
+        title=f"Microscopy sample {number}",
+        observed_at="2026-10-03T00:00:00Z",
+        rights_status=rights,
+        rights_basis="synthetic CC0 fixture" if rights == "cleared" else None,
+        text=(text if text is not None else f"fluorescence sample {number} " * 12)
+        if rights == "cleared" else None,
+    )
+
+
+class LocalMemoryTests(unittest.TestCase):
+    def test_fifty_synthetic_records_reopen_search_export_and_reimport(self) -> None:
+        before_rss = _process_peak_bytes()
+        with TemporaryDirectory() as directory:
+            source_path = Path(directory) / "source.sqlite"
+            target_path = Path(directory) / "target.sqlite"
+            with LocalMemory(source_path) as source:
+                for number in range(50):
+                    rights = "unknown" if number % 10 == 0 else "cleared"
+                    self.assertEqual(source.upsert(fixture(number, rights=rights)), "inserted")
+                self.assertEqual(source.upsert(fixture(1)), "unchanged")
+                self.assertEqual(source.count(), 50)
+                self.assertLessEqual(source.peak_storage_bytes, MAX_DB_BYTES)
+                page_size = source._db.execute("PRAGMA page_size").fetchone()[0]
+                page_limit = source._db.execute("PRAGMA max_page_count").fetchone()[0]
+                self.assertLessEqual(page_size * page_limit, MAX_DB_BYTES)
+                self.assertEqual(source.search("fluorescence", limit=20)[0]["training_allowed"], False)
+                self.assertEqual(source.search("sample 0", limit=20)[0]["content_access"], "METADATA_ONLY")
+                self.assertTrue(all("text" not in handle for handle in source.search("sample")))
+                with self.assertRaises(PermissionError):
+                    source.hydrate("synthetic-001", authorizer=lambda *_: False,
+                                   principal_id="owner", tenant_id="local", policy_revision="v1")
+                hydrated = source.hydrate("synthetic-001", authorizer=lambda *_: True,
+                                          principal_id="owner", tenant_id="local", policy_revision="v1")
+                self.assertIn("fluorescence", hydrated["text"])
+                with self.assertRaises(PermissionError):
+                    source.hydrate("synthetic-000", authorizer=lambda *_: True,
+                                   principal_id="owner", tenant_id="local", policy_revision="v1")
+                output = io.StringIO()
+                self.assertEqual(source.export_jsonl(output), 50)
+                export = output.getvalue()
+                self.assertLessEqual(len(export.encode("utf-8")), MAX_IMPORT_BYTES)
+                self.assertNotIn('"text": null', export)
+                self.assertLessEqual(source.storage_bytes(), MAX_DB_BYTES)
+                source_peak_disk = source.peak_storage_bytes
+            with LocalMemory(source_path) as reopened:
+                self.assertEqual(reopened.count(), 50)
+                self.assertEqual(reopened.search("fluorescence")[0]["record_id"], "synthetic-001")
+            with LocalMemory(target_path) as target:
+                self.assertEqual(target.import_jsonl(io.StringIO(export)),
+                                 {"inserted": 50, "updated": 0, "unchanged": 0})
+                self.assertEqual(target.import_jsonl(io.StringIO(export)),
+                                 {"inserted": 0, "updated": 0, "unchanged": 50})
+                copied = io.StringIO()
+                target.export_jsonl(copied)
+                self.assertEqual(copied.getvalue(), export)
+                self.assertTrue(target.delete("synthetic-001"))
+                self.assertFalse(target.delete("synthetic-001"))
+                self.assertEqual(target.count(), 49)
+                self.assertFalse(any(row["record_id"] == "synthetic-001"
+                                     for row in target.search("fluorescence", limit=20)))
+                self.assertLessEqual(target.peak_storage_bytes, MAX_DB_BYTES)
+                target_peak_disk = target.peak_storage_bytes
+        after_rss = _process_peak_bytes()
+        print(f"local-memory probe: 50 records, input={len(export.encode('utf-8'))} bytes, "
+              f"source DB+journal peak={source_peak_disk} bytes, "
+              f"target DB+journal peak={target_peak_disk} bytes, "
+              f"process peak RSS={after_rss} bytes, delta={max(0, after_rss-before_rss)} bytes")
+
+    def test_rights_downgrade_removes_content_from_search_and_export(self) -> None:
+        with TemporaryDirectory() as directory, LocalMemory(Path(directory) / "memory.sqlite") as memory:
+            self.assertEqual(memory.upsert(fixture(2, text="privateblueword")), "inserted")
+            self.assertEqual(len(memory.search("privateblueword")), 1)
+            self.assertEqual(memory.upsert(fixture(2, rights="unknown")), "updated")
+            self.assertEqual(memory.search("privateblueword"), [])
+            output = io.StringIO()
+            memory.export_jsonl(output)
+            self.assertNotIn("privateblueword", output.getvalue())
+            self.assertNotIn("text", json.loads(output.getvalue()))
+            self.assertEqual(memory.search("microscopy")[0]["content_access"], "METADATA_ONLY")
+            with self.assertRaises(ValueError):
+                memory.upsert(MemoryRecord("unknown", "synthetic://bad", "v1", "Bad",
+                                           "2026-10-03T00:00:00Z", "unknown", text="forbidden"))
+            with self.assertRaises(ValueError):
+                memory.upsert(fixture(6, text="x" * (MAX_TEXT_BYTES + 1)))
+
+    def test_fts_query_operators_and_sql_in_record_id_are_literal(self) -> None:
+        with TemporaryDirectory() as directory, LocalMemory(Path(directory) / "memory.sqlite") as memory:
+            injected_id = "x'); DROP TABLE memory_record; --"
+            row = fixture(3, text="microscopeonly")
+            self.assertEqual(memory.upsert(MemoryRecord(injected_id, row.source_uri,
+                                                         row.source_revision, row.title,
+                                                         row.observed_at, row.rights_status,
+                                                         row.rights_basis, row.text)), "inserted")
+            self.assertEqual(len(memory.search("microscopeonly")), 1)
+            self.assertEqual(memory.search('microscopeonly" OR *'), [])
+            self.assertEqual(memory.count(), 1)
+            self.assertTrue(memory.delete(injected_id))
+            self.assertEqual(memory.count(), 0)
+            with self.assertRaises(ValueError):
+                memory.search("x" * 257)
+
+    def test_import_rejects_tampering_without_partial_write(self) -> None:
+        with TemporaryDirectory() as directory:
+            with LocalMemory(Path(directory) / "source.sqlite") as source:
+                source.upsert(fixture(4))
+                source.upsert(fixture(5))
+                exported = io.StringIO()
+                source.export_jsonl(exported)
+            lines = exported.getvalue().splitlines()
+            tampered = json.loads(lines[1])
+            tampered["content_sha256"] = "0" * 64
+            lines[1] = json.dumps(tampered)
+            with LocalMemory(Path(directory) / "target.sqlite") as target:
+                with self.assertRaises(ValueError):
+                    target.import_jsonl(io.StringIO("\n".join(lines) + "\n"))
+                self.assertEqual(target.count(), 0)
+                tampered["training_allowed"] = True
+                with self.assertRaises(ValueError):
+                    target.import_jsonl(io.StringIO(json.dumps(tampered) + "\n"))
+                with self.assertRaises(ValueError):
+                    target.import_jsonl(io.StringIO('{"schema":"x","schema":"y"}\n'))
+                self.assertEqual(target.count(), 0)
+
+    def test_hydration_refuses_a_record_changed_by_its_authorizer(self) -> None:
+        with TemporaryDirectory() as directory, LocalMemory(Path(directory) / "memory.sqlite") as memory:
+            memory.upsert(fixture(7, text="revokedword"))
+
+            def revoke(*_args):
+                memory.upsert(fixture(7, rights="unknown"))
+                return True
+
+            with self.assertRaises(PermissionError):
+                memory.hydrate("synthetic-007", authorizer=revoke, principal_id="owner",
+                               tenant_id="local", policy_revision="v1")
+            self.assertEqual(memory.search("revokedword"), [])
+
+    def test_scaled_budgets_reject_without_losing_previous_records(self) -> None:
+        with TemporaryDirectory() as directory:
+            with patch("second_brain.local_memory.MAX_DB_BYTES", 64 * 1024):
+                with LocalMemory(Path(directory) / "limited.sqlite") as memory:
+                    memory.upsert(fixture(8, text="retainedword"))
+                    with self.assertRaises(MemoryLimitError):
+                        memory.upsert(fixture(9, text="floodword " * 5000))
+                    self.assertEqual(memory.count(), 1)
+                    self.assertEqual(len(memory.search("retainedword")), 1)
+                    self.assertEqual(memory.search("floodword"), [])
+                    self.assertLessEqual(memory.path.stat().st_size, 64 * 1024)
+                    exported = io.StringIO()
+                    memory.export_jsonl(exported)
+            with LocalMemory(Path(directory) / "rows.sqlite") as memory:
+                with patch("second_brain.local_memory.MAX_RECORDS", 2):
+                    memory.upsert(fixture(10))
+                    memory.upsert(fixture(11))
+                    with self.assertRaises(MemoryLimitError):
+                        memory.upsert(fixture(12))
+                    self.assertEqual(memory.count(), 2)
+            with LocalMemory(Path(directory) / "import.sqlite") as memory:
+                with patch("second_brain.local_memory.MAX_IMPORT_BYTES", 100):
+                    with self.assertRaises(MemoryLimitError):
+                        memory.import_jsonl(io.StringIO(exported.getvalue()))
+                    self.assertEqual(memory.count(), 0)
+
+    def test_valid_escaped_text_survives_export_and_reimport(self) -> None:
+        text = "\u0001" * 22000
+        with TemporaryDirectory() as directory:
+            with LocalMemory(Path(directory) / "source.sqlite") as source:
+                source.upsert(fixture(13, text=text))
+                exported = io.StringIO()
+                source.export_jsonl(exported)
+            self.assertGreater(len(exported.getvalue()), 128 * 1024)
+            self.assertLess(len(exported.getvalue().encode("utf-8")), MAX_IMPORT_BYTES)
+            with LocalMemory(Path(directory) / "target.sqlite") as target:
+                self.assertEqual(target.import_jsonl(io.StringIO(exported.getvalue())),
+                                 {"inserted": 1, "updated": 0, "unchanged": 0})
+                hydrated = target.hydrate("synthetic-013", authorizer=lambda *_: True,
+                                          principal_id="owner", tenant_id="local",
+                                          policy_revision="v1")
+                self.assertEqual(hydrated["text"], text)
+
+    def test_import_failure_rolls_back_an_earlier_update_and_its_index(self) -> None:
+        with TemporaryDirectory() as directory:
+            with LocalMemory(Path(directory) / "source.sqlite") as source:
+                source.upsert(fixture(18, text="replacementword"))
+                source.upsert(fixture(20))
+                exported = io.StringIO()
+                source.export_jsonl(exported)
+            with LocalMemory(Path(directory) / "target.sqlite") as target:
+                target.upsert(fixture(18, text="originalword"))
+                target.upsert(fixture(19))
+                before = io.StringIO()
+                target.export_jsonl(before)
+                with patch("second_brain.local_memory.MAX_RECORDS", 2):
+                    with self.assertRaises(MemoryLimitError):
+                        target.import_jsonl(io.StringIO(exported.getvalue()))
+                after = io.StringIO()
+                target.export_jsonl(after)
+                self.assertEqual(after.getvalue(), before.getvalue())
+                self.assertEqual(len(target.search("originalword")), 1)
+                self.assertEqual(target.search("replacementword"), [])
+
+    def test_hydration_holds_an_independent_writer_until_authorization_finishes(self) -> None:
+        with TemporaryDirectory() as directory, LocalMemory(Path(directory) / "memory.sqlite") as memory:
+            memory.upsert(fixture(16, text="authorizedword"))
+            writer = sqlite3.connect(memory.path, timeout=0)
+            try:
+                def authorize(*_args):
+                    with self.assertRaisesRegex(sqlite3.OperationalError, "locked"):
+                        writer.execute("UPDATE memory_record SET title=? WHERE record_id=?",
+                                       ("Changed during authorization", "synthetic-016"))
+                    writer.rollback()
+                    return True
+
+                hydrated = memory.hydrate("synthetic-016", authorizer=authorize,
+                                          principal_id="owner", tenant_id="local",
+                                          policy_revision="v1")
+                self.assertEqual(hydrated["text"], "authorizedword")
+                self.assertEqual(hydrated["title"], "Microscopy sample 16")
+                with writer:
+                    writer.execute("UPDATE memory_record SET title=? WHERE record_id=?",
+                                   ("Lock released", "synthetic-016"))
+                self.assertEqual(memory.search("released")[0]["title"], "Lock released")
+            finally:
+                writer.close()
+
+    def test_query_terms_use_the_same_unicode_tokenizer_as_the_index(self) -> None:
+        cases = (
+            ("re\u0301sume\u0301", ("re\u0301sume\u0301", "r\u00e9sum\u00e9")),
+            ("x\u0301y", ("x\u0301y",)),
+            ("x\u20ddy", ("x\u20ddy",)),
+            ("a\ue000b", ("a\ue000b",)),
+            ("alpha intervening beta", ("beta_alpha", "beta alpha")),
+        )
+        with TemporaryDirectory() as directory, LocalMemory(Path(directory) / "memory.sqlite") as memory:
+            for text, queries in cases:
+                with self.subTest(text=text):
+                    memory.upsert(fixture(14, text=text))
+                    for query in queries:
+                        self.assertEqual([row["record_id"] for row in memory.search(query)],
+                                         ["synthetic-014"])
+            self.assertEqual(memory.search("***"), [])
+            with self.assertRaises(ValueError):
+                memory.search("alpha " * 13)
+            with self.assertRaises(ValueError):
+                memory.search("a" * 65)
+
+    def test_export_import_share_an_inclusive_utf8_byte_budget(self) -> None:
+        with TemporaryDirectory() as directory:
+            with LocalMemory(Path(directory) / "source.sqlite") as source:
+                source.upsert(fixture(21, text="\u0001 escaped \u00e9 microscopy"))
+                exported = io.StringIO()
+                source.export_jsonl(exported)
+                payload = exported.getvalue()
+                budget = len(payload.encode("utf-8"))
+                self.assertGreater(budget, len(payload))
+                with patch("second_brain.local_memory.MAX_IMPORT_BYTES", budget):
+                    exact = io.StringIO()
+                    self.assertEqual(source.export_jsonl(exact), 1)
+                    self.assertEqual(exact.getvalue(), payload)
+                    with LocalMemory(Path(directory) / "target.sqlite") as target:
+                        self.assertEqual(target.import_jsonl(io.StringIO(payload)),
+                                         {"inserted": 1, "updated": 0, "unchanged": 0})
+                        self.assertEqual(target.import_jsonl(io.StringIO(payload)),
+                                         {"inserted": 0, "updated": 0, "unchanged": 1})
+                output = io.StringIO("existing output")
+                output.seek(4)
+                with patch("second_brain.local_memory.MAX_IMPORT_BYTES", budget - 1):
+                    with self.assertRaises(MemoryLimitError):
+                        source.export_jsonl(output)
+                self.assertEqual(output.getvalue(), "existing output")
+                self.assertEqual(output.tell(), 4)
+
+    def test_escaped_store_over_transfer_cap_rejects_without_partial_output_or_import(self) -> None:
+        text = "\u0001" * MAX_TEXT_BYTES
+        with TemporaryDirectory() as directory:
+            with LocalMemory(Path(directory) / "source.sqlite") as source:
+                source.upsert(fixture(22, text=text))
+                source.upsert(fixture(23, text=text))
+                exported = io.StringIO()
+                self.assertEqual(source.export_jsonl(exported), 2)
+                bounded = exported.getvalue()
+                self.assertLessEqual(len(bounded.encode("utf-8")), MAX_IMPORT_BYTES)
+                source.upsert(fixture(24, text=text))
+                output = io.StringIO("existing output")
+                output.seek(4)
+                with self.assertRaises(MemoryLimitError):
+                    source.export_jsonl(output)
+                self.assertEqual(output.getvalue(), "existing output")
+                self.assertEqual(output.tell(), 4)
+                self.assertEqual(source.count(), 3)
+                for number in (22, 23, 24):
+                    hydrated = source.hydrate(f"synthetic-{number:03}", authorizer=lambda *_: True,
+                                              principal_id="owner", tenant_id="local",
+                                              policy_revision="v1")
+                    self.assertEqual(hydrated["text"], text)
+            with LocalMemory(Path(directory) / "target.sqlite") as target:
+                self.assertEqual(target.import_jsonl(io.StringIO(bounded)),
+                                 {"inserted": 2, "updated": 0, "unchanged": 0})
+                self.assertEqual(target.import_jsonl(io.StringIO(bounded)),
+                                 {"inserted": 0, "updated": 0, "unchanged": 2})
+            with LocalMemory(Path(directory) / "rejected.sqlite") as target:
+                budget = len(bounded.encode("utf-8")) - 1
+                with patch("second_brain.local_memory.MAX_IMPORT_BYTES", budget):
+                    with self.assertRaises(MemoryLimitError):
+                        target.import_jsonl(io.StringIO(bounded))
+                self.assertEqual(target.count(), 0)
+                target.upsert(fixture(25, text="retainedword"))
+                before = io.StringIO()
+                target.export_jsonl(before)
+                with patch("second_brain.local_memory.MAX_IMPORT_BYTES", budget):
+                    with self.assertRaises(MemoryLimitError):
+                        target.import_jsonl(io.StringIO(bounded))
+                after = io.StringIO()
+                target.export_jsonl(after)
+                self.assertEqual(after.getvalue(), before.getvalue())
+                self.assertEqual(len(target.search("retainedword")), 1)
+
+    def test_two_connections_cannot_admit_beyond_the_record_cap(self) -> None:
+        # Force both unguarded capacity readers to rendezvous before writing.
+        # With a writer lock, the first reader's rendezvous expires, then the
+        # second connection observes the committed row and rejects admission.
+        for operation in ("upsert", "import"):
+            with self.subTest(operation=operation), TemporaryDirectory() as directory:
+                path = Path(directory) / "memory.sqlite"
+                with LocalMemory(path):
+                    pass
+                ready, capacity = Barrier(2), Barrier(2)
+
+                class RendezvousMemory(LocalMemory):
+                    def count(self):
+                        count = super().count()
+                        try:
+                            capacity.wait(timeout=0.25)
+                        except BrokenBarrierError:
+                            # A writer lock prevents the second reader from rendezvousing.
+                            pass
+                        return count
+
+                def admit(number):
+                    record = fixture(number)
+                    with RendezvousMemory(path) as memory:
+                        ready.wait(timeout=5)
+                        try:
+                            if operation == "upsert":
+                                return memory.upsert(record)
+                            payload = {**record.__dict__, "schema": "szl.second-brain.local-memory/v1",
+                                       "training_allowed": False,
+                                       "content_sha256": hashlib.sha256(
+                                           record.text.encode("utf-8")).hexdigest()}
+                            return memory.import_jsonl(io.StringIO(json.dumps(payload) + "\n"))
+                        except MemoryLimitError:
+                            return "capacity-rejected"
+
+                with patch("second_brain.local_memory.MAX_RECORDS", 1):
+                    with ThreadPoolExecutor(max_workers=2) as executor:
+                        outcomes = list(executor.map(admit, (31, 32)))
+                self.assertEqual(outcomes.count("capacity-rejected"), 1)
+                with LocalMemory(path) as memory:
+                    self.assertEqual(memory.count(), 1)
+                    self.assertEqual(len(memory.search("microscopy")), 1)
+
+    def test_empty_export_reimports_as_an_additive_noop(self) -> None:
+        with TemporaryDirectory() as directory:
+            with LocalMemory(Path(directory) / "empty.sqlite") as source:
+                exported = io.StringIO()
+                self.assertEqual(source.export_jsonl(exported), 0)
+                self.assertEqual(exported.getvalue(), "")
+                self.assertEqual(source.import_jsonl(io.StringIO("")),
+                                 {"inserted": 0, "updated": 0, "unchanged": 0})
+                with self.assertRaises(ValueError):
+                    source.import_jsonl(io.BytesIO(b""))
+            with LocalMemory(Path(directory) / "populated.sqlite") as target:
+                target.upsert(fixture(26, text="retainedword"))
+                before = io.StringIO()
+                target.export_jsonl(before)
+                for _ in range(2):
+                    self.assertEqual(target.import_jsonl(io.StringIO(exported.getvalue())),
+                                     {"inserted": 0, "updated": 0, "unchanged": 0})
+                after = io.StringIO()
+                target.export_jsonl(after)
+                self.assertEqual(after.getvalue(), before.getvalue())
+                self.assertEqual(len(target.search("retainedword")), 1)
+
+
+    def test_reopen_rejects_actual_file_bytes_over_cap(self) -> None:
+        with TemporaryDirectory() as directory, patch("second_brain.local_memory.MAX_DB_BYTES", 65536):
+            path = Path(directory) / "oversized.sqlite"
+            with LocalMemory(path):
+                pass
+            with path.open("ab") as output:
+                output.write(b"x" * 131072)
+            before = path.read_bytes()
+            with self.assertRaises(MemoryLimitError):
+                LocalMemory(path)
+            self.assertEqual(path.read_bytes(), before)
+
+    def test_storage_accounting_survives_working_directory_change(self) -> None:
+        import os
+        previous = Path.cwd()
+        with TemporaryDirectory() as directory:
+            try:
+                os.chdir(directory)
+                with LocalMemory("relative.sqlite") as memory:
+                    before = memory.storage_bytes()
+                    os.chdir(previous)
+                    self.assertEqual(memory.storage_bytes(), before)
+                    self.assertTrue(memory.path.is_absolute())
+            finally:
+                os.chdir(previous)
+
+    def test_import_reads_bounded_unicode_chunks(self) -> None:
+        class RecordingInput(io.StringIO):
+            largest = 0
+            def readline(self, size=-1):
+                value = super().readline(size)
+                self.largest = max(self.largest, len(value.encode("utf-8")))
+                return value
+        with TemporaryDirectory() as directory, LocalMemory(Path(directory) / "memory.sqlite") as memory:
+            source = RecordingInput("😀" * 80)
+            with patch("second_brain.local_memory.MAX_IMPORT_BYTES", 64):
+                with self.assertRaises(MemoryLimitError):
+                    memory.import_jsonl(source)
+            self.assertLessEqual(source.largest, 64)
+            self.assertEqual(memory.count(), 0)
+
+    def test_full_store_preserves_delete_and_rights_revocation(self) -> None:
+        import random
+        import string
+        for operation in ("delete", "revoke"):
+            with self.subTest(operation=operation), TemporaryDirectory() as directory:
+                with patch("second_brain.local_memory.MAX_DB_BYTES", 32768):
+                    with LocalMemory(Path(directory) / "memory.sqlite") as memory:
+                        rng = random.Random(17)
+                        records = []
+                        for number in range(150):
+                            text = " ".join("".join(rng.choice(string.ascii_lowercase) for _ in range(12)) for _ in range(10))
+                            record = MemoryRecord(str(number), "synthetic://" + str(number), "v1", "title",
+                                                  "2026-10-03T00:00:00Z", "cleared", "synthetic", text)
+                            try:
+                                memory.upsert(record)
+                                records.append(record)
+                            except MemoryLimitError:
+                                break
+                        self.assertTrue(records)
+                        target = records[0]
+                        if operation == "delete":
+                            self.assertTrue(memory.delete(target.record_id))
+                            self.assertEqual(memory.count(), len(records) - 1)
+                        else:
+                            revoked = MemoryRecord(target.record_id, target.source_uri, target.source_revision,
+                                                   target.title, target.observed_at, "unknown")
+                            self.assertEqual(memory.upsert(revoked), "updated")
+                            with self.assertRaises(PermissionError):
+                                memory.hydrate(target.record_id, authorizer=lambda *_: True,
+                                               principal_id="owner", tenant_id="local", policy_revision="v1")
+                        self.assertEqual(memory.search(target.text.split()[0]), [])
+                        self.assertLessEqual(memory.path.stat().st_size, 32768)
+
+
+    def test_cleanup_rebuild_failure_restores_records_and_index(self) -> None:
+        with TemporaryDirectory() as directory, LocalMemory(Path(directory) / "memory.sqlite") as memory:
+            memory.upsert(fixture(30, text="rollbackword"))
+            before = io.StringIO()
+            memory.export_jsonl(before)
+            def deny_rebuild(action, *_args):
+                return sqlite3.SQLITE_DENY if action == sqlite3.SQLITE_CREATE_VTABLE else sqlite3.SQLITE_OK
+            memory._db.set_authorizer(deny_rebuild)
+            try:
+                with self.assertRaises(sqlite3.DatabaseError):
+                    memory._cleanup_rebuild(lambda: memory._db.execute(
+                        "DELETE FROM memory_record WHERE record_id=?", ("synthetic-030",)
+                    ))
+            finally:
+                memory._db.set_authorizer(None)
+            after = io.StringIO()
+            memory.export_jsonl(after)
+            self.assertEqual(after.getvalue(), before.getvalue())
+            self.assertEqual(len(memory.search("rollbackword")), 1)
+            memory.upsert(fixture(31, text="newtriggerword"))
+            self.assertEqual(len(memory.search("newtriggerword")), 1)
+            self.assertTrue(memory.delete("synthetic-030"))
+            self.assertEqual(memory.search("rollbackword"), [])
+
+    def test_memory_special_path_is_still_rejected(self) -> None:
+        with self.assertRaises(ValueError):
+            LocalMemory(":memory:")
+
+
+if __name__ == "__main__":
+    unittest.main()
