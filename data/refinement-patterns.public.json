@@ -1,0 +1,16 @@
+{
+  "content_access": "HANDLES_ONLY",
+  "execution_authority": "NONE",
+  "handles": [],
+  "merge_authority": "NONE",
+  "pattern_count": 0,
+  "private_graph_present": false,
+  "promotion_authority": "NONE",
+  "raw_reasoning_present": false,
+  "ready": true,
+  "receipt_count": 0,
+  "schema": "szl.second-brain.refinement-memory/v1",
+  "state": "EMPTY_REVIEW_REQUIRED",
+  "state_sha256": "b4513ebd5403357e642e9858c5d4cf456aa0285a19dbae1f6d18d6d906905a9c",
+  "training_authority": "NONE"
+}
