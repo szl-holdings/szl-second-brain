@@ -28,8 +28,12 @@ source files and the reused corpus/retrieval/hydration modules, normalized to LF
 It does not publish anything.
 
 Open [the committed static result page](index.html) locally to inspect the frozen
-results, exact citations, source dates and hashes. The page has no scripts,
-external assets, network requests or interactive server. The CLI prints JSON;
+results, exact citations, source dates and hashes. Its silver/violet evidence
+map has 7 entity vertices and 5 cited, explicit directed edges; the source cards
+contain exactly the 13 admitted records. `SYNTHETIC / UNVERIFIED` remains visible.
+Keyboard-accessible local links connect edges and answers to their source cards.
+An open text list repeats every edge, and native disclosure controls reveal hashes.
+The page has no scripts, external assets, network requests or interactive server. The CLI prints JSON;
 `--k` changes the lexical candidate count within 1–12. Abstention is a valid JSON
 result and exits successfully. Invalid CLI usage exits with code 2.
 
@@ -57,8 +61,14 @@ held-out model benchmark**. No production-readiness, novelty, AGI, model-quality
 training-eligibility, or Conjecture 1 proof claim is made.
 
 ```sh
-python -m pytest tests/test_showcase.py tests/test_showcase_evaluation.py
+python -m pytest tests/test_showcase.py tests/test_showcase_evaluation.py tests/test_showcase_visuals.py
 ```
+
+The layout includes narrow-screen and reduced-motion CSS. The map scrolls inside
+its own focusable region to preserve readable labels; the adjacent text list
+needs no horizontal scrolling. Structural checks cover the intended
+320/375/768/1440 viewport ranges, but browser-rendered layout has **not** been
+visually verified because local-file preview is blocked by browser policy.
 
 Tests require the repository's existing test environment. The demo itself does
 not inspect credentials or accept alternate input file paths. Its only content

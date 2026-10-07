@@ -35,12 +35,13 @@ def main() -> int:
     parser.add_argument("--report", type=Path, required=True)
     args = parser.parse_args()
     requests = [("arxiv", value) for value in args.arxiv] + [("crossref", value) for value in args.doi]
-    if not 1 <= len(requests) <= 12 or len(set(requests)) != len(requests):
-        parser.error("require one to twelve distinct identifiers")
+    if not 1 <= len(requests) <= 12:
+        parser.error("require one to twelve identifiers")
     if args.arxiv and not args.exclusive_arxiv:
         parser.error("coordinate aggregate arXiv ownership before collection")
-    for provider, identifier in requests:
-        identifier_url(provider, identifier)
+    request_urls = [identifier_url(provider, identifier) for provider, identifier in requests]
+    if len(set(request_urls)) != len(request_urls):
+        parser.error("require distinct provider identifiers")
     args.snapshot.parent.mkdir(parents=True, exist_ok=True)
     lock = args.snapshot.parent / ".public-research-collector.lock"
     handle = os.open(lock, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)

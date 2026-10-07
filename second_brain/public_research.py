@@ -29,6 +29,9 @@ MAX_AUTHORS = 32
 MAX_FIELD_CHARS = 240
 MAX_AGE_DAYS = 180
 USER_AGENT = "SZL-SecondBrain-PublicResearch/1.0 (bounded metadata discovery)"
+# Conservative public-pool pacing; response limits may still require stopping.
+# https://www.crossref.org/documentation/retrieve-metadata/rest-api/access-and-authentication/
+_REQUEST_INTERVALS = {"arxiv": 3.0, "crossref": 1.0}
 _DOI = re.compile(r"^10\.\d{4,9}/[A-Za-z0-9._;()/:-]{1,180}$")
 _ARXIV = re.compile(r"^\d{4}\.\d{4,5}(?:v[1-9]\d{0,2})?$")
 _ARXIV_VERSION = re.compile(r"^\d{4}\.\d{4,5}v[1-9]\d{0,2}$")
@@ -108,17 +111,18 @@ class _NoRedirect(urllib.request.HTTPRedirectHandler):
 
 
 class PublicMetadataClient:
-    """One connection, no automatic retries; arXiv calls are globally serialized.
+    """Sequential requests, no retries; each provider has per-client pacing.
 
     The caller must ensure this is the only arXiv collector across controlled
     processes and machines. The CLI uses a local exclusive lock as an additional
-    guard. It never claims that a process-local timer enforces a global limit.
+    guard. Three-second arXiv and conservative one-second Crossref intervals do
+    not claim that a process-local timer enforces an aggregate global limit.
     """
 
     def __init__(self, *, transport: Callable[[str], bytes] | None = None, clock: Callable[[], float] = time.monotonic, sleep: Callable[[float], None] = time.sleep) -> None:
         self._transport = transport or self._request
         self._clock, self._sleep = clock, sleep
-        self._last_arxiv: float | None = None
+        self._last_request: dict[str, float] = {}
 
     @staticmethod
     def _request(url: str) -> bytes:
@@ -137,13 +141,12 @@ class PublicMetadataClient:
     def capture(self, provider: str, identifier: str, *, observed_at: str) -> dict[str, Any]:
         url = identifier_url(provider, identifier)
         parse_timestamp(observed_at)
-        if provider == "arxiv" and self._last_arxiv is not None:
-            delay = 3.0 - (self._clock() - self._last_arxiv)
+        if provider in self._last_request:
+            delay = _REQUEST_INTERVALS[provider] - (self._clock() - self._last_request[provider])
             if delay > 0:
                 self._sleep(delay)
         # Set the timer before the request: failures count towards spacing too.
-        if provider == "arxiv":
-            self._last_arxiv = self._clock()
+        self._last_request[provider] = self._clock()
         raw = self._transport(url)
         if not isinstance(raw, bytes) or len(raw) > MAX_RESPONSE_BYTES:
             raise ResearchBoundaryError("metadata response exceeds byte bound")

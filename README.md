@@ -202,6 +202,15 @@ explicitly reports `BM25_FALLBACK_DENSE_UNAVAILABLE`; it never claims a hybrid
 run that did not occur. Similarity and ranking are never represented as
 correctness.
 
+## Local persistent memory prototype
+
+`second_brain.local_memory.LocalMemory` is an opt-in, stdlib SQLite/FTS5
+store for a trusted local controller. It has no API keys, provider calls, or
+network ingestion. It is separate from the admitted public corpus, the hourly
+review frontier, and all public routes. Search returns provenance handles;
+text needs an explicit controller authorizer. Unknown-rights sources remain
+metadata-only. See [local memory usage and limits](docs/LOCAL_MEMORY.md).
+
 ## Authorized hydration
 
 `AuthorizedHydrator` and `AuthorizedFrontierHydrator` are library-only controller
