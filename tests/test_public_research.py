@@ -88,7 +88,11 @@ def test_arxiv_version_and_xml_entities_are_rejected():
     assert value["full_text_licence"] == "NOT_INFERRED"
 
 
-def test_arxiv_spacing_includes_failed_requests():
+@pytest.mark.parametrize("provider,identifier,response,interval", [
+    ("arxiv", "2305.01582", atom(), 3.0),
+    ("crossref", DOI, crossref(), 1.0),
+], ids=["arxiv", "crossref"])
+def test_provider_spacing_includes_failed_requests(provider, identifier, response, interval):
     clock = [0.0]
     sleeps = []
     calls = []
@@ -101,13 +105,89 @@ def test_arxiv_spacing_includes_failed_requests():
         calls.append(clock[0])
         if len(calls) == 1:
             raise ResearchBoundaryError("simulated timeout")
-        return atom()
+        return response
 
     client = PublicMetadataClient(transport=transport, clock=lambda: clock[0], sleep=sleep)
     with pytest.raises(ResearchBoundaryError):
-        client.capture("arxiv", "2305.01582", observed_at=OBSERVED)
-    client.capture("arxiv", "2305.01582", observed_at=OBSERVED)
-    assert sleeps == [3.0] and calls == [0.0, 3.0]
+        client.capture(provider, identifier, observed_at=OBSERVED)
+    client.capture(provider, identifier, observed_at=OBSERVED)
+    assert sleeps == [interval] and calls == [0.0, interval]
+
+
+@pytest.mark.parametrize("elapsed,expected_sleep", [(0.0, 1.0), (0.25, 0.75), (1.0, 0.0), (2.0, 0.0)])
+def test_crossref_waits_only_for_remaining_interval(elapsed, expected_sleep):
+    clock = [0.0]
+    sleeps, calls = [], []
+
+    def sleep(delay):
+        sleeps.append(delay)
+        clock[0] += delay
+
+    def transport(_url):
+        calls.append(clock[0])
+        return crossref()
+
+    client = PublicMetadataClient(transport=transport, clock=lambda: clock[0], sleep=sleep)
+    client.capture("crossref", DOI, observed_at=OBSERVED)
+    clock[0] += elapsed
+    client.capture("crossref", DOI, observed_at=OBSERVED)
+    assert sleeps == ([expected_sleep] if expected_sleep else [])
+    assert calls == [0.0, max(elapsed, 1.0)]
+
+
+def test_crossref_batch_does_not_burst_and_preserves_capture_bytes():
+    clock = [0.0]
+    calls = []
+
+    def sleep(delay):
+        clock[0] += delay
+
+    def transport(_url):
+        calls.append(clock[0])
+        return crossref()
+
+    client = PublicMetadataClient(transport=transport, clock=lambda: clock[0], sleep=sleep)
+    rows = [client.capture("crossref", DOI, observed_at=OBSERVED) for _ in range(12)]
+    assert calls == list(range(12))
+    assert all(row == rows[0] for row in rows)
+
+
+def test_interleaved_providers_keep_independent_intervals():
+    clock = [0.0]
+    calls, sleeps = [], []
+
+    def sleep(delay):
+        sleeps.append(delay)
+        clock[0] += delay
+
+    def transport(url):
+        calls.append(("crossref" if "crossref" in url else "arxiv", clock[0]))
+        return crossref() if "crossref" in url else atom()
+
+    client = PublicMetadataClient(transport=transport, clock=lambda: clock[0], sleep=sleep)
+    for provider, identifier in [("arxiv", "2305.01582"), ("crossref", DOI), ("crossref", DOI), ("arxiv", "2305.01582")]:
+        client.capture(provider, identifier, observed_at=OBSERVED)
+    assert calls == [("arxiv", 0.0), ("crossref", 0.0), ("crossref", 1.0), ("arxiv", 3.0)]
+    assert sleeps == [1.0, 2.0]
+
+
+def test_doi_case_duplicates_are_rejected_before_lock_or_network(monkeypatch, tmp_path, capsys):
+    from scripts import collect_public_research as collector
+
+    def unexpected(*_args, **_kwargs):
+        raise AssertionError("duplicate requests reached lock or network")
+
+    monkeypatch.setattr(collector.os, "open", unexpected)
+    monkeypatch.setattr(collector, "PublicMetadataClient", unexpected)
+    monkeypatch.setattr(collector.sys, "argv", [
+        "collect_public_research.py", "--doi", DOI, "--doi", DOI.upper(),
+        "--snapshot", str(tmp_path / "snapshot.json"), "--report", str(tmp_path / "report.json"),
+    ])
+    with pytest.raises(SystemExit) as blocked:
+        collector.main()
+    assert blocked.value.code == 2
+    assert "distinct" in capsys.readouterr().err
+    assert list(tmp_path.iterdir()) == []
 
 
 def test_repeated_ingestion_is_idempotent_and_changed_metadata_is_versioned():
