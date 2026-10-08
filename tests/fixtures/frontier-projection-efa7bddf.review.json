@@ -1,0 +1,58 @@
+{
+  "schema": "szl.second-brain.frontier-projection-review/v1",
+  "snapshot_revision": "b50307d3006ebd6150bd76e427c6322ea48fa3b1",
+  "review_scope": "STRUCTURAL_HANDLES_ONLY_NOT_CLAIM_OR_PUBLICATION_APPROVAL",
+  "source_sha256": [
+    "efa7bddf8526aaabada77e27257dc0f0128f151a7e97ebe51d5eafede8f04f7c",
+    "54cb1a5b7bb2275ce96611afa00910f4026825e42641bec02f70663fb585258b",
+    "d63cb1e11373807362632cae45b51263eb97ecbc8168a2ea6af85958a3f74c86"
+  ],
+  "historical_inputs": [
+    {
+      "source_sha256": [
+        "c6dd7ce0d1379da74eb2456f4ab4b750ec9dd481bf57941240f4a98d771e6163",
+        "9eeb6e883463669770ebe0a2cf663ec6ee6bd22da0276b9fee70696015214d74",
+        "d63cb1e11373807362632cae45b51263eb97ecbc8168a2ea6af85958a3f74c86"
+      ],
+      "counts": [137, 10, 6]
+    },
+    {
+      "source_sha256": [
+        "440473ee67851ad8897d2e2e20e0025b95b202844cdabe0b1acdd5e5619d177f",
+        "9443f9bb522e27650b93d42ac9cb225d11fa2b21e52f81dd161269c9511a756c",
+        "d63cb1e11373807362632cae45b51263eb97ecbc8168a2ea6af85958a3f74c86"
+      ],
+      "counts": [141, 10, 6]
+    }
+  ],
+  "canonical_state_core_sha256": "0048aa89a04b3142a92692b112a47dfe0c47a217d0bfd2844953b916cf7ef49e",
+  "handles_sha256": "e153ecec2bca5853a289b94f01cf864b72f500738d5db379bdd4750cfb5e71e8",
+  "candidate_count": 141,
+  "source_count": 10,
+  "research_metadata_count": 6,
+  "changed_source_repository": "szl-holdings/szl-ouroboros",
+  "changed_source_revision": "9ae23a9d46bc526b7e665aade505c2eaedb66c75",
+  "changed_source_path": "README.md",
+  "changed_source_id": "ouroboros_runtime",
+  "changed_source_payload_sha256": "42fd166f609e7749b5f3839c6b1d0cb3313500e15ea8fc2963775fb28bda4fc9",
+  "changed_candidate_count": 5,
+  "changed_candidate_ids": [
+    "frontier:345c1133534cb71cdb92b62cf14f333d",
+    "frontier:9ac33d84d5f7107f63018b796599c592",
+    "frontier:cd389af37aff8213f6cae432c7dd5a25",
+    "frontier:f2736c796bb1557ee5ff7dd42639ca98",
+    "frontier:fe7779524e7ab28352af03cc7cdbbd40"
+  ],
+  "changed_source_declared_code_license": "Apache-2.0",
+  "changed_source_license_sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+  "changed_source_license_git_blob_sha1": "d645695673349e3947e8e5ae42332d0ac3164cd7",
+  "changed_source_license_url": "https://github.com/szl-holdings/szl-ouroboros/blob/9ae23a9d46bc526b7e665aade505c2eaedb66c75/LICENSE",
+  "metadata_rights_counts": {
+    "arxiv:CC0-1.0": 2,
+    "crossref:NOT_DECLARED_BY_RESPONSE": 4
+  },
+  "full_text_license": "NOT_INFERRED",
+  "training_authority": "NONE",
+  "promotion_authority": "NONE",
+  "execution_authority": "NONE"
+}
