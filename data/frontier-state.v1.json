@@ -1,6 +1,6 @@
 {
   "candidate_count": 141,
-  "candidate_set_sha256": "efa7bddf8526aaabada77e27257dc0f0128f151a7e97ebe51d5eafede8f04f7c",
+  "candidate_set_sha256": "8e9e04f01c5ae8ac956f24189cc4380e46546b951787a76bdf7d33eb143257ca",
   "controller_content_access": "AUTHORIZED_CONTROLLER_ONLY",
   "execution_authority": "NONE",
   "lambda": "CONJECTURE_1",
@@ -38,11 +38,11 @@
   "sources": [
     {
       "candidate_count": 8,
-      "content_sha256": "121884029bad18403dd02cebb88ea54ab00ff6d17bd75cb70980fdd7d2e1dabf",
+      "content_sha256": "660ab48c30f0718c7383ecdecfce7148998836941dd663ce67a02ba85e3d09c3",
       "parser": "public_estate",
       "path": "governance/public-estate.v1.json",
       "repository": "szl-holdings/a11oy",
-      "revision": "dddf649beb7f189c4c05dc062875cf6d4c4d215d",
+      "revision": "0860babc5da069dd713e4a81ef77d66eb214a24c",
       "source_id": "a11oy_public_estate"
     },
     {
@@ -83,11 +83,11 @@
     },
     {
       "candidate_count": 12,
-      "content_sha256": "748d375c7f1fa3c1a2626ed00b8dbfffbd2ec63e9638bf5b2c67f1f448abd878",
+      "content_sha256": "e6fcff630a50603812b6bae5fb992b86aac0c3b3a809ef017fe59fa5837b71b7",
       "parser": "markdown",
       "path": "README.md",
       "repository": "szl-holdings/szl-nemo",
-      "revision": "7c0bc1599e8a000ad5fe9736339789e1ba18d7e5",
+      "revision": "ce9955c3d17b7fb9803a5267470b4a8f39928f92",
       "source_id": "nemo_witness"
     },
     {
@@ -130,6 +130,6 @@
     }
   ],
   "state": "REVIEW_REQUIRED",
-  "state_sha256": "0048aa89a04b3142a92692b112a47dfe0c47a217d0bfd2844953b916cf7ef49e",
+  "state_sha256": "70430d83c4690e944fc338191de0698aa36125f9612bd6bb345b9330cc2d55d0",
   "training_authority": "NONE"
 }
