@@ -72,7 +72,9 @@ def test_existing_eligible_sections_keep_order_ids_and_content_bounds() -> None:
     assert all(row["content"] == CONTENT for row in rows[1:])
 
 
-@pytest.mark.parametrize("payload", [b"", document([("Navigation", "x")] * 30)])
+@pytest.mark.parametrize(
+    "payload", [b"", b"#\n##\n####\n", document([("Navigation", "x")] * 30)]
+)
 def test_no_eligible_sections_still_fail_closed(payload: bytes) -> None:
     with pytest.raises(RefreshError, match="no bounded sections found"):
         markdown_candidates(SPEC, REVISION, payload)
@@ -83,3 +85,33 @@ def test_secret_screening_covers_input_after_candidate_limit() -> None:
     sections.append(("Rejected tail", "-----BEGIN PRIVATE KEY-----"))
     with pytest.raises(RefreshError, match="secret-like material rejected"):
         markdown_candidates(SPEC, REVISION, document(sections))
+
+
+@pytest.mark.parametrize("eligible_count", [23, 24, 25])
+def test_exact_candidate_limit_and_minimum_content_length(eligible_count: int) -> None:
+    sections = [("Too short", "x" * 39)] + [
+        (f"Exact minimum {index}", "x" * 40) for index in range(eligible_count)
+    ]
+    rows = markdown_candidates(SPEC, REVISION, document(sections))
+
+    assert len(rows) == min(eligible_count, MAX_TEXT_CANDIDATES)
+    assert all(row["content"] == "x" * 40 for row in rows)
+    assert [row["id"] for row in rows] == [
+        expected_id(index + 1, f"Exact minimum {index}") for index in range(len(rows))
+    ]
+
+
+def test_duplicate_sections_retain_distinct_original_section_identities() -> None:
+    rows = markdown_candidates(SPEC, REVISION, document([("Repeated", CONTENT)] * 30))
+
+    assert len(rows) == MAX_TEXT_CANDIDATES
+    assert [row["id"] for row in rows] == [
+        expected_id(index, "Repeated") for index in range(MAX_TEXT_CANDIDATES)
+    ]
+    assert len({row["id"] for row in rows}) == MAX_TEXT_CANDIDATES
+
+
+@pytest.mark.parametrize("prefix", [b"", document([("Details", CONTENT)] * 24)])
+def test_invalid_utf8_anywhere_in_input_is_rejected(prefix: bytes) -> None:
+    with pytest.raises(UnicodeDecodeError):
+        markdown_candidates(SPEC, REVISION, prefix + b"\xff")
