@@ -47,6 +47,14 @@ REVIEWED_INPUTS: dict[tuple[str, str, str], tuple[int, int, int]] = {
         '9443f9bb522e27650b93d42ac9cb225d11fa2b21e52f81dd161269c9511a756c',
         'd63cb1e11373807362632cae45b51263eb97ecbc8168a2ea6af85958a3f74c86',
     ): (141, 10, 6),
+    # Structural handle projection reviewed at b50307d; mixed-source rights
+    # and review-required status are retained. Pin the raw state-file bytes,
+    # not the separate canonical state-core digest.
+    (
+        'efa7bddf8526aaabada77e27257dc0f0128f151a7e97ebe51d5eafede8f04f7c',
+        '54cb1a5b7bb2275ce96611afa00910f4026825e42641bec02f70663fb585258b',
+        'd63cb1e11373807362632cae45b51263eb97ecbc8168a2ea6af85958a3f74c86',
+    ): (141, 10, 6),
 }
 
 

@@ -221,7 +221,63 @@ def test_missing_or_duplicate_card_count_marker_is_rejected(marker: str) -> None
 
 
 def test_legacy_and_current_source_policies_remain_distinct() -> None:
-    assert len(publisher.REVIEWED_INPUTS) == 2
+    receipt = json.loads((ROOT / "tests/fixtures/frontier-projection-efa7bddf.review.json").read_text(encoding="utf-8"))
+    assert len(publisher.REVIEWED_INPUTS) == len(receipt["historical_inputs"]) + 1
+    for historical in receipt["historical_inputs"]:
+        assert publisher.REVIEWED_INPUTS[tuple(historical["source_sha256"])] == tuple(historical["counts"])
     assert set(publisher.REVIEWED_INPUTS.values()) == {(137, 10, 6), (141, 10, 6)}
     assert all(len(identities) == 3 and all(len(digest) == 64 for digest in identities)
                for identities in publisher.REVIEWED_INPUTS)
+
+
+def test_reviewed_ouroboros_projection_preserves_receipt_and_rights() -> None:
+    receipt = json.loads((ROOT / "tests/fixtures/frontier-projection-efa7bddf.review.json").read_text(encoding="utf-8"))
+    data = source()
+    identity = tuple(publisher.sha256(data[path]) for path in publisher.SOURCE_PATHS)
+    assert identity == tuple(receipt["source_sha256"])
+    assert publisher.REVIEWED_INPUTS[identity] == (141, 10, 6)
+
+    output = render(data)
+    handles_bytes = output["frontier-handles.public.jsonl"]
+    assert publisher.sha256(handles_bytes) == receipt["handles_sha256"]
+    handles = [json.loads(line) for line in handles_bytes.splitlines()]
+    assert len(handles) == 141
+    assert all(row["candidate_state"] == "DISCOVERED_REVIEW_REQUIRED" for row in handles)
+    assert all(row["contentAccess"] == "HANDLES_ONLY" for row in handles)
+    assert all("content" not in row and "provenance" not in row for row in handles)
+
+    research = [row["sourceIdentity"] for row in handles if "sourceIdentity" in row]
+    assert len(research) == 6
+    assert all(row["fullTextLicence"] == "NOT_INFERRED" for row in research)
+    observed_rights = {}
+    for row in research:
+        key = f"{row['provider']}:{row['metadataLicence']}"
+        observed_rights[key] = observed_rights.get(key, 0) + 1
+    assert observed_rights == receipt["metadata_rights_counts"]
+
+    state = json.loads(output["frontier-state.v1.json"])
+    repository = receipt["changed_source_repository"]
+    revision = receipt["changed_source_revision"]
+    rows = [publisher.strict_json(line) for line in data[publisher.SOURCE_PATHS[0]].splitlines()]
+    changed = [row for row in rows if row["source_revision"] == revision]
+    assert {row["source_repository"] for row in changed} == {repository}
+    assert {row["source_path"] for row in changed} == {receipt["changed_source_path"]}
+    assert sorted(row["id"] for row in changed) == receipt["changed_candidate_ids"]
+    assert len(changed) == receipt["changed_candidate_count"] == 5
+    bound_sources = [source for source in state["sources"] if source["source_id"] == receipt["changed_source_id"]]
+    assert len(bound_sources) == 1
+    bound = bound_sources[0]
+    assert (bound["repository"], bound["revision"], bound["path"]) == (
+        repository, revision, receipt["changed_source_path"]
+    )
+    assert bound["candidate_count"] == len(changed)
+    assert bound["content_sha256"] == receipt["changed_source_payload_sha256"]
+    assert receipt["changed_source_declared_code_license"] == "Apache-2.0"
+    assert receipt["changed_source_license_sha256"] == "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+    assert receipt["changed_source_license_git_blob_sha1"] == "d645695673349e3947e8e5ae42332d0ac3164cd7"
+    assert receipt["changed_source_license_url"] == f"https://github.com/{repository}/blob/{revision}/LICENSE"
+    assert state["state_sha256"] == receipt["canonical_state_core_sha256"]
+    assert publisher.sha256(output["frontier-state.v1.json"]) == identity[1]
+    card = output["README.md"].decode()
+    assert "license: other" in card
+    assert "no blanket open-data" in card
