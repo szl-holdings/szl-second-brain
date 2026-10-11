@@ -1,6 +1,6 @@
 {
-  "candidate_count": 141,
-  "candidate_set_sha256": "efa7bddf8526aaabada77e27257dc0f0128f151a7e97ebe51d5eafede8f04f7c",
+  "candidate_count": 144,
+  "candidate_set_sha256": "b83fd688cb56f57f231dc394f71d6c2b4f58cb132403d00c880f7b5147099313",
   "controller_content_access": "AUTHORIZED_CONTROLLER_ONLY",
   "execution_authority": "NONE",
   "lambda": "CONJECTURE_1",
@@ -33,16 +33,16 @@
     "python-contract": 5,
     "quant-domain": 9,
     "research-metadata": 6,
-    "source-document": 59
+    "source-document": 62
   },
   "sources": [
     {
       "candidate_count": 8,
-      "content_sha256": "121884029bad18403dd02cebb88ea54ab00ff6d17bd75cb70980fdd7d2e1dabf",
+      "content_sha256": "660ab48c30f0718c7383ecdecfce7148998836941dd663ce67a02ba85e3d09c3",
       "parser": "public_estate",
       "path": "governance/public-estate.v1.json",
       "repository": "szl-holdings/a11oy",
-      "revision": "dddf649beb7f189c4c05dc062875cf6d4c4d215d",
+      "revision": "0860babc5da069dd713e4a81ef77d66eb214a24c",
       "source_id": "a11oy_public_estate"
     },
     {
@@ -64,7 +64,7 @@
       "source_id": "formula_quant_atlas"
     },
     {
-      "candidate_count": 21,
+      "candidate_count": 24,
       "content_sha256": "f616ef60771dc1682707f46bf086daa1298536c36ae5f092f1aabbdb5f09d150",
       "parser": "markdown",
       "path": "README.md",
@@ -83,20 +83,20 @@
     },
     {
       "candidate_count": 12,
-      "content_sha256": "748d375c7f1fa3c1a2626ed00b8dbfffbd2ec63e9638bf5b2c67f1f448abd878",
+      "content_sha256": "e6fcff630a50603812b6bae5fb992b86aac0c3b3a809ef017fe59fa5837b71b7",
       "parser": "markdown",
       "path": "README.md",
       "repository": "szl-holdings/szl-nemo",
-      "revision": "7c0bc1599e8a000ad5fe9736339789e1ba18d7e5",
+      "revision": "ce9955c3d17b7fb9803a5267470b4a8f39928f92",
       "source_id": "nemo_witness"
     },
     {
       "candidate_count": 5,
-      "content_sha256": "42fd166f609e7749b5f3839c6b1d0cb3313500e15ea8fc2963775fb28bda4fc9",
+      "content_sha256": "89d8680d357055dc99460228e46ceb8dad784d875de69864498d85e6851cfabc",
       "parser": "markdown",
       "path": "README.md",
       "repository": "szl-holdings/szl-ouroboros",
-      "revision": "9ae23a9d46bc526b7e665aade505c2eaedb66c75",
+      "revision": "a9a0aaa2cb548c23f7aa6f7c4996dccf0a61a262",
       "source_id": "ouroboros_runtime"
     },
     {
@@ -130,6 +130,6 @@
     }
   ],
   "state": "REVIEW_REQUIRED",
-  "state_sha256": "0048aa89a04b3142a92692b112a47dfe0c47a217d0bfd2844953b916cf7ef49e",
+  "state_sha256": "61a213c2e3b00293b6cbed28a0f37d7feb6f8747eec186e809155ad6df64bcbc",
   "training_authority": "NONE"
 }
