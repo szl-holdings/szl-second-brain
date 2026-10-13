@@ -55,6 +55,13 @@ REVIEWED_INPUTS: dict[tuple[str, str, str], tuple[int, int, int]] = {
         '54cb1a5b7bb2275ce96611afa00910f4026825e42641bec02f70663fb585258b',
         'd63cb1e11373807362632cae45b51263eb97ecbc8168a2ea6af85958a3f74c86',
     ): (141, 10, 6),
+    # Reproduced all eight immutable Git inputs and unchanged research metadata
+    # at 979235b. Review permits structural handles only, never claim admission.
+    (
+        '7b8766cbb5488be7c5720a7b01ba4b1871d24eb503f385aff8475db02cfe1a74',
+        '18b6624cb9c15d0a83848fc3dc3252c5100d0cbf043fb88a247bd89cc5432518',
+        'd63cb1e11373807362632cae45b51263eb97ecbc8168a2ea6af85958a3f74c86',
+    ): (144, 10, 6),
 }
 
 
