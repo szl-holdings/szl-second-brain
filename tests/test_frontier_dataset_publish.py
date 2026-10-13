@@ -20,9 +20,9 @@ publisher = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(publisher)
 
 
-def source() -> dict[str, bytes]:
+def source(revision: str = "HEAD") -> dict[str, bytes]:
     # Windows checkouts may use CRLF; the publisher reads immutable Git blobs.
-    return {path: publisher.committed_bytes("HEAD", path) for path in publisher.SOURCE_PATHS}
+    return {path: publisher.committed_bytes(revision, path) for path in publisher.SOURCE_PATHS}
 
 
 def render(data: dict[str, bytes]) -> dict[str, bytes]:
@@ -39,7 +39,7 @@ def test_publication_is_handle_only_and_binds_exact_source_bytes() -> None:
         "README.md", "publication.json",
     }
     handles = [json.loads(line) for line in output["frontier-handles.public.jsonl"].splitlines()]
-    assert len(handles) == 141
+    assert len(handles) == 144
     assert all(row["candidate_state"] == "DISCOVERED_REVIEW_REQUIRED" for row in handles)
     assert all(row["contentAccess"] == "HANDLES_ONLY" for row in handles)
     assert all("content" not in row and "provenance" not in row for row in handles)
@@ -191,7 +191,7 @@ def test_self_consistent_same_count_change_remains_unreviewed() -> None:
     }))
     data[publisher.SOURCE_PATHS[1]] = publisher.canonical_bytes(state) + b"\n"
     publisher.FrontierIndex._validate(state, rows)
-    assert len(rows) == 141
+    assert len(rows) == 144
     with pytest.raises(publisher.PublicationError, match="source set has not been reviewed"):
         render(data)
 
@@ -199,9 +199,9 @@ def test_self_consistent_same_count_change_remains_unreviewed() -> None:
 def test_public_card_counts_match_the_projected_handles() -> None:
     output = render(source())
     card = output["README.md"].decode()
-    assert "Inspect 141 attributed" in card
-    assert "**141 attributed candidates" in card
-    assert "| 135 Git-sourced candidates" in card
+    assert "Inspect 144 attributed" in card
+    assert "**144 attributed candidates" in card
+    assert "| 138 Git-sourced candidates" in card
     assert "__CANDIDATE_COUNT__" not in card
     assert "__DETAIL_CANDIDATE_COUNT__" not in card
     assert "__GIT_CANDIDATE_COUNT__" not in card
@@ -222,17 +222,55 @@ def test_missing_or_duplicate_card_count_marker_is_rejected(marker: str) -> None
 
 def test_legacy_and_current_source_policies_remain_distinct() -> None:
     receipt = json.loads((ROOT / "tests/fixtures/frontier-projection-efa7bddf.review.json").read_text(encoding="utf-8"))
-    assert len(publisher.REVIEWED_INPUTS) == len(receipt["historical_inputs"]) + 1
+    assert len(publisher.REVIEWED_INPUTS) == len(receipt["historical_inputs"]) + 2
     for historical in receipt["historical_inputs"]:
         assert publisher.REVIEWED_INPUTS[tuple(historical["source_sha256"])] == tuple(historical["counts"])
-    assert set(publisher.REVIEWED_INPUTS.values()) == {(137, 10, 6), (141, 10, 6)}
+    assert set(publisher.REVIEWED_INPUTS.values()) == {(137, 10, 6), (141, 10, 6), (144, 10, 6)}
     assert all(len(identities) == 3 and all(len(digest) == 64 for digest in identities)
                for identities in publisher.REVIEWED_INPUTS)
 
 
+def test_reviewed_refresh_preserves_exact_handles_sources_and_rights() -> None:
+    receipt = json.loads((ROOT / "tests/fixtures/frontier-projection-7b8766cb.review.json").read_text(encoding="utf-8"))
+    data = source()
+    identity = tuple(publisher.sha256(data[path]) for path in publisher.SOURCE_PATHS)
+    assert identity == tuple(receipt["source_sha256"])
+    assert publisher.REVIEWED_INPUTS[identity] == (144, 10, 6)
+    output = render(data)
+    handles_bytes = output["frontier-handles.public.jsonl"]
+    assert publisher.sha256(handles_bytes) == receipt["handles_sha256"]
+    handles = [json.loads(line) for line in handles_bytes.splitlines()]
+    assert len(handles) == receipt["candidate_count"] == 144
+    assert all(handle["candidate_state"] == "DISCOVERED_REVIEW_REQUIRED" for handle in handles)
+    assert all(handle["contentAccess"] == "HANDLES_ONLY" for handle in handles)
+    assert all("content" not in handle and "provenance" not in handle for handle in handles)
+    research = [handle["sourceIdentity"] for handle in handles if "sourceIdentity" in handle]
+    assert len(research) == receipt["research_metadata_count"] == 6
+    rights = {}
+    for row in research:
+        assert row["fullTextLicence"] == "NOT_INFERRED"
+        key = f"{row['provider']}:{row['metadataLicence']}"
+        rights[key] = rights.get(key, 0) + 1
+    assert rights == receipt["metadata_rights_counts"]
+    state = json.loads(output["frontier-state.v1.json"])
+    assert state["state_sha256"] == receipt["canonical_state_core_sha256"]
+    actual_sources = {row["source_id"]: row for row in state["sources"]}
+    assert len(receipt["immutable_git_sources"]) == 8
+    for expected in receipt["immutable_git_sources"]:
+        source_row = {key: value for key, value in expected.items() if key != "immutable_url"}
+        assert actual_sources[expected["source_id"]] == source_row
+        assert expected["immutable_url"] == (
+            f"https://raw.githubusercontent.com/{expected['repository']}/"
+            f"{expected['revision']}/{expected['path']}"
+        )
+    manifest = json.loads(output["publication.json"])
+    for key in ("training_authority", "promotion_authority", "execution_authority"):
+        assert manifest[key] == state[key] == receipt[key] == "NONE"
+
+
 def test_reviewed_ouroboros_projection_preserves_receipt_and_rights() -> None:
     receipt = json.loads((ROOT / "tests/fixtures/frontier-projection-efa7bddf.review.json").read_text(encoding="utf-8"))
-    data = source()
+    data = source(receipt["snapshot_revision"])
     identity = tuple(publisher.sha256(data[path]) for path in publisher.SOURCE_PATHS)
     assert identity == tuple(receipt["source_sha256"])
     assert publisher.REVIEWED_INPUTS[identity] == (141, 10, 6)
