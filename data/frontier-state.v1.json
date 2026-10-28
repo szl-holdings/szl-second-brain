@@ -1,6 +1,6 @@
 {
-  "candidate_count": 144,
-  "candidate_set_sha256": "3fb2cf2b7e55ecf179cf76e6afe97bcbbbd8fa645d1595bc0abb7440cf64e54a",
+  "candidate_count": 146,
+  "candidate_set_sha256": "7cecf128ada87cd85d36c3edd9924e920818f7006e3bacd6ed01cc82eaee6af6",
   "controller_content_access": "AUTHORIZED_CONTROLLER_ONLY",
   "execution_authority": "NONE",
   "lambda": "CONJECTURE_1",
@@ -30,7 +30,7 @@
     "executable-formula": 21,
     "formula-authority": 1,
     "forum-insight": 2,
-    "python-contract": 5,
+    "python-contract": 7,
     "quant-domain": 9,
     "research-metadata": 6,
     "source-document": 62
@@ -38,20 +38,20 @@
   "sources": [
     {
       "candidate_count": 8,
-      "content_sha256": "660ab48c30f0718c7383ecdecfce7148998836941dd663ce67a02ba85e3d09c3",
+      "content_sha256": "c3bb1817ac7edae652ff7b8e3ac3fa99bad02bbb06a3c9024e5da69204f8466e",
       "parser": "public_estate",
       "path": "governance/public-estate.v1.json",
       "repository": "szl-holdings/a11oy",
-      "revision": "0860babc5da069dd713e4a81ef77d66eb214a24c",
+      "revision": "545bc9a8c6391e181dd261cb434d2311a61c824d",
       "source_id": "a11oy_public_estate"
     },
     {
-      "candidate_count": 5,
-      "content_sha256": "2a1644066c931bd2a73e880c60666765cb10607c4282c22206cb8be01d177e22",
+      "candidate_count": 7,
+      "content_sha256": "1fb7b74670e600dfcfd8a4ad1a11ca4fbf848022c57e4d7ed2edbf70f7f85bf6",
       "parser": "python_contract",
       "path": "inference/production.py",
       "repository": "szl-holdings/szl-forge",
-      "revision": "943f6ab987bbe120cae32649c46c3a5f0b6f9e9b",
+      "revision": "815a3a1ca1318f5bd969b936af664cfe73a146f8",
       "source_id": "forge_production_controller"
     },
     {
@@ -130,6 +130,6 @@
     }
   ],
   "state": "REVIEW_REQUIRED",
-  "state_sha256": "c41da91e636cd2fd8c485cdd33b68f7af739e98ca809ea5fc8f62d676839dd24",
+  "state_sha256": "16f6db35d571d25eb45790efb6e134cfe1159b3e4611fb703dfb39bd9f731335",
   "training_authority": "NONE"
 }
