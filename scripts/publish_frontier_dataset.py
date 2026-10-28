@@ -62,6 +62,13 @@ REVIEWED_INPUTS: dict[tuple[str, str, str], tuple[int, int, int]] = {
         '18b6624cb9c15d0a83848fc3dc3252c5100d0cbf043fb88a247bd89cc5432518',
         'd63cb1e11373807362632cae45b51263eb97ecbc8168a2ea6af85958a3f74c86',
     ): (144, 10, 6),
+    # Hourly refresh 3fb2cf2b (PR #56): 2 of 10 sources re-pinned, 45 rows moved to
+    # new source revisions, 2 rows changed content. Structural handles only, never claim admission.
+    (
+        '3fb2cf2b7e55ecf179cf76e6afe97bcbbbd8fa645d1595bc0abb7440cf64e54a',
+        '5123f626bde1306b04c0d3b908597ba8285c52253e225fe7928f0a071f616ded',
+        'd63cb1e11373807362632cae45b51263eb97ecbc8168a2ea6af85958a3f74c86',
+    ): (144, 10, 6),
 }
 
 

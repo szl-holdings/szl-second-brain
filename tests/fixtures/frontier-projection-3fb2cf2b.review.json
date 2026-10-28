@@ -1,0 +1,119 @@
+{
+  "schema": "szl.second-brain.frontier-projection-review/v1",
+  "snapshot_revision": "e0e8774a5f3193f256161a8e8d4b705273893f98",
+  "base_revision": "138208a6cc96948c9c9cdce28a45f005a18fce4a",
+  "review_scope": "STRUCTURAL_HANDLES_ONLY_NOT_CLAIM_OR_PUBLICATION_APPROVAL",
+  "source_sha256": [
+    "3fb2cf2b7e55ecf179cf76e6afe97bcbbbd8fa645d1595bc0abb7440cf64e54a",
+    "5123f626bde1306b04c0d3b908597ba8285c52253e225fe7928f0a071f616ded",
+    "d63cb1e11373807362632cae45b51263eb97ecbc8168a2ea6af85958a3f74c86"
+  ],
+  "candidate_count": 144,
+  "source_count": 10,
+  "research_metadata_count": 6,
+  "git_candidate_count": 138,
+  "handles_sha256": "3a92386a5601ac6ef432284a2dd83df193d7e41bcda0be25bde1578b79cab03c",
+  "canonical_state_core_sha256": "c41da91e636cd2fd8c485cdd33b68f7af739e98ca809ea5fc8f62d676839dd24",
+  "immutable_git_sources": [
+    {
+      "candidate_count": 8,
+      "content_sha256": "660ab48c30f0718c7383ecdecfce7148998836941dd663ce67a02ba85e3d09c3",
+      "parser": "public_estate",
+      "path": "governance/public-estate.v1.json",
+      "repository": "szl-holdings/a11oy",
+      "revision": "0860babc5da069dd713e4a81ef77d66eb214a24c",
+      "source_id": "a11oy_public_estate",
+      "immutable_url": "https://raw.githubusercontent.com/szl-holdings/a11oy/0860babc5da069dd713e4a81ef77d66eb214a24c/governance/public-estate.v1.json"
+    },
+    {
+      "candidate_count": 5,
+      "content_sha256": "2a1644066c931bd2a73e880c60666765cb10607c4282c22206cb8be01d177e22",
+      "parser": "python_contract",
+      "path": "inference/production.py",
+      "repository": "szl-holdings/szl-forge",
+      "revision": "943f6ab987bbe120cae32649c46c3a5f0b6f9e9b",
+      "source_id": "forge_production_controller",
+      "immutable_url": "https://raw.githubusercontent.com/szl-holdings/szl-forge/943f6ab987bbe120cae32649c46c3a5f0b6f9e9b/inference/production.py"
+    },
+    {
+      "candidate_count": 61,
+      "content_sha256": "ff8b0c8e1513ae140eccbf14e359aaaf2ca46a0c018a99a2ccbb35a278a8e602",
+      "parser": "formula_atlas",
+      "path": "atlas/formula-atlas.v1.json",
+      "repository": "szl-holdings/szl-formulas",
+      "revision": "a3f9dcab6e3564ce384bd3c095f64cc2121059f9",
+      "source_id": "formula_quant_atlas",
+      "immutable_url": "https://raw.githubusercontent.com/szl-holdings/szl-formulas/a3f9dcab6e3564ce384bd3c095f64cc2121059f9/atlas/formula-atlas.v1.json"
+    },
+    {
+      "candidate_count": 24,
+      "content_sha256": "225fde29aad2b28bf562322275a428d3c57d40125986d9b46354d473da2e8346",
+      "parser": "markdown",
+      "path": "README.md",
+      "repository": "szl-holdings/szl-kernels",
+      "revision": "d9f32c650731744ba8158fa1a7f89b65c0bbd565",
+      "source_id": "governed_kernel_suite",
+      "immutable_url": "https://raw.githubusercontent.com/szl-holdings/szl-kernels/d9f32c650731744ba8158fa1a7f89b65c0bbd565/README.md"
+    },
+    {
+      "candidate_count": 21,
+      "content_sha256": "475b11bdafb47d1f8cc84c865fe4067e609f9e7f58e8ad51dd2718c052182027",
+      "parser": "markdown",
+      "path": "README.md",
+      "repository": "szl-holdings/anatomy",
+      "revision": "0c27d5823079493087a822fa1abe37387785f28f",
+      "source_id": "living_anatomy",
+      "immutable_url": "https://raw.githubusercontent.com/szl-holdings/anatomy/0c27d5823079493087a822fa1abe37387785f28f/README.md"
+    },
+    {
+      "candidate_count": 12,
+      "content_sha256": "6e27c66f382f221e2472760381ffb21bd206a7f24b5403f90aca603d2cb15ba3",
+      "parser": "markdown",
+      "path": "README.md",
+      "repository": "szl-holdings/szl-nemo",
+      "revision": "229503457d99a1514e7d9ca788fa3cf07b3c3ef4",
+      "source_id": "nemo_witness",
+      "immutable_url": "https://raw.githubusercontent.com/szl-holdings/szl-nemo/229503457d99a1514e7d9ca788fa3cf07b3c3ef4/README.md"
+    },
+    {
+      "candidate_count": 5,
+      "content_sha256": "89d8680d357055dc99460228e46ceb8dad784d875de69864498d85e6851cfabc",
+      "parser": "markdown",
+      "path": "README.md",
+      "repository": "szl-holdings/szl-ouroboros",
+      "revision": "a9a0aaa2cb548c23f7aa6f7c4996dccf0a61a262",
+      "source_id": "ouroboros_runtime",
+      "immutable_url": "https://raw.githubusercontent.com/szl-holdings/szl-ouroboros/a9a0aaa2cb548c23f7aa6f7c4996dccf0a61a262/README.md"
+    },
+    {
+      "candidate_count": 2,
+      "content_sha256": "85c196628b64b21dab5f3ecffb466201bc57784dc4c6485c1a86cf45542b87f8",
+      "parser": "forum_pilot",
+      "path": "dataset/sources.public.jsonl",
+      "repository": "szl-holdings/szl-science-forum-corpus",
+      "revision": "edf05833d34b9cb84383bb8cf7b86b0f9b48f1dc",
+      "source_id": "science_forum_pilot",
+      "immutable_url": "https://raw.githubusercontent.com/szl-holdings/szl-science-forum-corpus/edf05833d34b9cb84383bb8cf7b86b0f9b48f1dc/dataset/sources.public.jsonl"
+    }
+  ],
+  "verification": {
+    "all_eight_git_source_payloads_match_sha256": true,
+    "complete_candidate_jsonl_reproduced_from_pinned_inputs": true,
+    "complete_state_reproduced": true,
+    "research_metadata_unchanged_from_base": true
+  },
+  "changed_source_ids": [
+    "governed_kernel_suite",
+    "living_anatomy"
+  ],
+  "added_candidate_ids": [],
+  "removed_candidate_ids": [],
+  "metadata_rights_counts": {
+    "crossref:NOT_DECLARED_BY_RESPONSE": 4,
+    "arxiv:CC0-1.0": 2
+  },
+  "full_text_license": "NOT_INFERRED",
+  "training_authority": "NONE",
+  "promotion_authority": "NONE",
+  "execution_authority": "NONE"
+}

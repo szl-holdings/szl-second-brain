@@ -222,7 +222,7 @@ def test_missing_or_duplicate_card_count_marker_is_rejected(marker: str) -> None
 
 def test_legacy_and_current_source_policies_remain_distinct() -> None:
     receipt = json.loads((ROOT / "tests/fixtures/frontier-projection-efa7bddf.review.json").read_text(encoding="utf-8"))
-    assert len(publisher.REVIEWED_INPUTS) == len(receipt["historical_inputs"]) + 2
+    assert len(publisher.REVIEWED_INPUTS) == len(receipt["historical_inputs"]) + 3
     for historical in receipt["historical_inputs"]:
         assert publisher.REVIEWED_INPUTS[tuple(historical["source_sha256"])] == tuple(historical["counts"])
     assert set(publisher.REVIEWED_INPUTS.values()) == {(137, 10, 6), (141, 10, 6), (144, 10, 6)}
@@ -231,7 +231,7 @@ def test_legacy_and_current_source_policies_remain_distinct() -> None:
 
 
 def test_reviewed_refresh_preserves_exact_handles_sources_and_rights() -> None:
-    receipt = json.loads((ROOT / "tests/fixtures/frontier-projection-7b8766cb.review.json").read_text(encoding="utf-8"))
+    receipt = json.loads((ROOT / "tests/fixtures/frontier-projection-3fb2cf2b.review.json").read_text(encoding="utf-8"))
     data = source()
     identity = tuple(publisher.sha256(data[path]) for path in publisher.SOURCE_PATHS)
     assert identity == tuple(receipt["source_sha256"])
@@ -319,3 +319,12 @@ def test_reviewed_ouroboros_projection_preserves_receipt_and_rights() -> None:
     card = output["README.md"].decode()
     assert "license: other" in card
     assert "no blanket open-data" in card
+
+
+def test_previous_reviewed_refresh_still_reproduces_at_its_snapshot() -> None:
+    receipt = json.loads((ROOT / "tests/fixtures/frontier-projection-7b8766cb.review.json").read_text(encoding="utf-8"))
+    data = source("138208a6cc96948c9c9cdce28a45f005a18fce4a")  # main before the 3fb2cf2b refresh
+    identity = tuple(publisher.sha256(data[path]) for path in publisher.SOURCE_PATHS)
+    assert identity == tuple(receipt["source_sha256"])
+    assert publisher.REVIEWED_INPUTS[identity] == (144, 10, 6)
+    assert publisher.sha256(render(data)["frontier-handles.public.jsonl"]) == receipt["handles_sha256"]
