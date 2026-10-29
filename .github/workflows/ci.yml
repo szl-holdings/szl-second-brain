@@ -8,6 +8,22 @@ permissions:
   contents: read
 
 jobs:
+  container:
+    name: Container runtime closure
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Build explicit runtime copy set
+        run: docker build --tag szl-second-brain:ci .
+      - name: Exercise runtime files without external network or writes
+        run: |
+          docker run --rm --interactive --network none --read-only \
+            --cap-drop ALL --security-opt no-new-privileges \
+            --entrypoint python szl-second-brain:ci - < tools/check_container_runtime.py
+
   selftest:
     runs-on: ubuntu-latest
     timeout-minutes: 15
