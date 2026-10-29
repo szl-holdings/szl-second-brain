@@ -1,7 +1,7 @@
 """Locate the public data files in both supported layouts.
 
 * wheel install:            site-packages/second_brain/data/  (package data)
-* source checkout or image: <repository>/data/                 (Dockerfile COPY . ., PYTHONPATH=.)
+* source checkout or image: <repository>/data/                 (explicit Dockerfile data copy)
 
 The wheel never ships a top-level ``data`` package; this resolver is the only place
 that knows both layouts, so every reader sees the same bytes either way.
