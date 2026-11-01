@@ -52,6 +52,37 @@ index is also [mirrored on Hugging Face at an exact revision](https://huggingfac
 that mirror does not grant training or promotion authority. An Anatomy source
 refresh and provider readback are separate release steps.
 
+## Python frontend and backend
+
+The primary page is a Python-rendered evidence console. Run it with:
+
+```sh
+python -m pip install -e ".[test]"
+python -m second_brain.web
+```
+
+Open `http://127.0.0.1:8101`. The search form and `GET/POST /api/v1/query`
+use the same retrieval transaction, plan and unsigned evidence receipt. The
+console displays public corpus handles separately from research/formula review
+candidates. It never hydrates private content. The hologram remains available at
+`/hologram` and uses the combined query API. The three older ASGI module names
+all resolve to `second_brain.web:app`.
+
+`/readyz` now returns HTTP 503 if the corpus, frontier or refinement projection
+is unavailable. It qualifies the public retrieval/review surface only; dense
+retrieval, model generation and production deployment remain separate checks.
+Malformed POST objects and invalid `k` return HTTP 400 rather than being coerced
+or clipped. Legacy plan callers may select only exact, unique handles returned
+by the current retrieval; invented or altered handles return HTTP 422.
+
+The wheel includes the Python web app and hologram assets. Historical training
+receipt/evaluation files are container inputs; installations without those files
+report them unavailable through their existing routes.
+
+See [the gap analysis and primary-source research](docs/INTEGRATION_RESEARCH_20261101.md)
+for the implementation decisions, remaining gaps and the proposed SZL math
+experiments.
+
 ## Installed-mode guarantee
 
 Version 1.5 packages the public corpus, schemas, and the review-gated frontier
