@@ -36,7 +36,7 @@ def main() -> None:
 
         import second_brain
         from fastapi.testclient import TestClient
-        from second_brain import routes_legacy
+        import second_brain.routes_legacy as routes_legacy
         from second_brain.retrieve import canonical_sha256
         from second_brain.web import app
 
