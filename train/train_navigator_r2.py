@@ -30,6 +30,7 @@ import argparse
 import glob
 import hashlib
 import json
+import math
 import os
 import platform
 import subprocess
@@ -192,6 +193,16 @@ def load_train_rows(dataset_file: Path | None = None) -> tuple[list[dict[str, An
     return rows, digest
 
 
+def finite_training_loss(value: object) -> bool:
+    """Only a finite numeric loss can support a MEASURED training label."""
+    if isinstance(value, bool) or not isinstance(value, (str, int, float)):
+        return False
+    try:
+        return math.isfinite(float(value))
+    except (TypeError, ValueError, OverflowError):
+        return False
+
+
 def status_receipt(
     *,
     hub: str,
@@ -236,8 +247,8 @@ def status_receipt(
         "report_to": "none",
         "weights": "LOCAL" if adapter_sha else "UNAVAILABLE",
         "adapterSha256": adapter_sha or None,
-        "finalTrainLoss": training_loss,
-        "train_loss_label": "MEASURED" if training_loss else "UNAVAILABLE",
+        "finalTrainLoss": training_loss if finite_training_loss(training_loss) else None,
+        "train_loss_label": "MEASURED" if finite_training_loss(training_loss) else "UNAVAILABLE",
         "evals": "none-this-run",
         "quality": "UNAVAILABLE",
         "lambda": "Conjecture 1",
@@ -372,9 +383,10 @@ def train_main(hub: str, dataset_file: Path | None) -> int:
         print("[brain-nav-r2] training...")
         stats = trainer.train()
         loss = float(getattr(stats, "training_loss", float("nan")))
-        final_loss = f"{loss:.4f}" if loss == loss else "UNAVAILABLE"
+        final_loss = f"{loss:.4f}" if finite_training_loss(loss) else None
+        loss_label = "MEASURED" if finite_training_loss(final_loss) else "UNAVAILABLE"
         print(
-            f"[brain-nav-r2] train_loss MEASURED {final_loss} "
+            f"[brain-nav-r2] train_loss {loss_label} {final_loss} "
             "(train metric, not an eval)"
         )
         ADAPTER_DIR.mkdir(parents=True, exist_ok=True)
