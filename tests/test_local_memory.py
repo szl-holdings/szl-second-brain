@@ -71,6 +71,38 @@ def fixture(number: int, *, rights: str = "cleared", text: str | None = None) ->
 
 
 class LocalMemoryTests(unittest.TestCase):
+    def test_hydration_rejects_corrupted_stored_content_before_authorization(self) -> None:
+        for column, value in (("body", "altered stored text"),
+                              ("content_sha256", "0" * 64),
+                              ("rights_basis", "")):
+            with self.subTest(column=column), TemporaryDirectory() as directory:
+                database = Path(directory) / "memory.sqlite"
+                record = fixture(17)
+                with LocalMemory(database) as memory:
+                    memory.upsert(record)
+                # Simulate persisted corruption through an independent writer,
+                # then reopen so no in-process cache can mask the bad row.
+                with sqlite3.connect(database) as corruptor:
+                    corruptor.execute("UPDATE memory_record SET " + column + "=? WHERE record_id=?",
+                                      (value, record.record_id))
+                with LocalMemory(database) as memory:
+                    authorized = []
+                    with self.assertRaises(ValueError):
+                        memory.hydrate(record.record_id,
+                                       authorizer=lambda *_: authorized.append(True) or True,
+                                       principal_id="owner", tenant_id="local", policy_revision="v1")
+                    self.assertEqual(authorized, [])
+                    self.assertEqual(memory._db.execute(
+                        "SELECT " + column + " FROM memory_record WHERE record_id=?",
+                        (record.record_id,)).fetchone()[0], value)
+                    # An explicit, valid replacement restores ordinary hydration.
+                    self.assertEqual(memory.upsert(record), "updated")
+                    hydrated = memory.hydrate(record.record_id, authorizer=lambda *_: True,
+                                              principal_id="owner", tenant_id="local", policy_revision="v1")
+                    self.assertEqual(hydrated["text"], record.text)
+                    self.assertEqual(hydrated["content_sha256"], hashlib.sha256(
+                        record.text.encode("utf-8")).hexdigest())
+
     def test_fifty_synthetic_records_reopen_search_export_and_reimport(self) -> None:
         before_rss = _process_peak_bytes()
         with TemporaryDirectory() as directory:

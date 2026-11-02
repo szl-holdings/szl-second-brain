@@ -309,6 +309,14 @@ class LocalMemory:
                 raise KeyError(record_id)
             if row["rights_status"] != "cleared":
                 raise PermissionError("content rights are unknown")
+            # Apply the export admission checks before authorizing stored text.
+            # A database row can be corrupt even when its SQLite shape is valid.
+            record = MemoryRecord(row["record_id"], row["source_uri"], row["source_revision"],
+                                  row["title"], row["observed_at"], row["rights_status"],
+                                  row["rights_basis"], row["body"])
+            _, digest = _validated(record)
+            if digest != row["content_sha256"] or row["training_allowed"] != 0:
+                raise ValueError("invalid stored digest or training authority")
             try:
                 allowed = authorizer(principal_id, tenant_id, policy_revision,
                                      record_id, row["source_uri"])
