@@ -39,7 +39,54 @@ _SOURCE_FIELDS = {
     "source_id", "repository", "revision", "path", "parser", "content_sha256",
     "candidate_count",
 }
-_GIT_SOURCE_PARSERS = {"formula_atlas", "markdown", "public_estate", "python_contract", "forum_pilot"}
+_METADATA_RECEIPT_PATH = "data/public-research-metadata.v1.json"
+_SOURCE_RECEIPT_IDENTITIES = {
+    (
+        "git-sha1",
+        "szl-holdings/a11oy",
+        "governance/public-estate.v1.json",
+    ): ("a11oy_public_estate", "public_estate"),
+    ("git-sha1", "szl-holdings/anatomy", "README.md"): (
+        "living_anatomy",
+        "markdown",
+    ),
+    ("git-sha1", "szl-holdings/szl-forge", "inference/production.py"): (
+        "forge_production_controller",
+        "python_contract",
+    ),
+    (
+        "git-sha1",
+        "szl-holdings/szl-formulas",
+        "atlas/formula-atlas.v1.json",
+    ): ("formula_quant_atlas", "formula_atlas"),
+    ("git-sha1", "szl-holdings/szl-kernels", "README.md"): (
+        "governed_kernel_suite",
+        "markdown",
+    ),
+    ("git-sha1", "szl-holdings/szl-nemo", "README.md"): (
+        "nemo_witness",
+        "markdown",
+    ),
+    ("git-sha1", "szl-holdings/szl-ouroboros", "README.md"): (
+        "ouroboros_runtime",
+        "markdown",
+    ),
+    (
+        "git-sha1",
+        "szl-holdings/szl-science-forum-corpus",
+        "dataset/sources.public.jsonl",
+    ): ("science_forum_pilot", "forum_pilot"),
+    (
+        "metadata-capture-sha256",
+        "public-metadata/arxiv",
+        _METADATA_RECEIPT_PATH,
+    ): ("public_research_arxiv", "public_research_metadata"),
+    (
+        "metadata-capture-sha256",
+        "public-metadata/crossref",
+        _METADATA_RECEIPT_PATH,
+    ): ("public_research_crossref", "public_research_metadata"),
+}
 _LEARNING_DEFINITION = (
     "Content-addressed public-source candidates are proposed for human review. "
     "No silent weight update or automatic truth promotion occurs."
@@ -304,8 +351,15 @@ class FrontierIndex:
         if type(state.get("source_count")) is not int or state["source_count"] != len(sources):
             raise ValueError("frontier source receipt count mismatch")
         candidate_sources = {
-            (row.get("source_revision_kind", "git-sha1"), row["source_repository"],
-             row["source_path"] if row.get("source_revision_kind", "git-sha1") == "git-sha1" else "")
+            (
+                row.get("source_revision_kind", "git-sha1"),
+                row["source_repository"],
+                (
+                    row["source_path"]
+                    if row.get("source_revision_kind", "git-sha1") == "git-sha1"
+                    else _METADATA_RECEIPT_PATH
+                ),
+            )
             for row in rows
         }
         receipt_sources: set[tuple[str, str, str]] = set()
@@ -320,20 +374,22 @@ class FrontierIndex:
                 raise ValueError("frontier source receipt is not unique")
             source_ids.add(source_id)
             revision_kind = source.get("revision_kind", "git-sha1")
-            parsers = {"public_research_metadata"} if revision_kind == "metadata-capture-sha256" else _GIT_SOURCE_PARSERS
-            if not isinstance(source["parser"], str) or source["parser"] not in parsers:
-                raise ValueError("frontier source receipt parser is invalid")
+            if revision_kind not in ("git-sha1", "metadata-capture-sha256"):
+                raise ValueError("frontier source receipt revision is not exact")
             if type(source["candidate_count"]) is not int or source["candidate_count"] < 1:
                 raise ValueError("frontier source receipt count is invalid")
             repository, path = source.get("repository"), source.get("path")
             if not isinstance(repository, str) or not repository or not isinstance(path, str) or not path:
                 raise ValueError("frontier source receipt identity is invalid")
-            source_key = (revision_kind, repository, path if revision_kind == "git-sha1" else "")
+            source_key = (revision_kind, repository, path)
+            expected_identity = _SOURCE_RECEIPT_IDENTITIES.get(source_key)
+            if expected_identity != (source_id, source.get("parser")):
+                raise ValueError("frontier source receipt identity is invalid")
             if source_key in receipt_sources:
                 raise ValueError("frontier source receipt is not unique")
             receipt_sources.add(source_key)
             revision_pattern = _HEX_64 if revision_kind == "metadata-capture-sha256" else _HEX_40
-            if revision_kind not in {"git-sha1", "metadata-capture-sha256"} or not revision_pattern.fullmatch(str(source.get("revision") or "")):
+            if not revision_pattern.fullmatch(str(source.get("revision") or "")):
                 raise ValueError("frontier source receipt revision is not exact")
             if not _HEX_64.fullmatch(str(source.get("content_sha256") or "")):
                 raise ValueError("frontier source receipt digest is malformed")

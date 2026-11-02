@@ -48,6 +48,7 @@ def test_valid_frontier_snapshot_remains_ready(snapshot):
 
 @pytest.mark.parametrize("case", [
     "wrong_digest", "missing_digest", "extra_state_content", "extra_source_content",
+    "source_id_content", "known_wrong_parser", "metadata_source_path",
     "merge_authority", "controller_access", "private_graph", "gradient_authority",
     "unbound_counts", "nested_learning_definition", "changed_learning_definition",
     "nested_parser", "unknown_parser",
@@ -62,6 +63,22 @@ def test_invalid_state_is_withheld_by_public_routes(snapshot, case):
         state["raw_reasoning"] = SENTINEL
     elif case == "extra_source_content":
         state["sources"][0]["content"] = SENTINEL
+    elif case == "source_id_content":
+        state["sources"][0]["source_id"] = SENTINEL
+    elif case == "known_wrong_parser":
+        source = next(
+            row
+            for row in state["sources"]
+            if row["source_id"] == "a11oy_public_estate"
+        )
+        source["parser"] = "python_contract"
+    elif case == "metadata_source_path":
+        source = next(
+            row
+            for row in state["sources"]
+            if row.get("revision_kind") == "metadata-capture-sha256"
+        )
+        source["path"] = SENTINEL
     elif case == "merge_authority":
         state["merge_authority"] = "AUTO_MERGE"
     elif case == "controller_access":
