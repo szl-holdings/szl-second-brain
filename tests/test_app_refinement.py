@@ -5,7 +5,8 @@ import unittest.mock
 
 from fastapi.testclient import TestClient
 
-import app_refinement
+from app_refinement import app
+from second_brain import routes_refinement as app_refinement
 from second_brain.refinement_memory import RefinementMemoryIndex, canonical_bytes, sha256_hex
 
 
@@ -29,7 +30,7 @@ class RefinementMemoryRouteTests(unittest.TestCase):
                     path = Path(directory) / "state.json"
                     path.write_text(json.dumps(state), encoding="utf-8")
                     with unittest.mock.patch.object(app_refinement, "_state_path", return_value=path):
-                        response = TestClient(app_refinement.app).get("/api/v1/refinement-memory")
+                        response = TestClient(app).get("/api/v1/refinement-memory")
                 self.assertEqual(response.status_code, 503)
                 self.assertFalse(response.json()["ready"])
                 self.assertEqual(response.json()["handles"], [])
@@ -41,7 +42,7 @@ class RefinementMemoryRouteTests(unittest.TestCase):
             path = Path(directory) / "refinement-patterns.public.json"
             path.write_text(json.dumps(state), encoding="utf-8")
             with unittest.mock.patch.object(app_refinement, "_state_path", return_value=path):
-                response = TestClient(app_refinement.app).get(
+                response = TestClient(app).get(
                     "/api/v1/refinement-memory"
                 )
         self.assertEqual(response.status_code, 200)
@@ -55,7 +56,7 @@ class RefinementMemoryRouteTests(unittest.TestCase):
     def test_missing_state_fails_closed(self) -> None:
         missing = Path("/definitely/missing/refinement-state.json")
         with unittest.mock.patch.object(app_refinement, "_state_path", return_value=missing):
-            response = TestClient(app_refinement.app).get(
+            response = TestClient(app).get(
                 "/api/v1/refinement-memory"
             )
         self.assertEqual(response.status_code, 503)

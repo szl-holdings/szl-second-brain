@@ -25,7 +25,7 @@ def _digest(state):
 @pytest.fixture
 def snapshot(tmp_path, monkeypatch):
     package = data_dir()
-    state = json.loads((package / "frontier-state.v1.json").read_text())
+    state = json.loads((package / "frontier-state.v1.json").read_text(encoding="utf-8"))
     (tmp_path / "frontier-candidates.public.jsonl").write_bytes(
         (package / "frontier-candidates.public.jsonl").read_bytes()
     )
@@ -36,7 +36,7 @@ def snapshot(tmp_path, monkeypatch):
 
 def test_valid_frontier_snapshot_remains_ready(snapshot):
     state, path = snapshot
-    path.write_text(json.dumps(state))
+    path.write_text(json.dumps(state), encoding="utf-8")
     client = TestClient(app)
     response = client.get("/api/v1/frontier-status")
     assert response.status_code == 200
@@ -100,7 +100,7 @@ def test_invalid_state_is_withheld_by_public_routes(snapshot, case):
     if case not in {"wrong_digest", "missing_digest"}:
         # A self-consistent digest is not permission to expose arbitrary data.
         _digest(state)
-    path.write_text(json.dumps(state))
+    path.write_text(json.dumps(state), encoding="utf-8")
 
     client = TestClient(app)
     response = client.get("/api/v1/frontier-status")
@@ -124,7 +124,11 @@ def test_invalid_state_is_withheld_by_public_routes(snapshot, case):
 def test_single_candidate_source_count_is_an_integer_not_a_boolean(snapshot, count, expected_ready):
     state, path = snapshot
     candidates_path = path.parent / "frontier-candidates.public.jsonl"
-    rows = [json.loads(line) for line in candidates_path.read_text().splitlines() if line.strip()]
+    rows = [
+        json.loads(line)
+        for line in candidates_path.read_text(encoding="utf-8").splitlines()
+        if line.strip()
+    ]
     source = state["sources"][0]
     row = next(row for row in rows if row["source_repository"] == source["repository"]
                and row["source_path"] == source["path"])
@@ -138,7 +142,7 @@ def test_single_candidate_source_count_is_an_integer_not_a_boolean(snapshot, cou
     state["quant_domain_counts"] = {row["quant_domain"]: 1} if row.get("quant_domain") else {}
     state["candidate_set_sha256"] = hashlib.sha256(candidate_bytes).hexdigest()
     _digest(state)
-    path.write_text(json.dumps(state))
+    path.write_text(json.dumps(state), encoding="utf-8")
 
     client = TestClient(app)
     body = client.get("/api/v1/frontier-status").json()
@@ -160,7 +164,9 @@ def test_duplicate_top_level_state_members_are_rejected(snapshot, member):
     state, path = snapshot
     # Last-key-wins decoding preserves the committed logical digest, so this
     # raw document passed before duplicate-member admission was enforced.
-    path.write_text("{" + member + ':"AUTO_MERGE",' + json.dumps(state)[1:])
+    path.write_text(
+        "{" + member + ':"AUTO_MERGE",' + json.dumps(state)[1:], encoding="utf-8"
+    )
     _assert_frontier_withheld()
 
 
@@ -170,7 +176,9 @@ def test_nested_duplicate_source_members_are_rejected(snapshot):
     source_text = json.dumps(source, separators=(",", ":"))
     ambiguous_source = '{"parser":"python_contract",' + source_text[1:]
     state_text = json.dumps(state, separators=(",", ":"))
-    path.write_text(state_text.replace(source_text, ambiguous_source, 1))
+    path.write_text(
+        state_text.replace(source_text, ambiguous_source, 1), encoding="utf-8"
+    )
     _assert_frontier_withheld()
 
 
@@ -178,10 +186,10 @@ def test_nested_duplicate_source_members_are_rejected(snapshot):
 def test_duplicate_candidate_members_are_rejected(snapshot, member):
     state, path = snapshot
     candidates_path = path.parent / "frontier-candidates.public.jsonl"
-    lines = candidates_path.read_text().splitlines()
+    lines = candidates_path.read_text(encoding="utf-8").splitlines()
     lines[0] = "{" + member + ":" + json.dumps(SENTINEL) + "," + lines[0][1:]
-    candidates_path.write_text("\n".join(lines) + "\n")
-    path.write_text(json.dumps(state))
+    candidates_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    path.write_text(json.dumps(state), encoding="utf-8")
     _assert_frontier_withheld()
 
 
@@ -189,7 +197,7 @@ def test_duplicate_candidate_members_are_rejected(snapshot, member):
 def test_non_finite_candidate_numbers_are_rejected(snapshot, number):
     state, path = snapshot
     candidates_path = path.parent / "frontier-candidates.public.jsonl"
-    lines = candidates_path.read_text().splitlines()
+    lines = candidates_path.read_text(encoding="utf-8").splitlines()
     lines[0] = lines[0][:-1] + ',"numeric_evidence":' + number + "}"
     # Reproduce the old permissive decoder and bind its logical representation.
     rows = [json.loads(line) for line in lines]
@@ -199,8 +207,8 @@ def test_non_finite_candidate_numbers_are_rejected(snapshot, number):
     )
     state["candidate_set_sha256"] = hashlib.sha256(candidate_bytes).hexdigest()
     _digest(state)
-    candidates_path.write_text("\n".join(lines) + "\n")
-    path.write_text(json.dumps(state))
+    candidates_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    path.write_text(json.dumps(state), encoding="utf-8")
     _assert_frontier_withheld()
 
 
