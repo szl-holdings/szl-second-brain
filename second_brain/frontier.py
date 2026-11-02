@@ -382,11 +382,13 @@ class FrontierIndex:
             if not isinstance(repository, str) or not repository or not isinstance(path, str) or not path:
                 raise ValueError("frontier source receipt identity is invalid")
             source_key = (revision_kind, repository, path)
-            expected_identity = _SOURCE_RECEIPT_IDENTITIES.get(source_key)
-            if expected_identity != (source_id, source.get("parser")):
-                raise ValueError("frontier source receipt identity is invalid")
             if source_key in receipt_sources:
                 raise ValueError("frontier source receipt is not unique")
+            expected_identity = _SOURCE_RECEIPT_IDENTITIES.get(source_key)
+            if expected_identity is None:
+                raise ValueError("frontier source receipt binding mismatch")
+            if expected_identity != (source_id, source.get("parser")):
+                raise ValueError("frontier source receipt identity is invalid")
             receipt_sources.add(source_key)
             revision_pattern = _HEX_64 if revision_kind == "metadata-capture-sha256" else _HEX_40
             if not revision_pattern.fullmatch(str(source.get("revision") or "")):
