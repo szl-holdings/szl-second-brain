@@ -23,10 +23,77 @@ from second_brain._data import data_dir
 _TOKEN_RE = re.compile(r"[a-z0-9][a-z0-9_.:/+-]{1,63}")
 _HEX_40 = re.compile(r"^[0-9a-f]{40}$")
 _HEX_64 = re.compile(r"^[0-9a-f]{64}$")
+_MAX_FRONTIER_STATE_BYTES = 64 * 1024
+_MAX_FRONTIER_CANDIDATE_SET_BYTES = 4 * 1024 * 1024
+_MAX_FRONTIER_CANDIDATE_LINE_BYTES = 64 * 1024
 
 FRONTIER_STATE_SCHEMA = "szl.second-brain.frontier-state/v1"
 FRONTIER_CANDIDATE_SCHEMA = "szl.second-brain.frontier-candidate/v1"
 FRONTIER_HANDLE_SCHEMA = "szl.second-brain.frontier-handle/v1"
+_STATE_FIELDS = {
+    "schema", "state", "candidate_count", "candidate_set_sha256", "source_count",
+    "sources", "source_kind_counts", "quant_domain_counts", "public_content_access",
+    "controller_content_access", "private_graph_nodes_loaded",
+    "raw_graph_nodes_admitted_to_gradients", "training_authority",
+    "promotion_authority", "execution_authority", "merge_authority", "lambda",
+    "learning_definition", "state_sha256",
+}
+_SOURCE_FIELDS = {
+    "source_id", "repository", "revision", "path", "parser", "content_sha256",
+    "candidate_count",
+}
+_METADATA_RECEIPT_PATH = "data/public-research-metadata.v1.json"
+_SOURCE_RECEIPT_IDENTITIES = {
+    (
+        "git-sha1",
+        "szl-holdings/a11oy",
+        "governance/public-estate.v1.json",
+    ): ("a11oy_public_estate", "public_estate"),
+    ("git-sha1", "szl-holdings/anatomy", "README.md"): (
+        "living_anatomy",
+        "markdown",
+    ),
+    ("git-sha1", "szl-holdings/szl-forge", "inference/production.py"): (
+        "forge_production_controller",
+        "python_contract",
+    ),
+    (
+        "git-sha1",
+        "szl-holdings/szl-formulas",
+        "atlas/formula-atlas.v1.json",
+    ): ("formula_quant_atlas", "formula_atlas"),
+    ("git-sha1", "szl-holdings/szl-kernels", "README.md"): (
+        "governed_kernel_suite",
+        "markdown",
+    ),
+    ("git-sha1", "szl-holdings/szl-nemo", "README.md"): (
+        "nemo_witness",
+        "markdown",
+    ),
+    ("git-sha1", "szl-holdings/szl-ouroboros", "README.md"): (
+        "ouroboros_runtime",
+        "markdown",
+    ),
+    (
+        "git-sha1",
+        "szl-holdings/szl-science-forum-corpus",
+        "dataset/sources.public.jsonl",
+    ): ("science_forum_pilot", "forum_pilot"),
+    (
+        "metadata-capture-sha256",
+        "public-metadata/arxiv",
+        _METADATA_RECEIPT_PATH,
+    ): ("public_research_arxiv", "public_research_metadata"),
+    (
+        "metadata-capture-sha256",
+        "public-metadata/crossref",
+        _METADATA_RECEIPT_PATH,
+    ): ("public_research_crossref", "public_research_metadata"),
+}
+_LEARNING_DEFINITION = (
+    "Content-addressed public-source candidates are proposed for human review. "
+    "No silent weight update or automatic truth promotion occurs."
+)
 FRONTIER_POLICY_REVISION = "sha256:" + hashlib.sha256(
     json.dumps(
         {
@@ -51,10 +118,48 @@ class FrontierBoundaryError(RuntimeError):
 def _canonical_bytes(value: Any) -> bytes:
     return json.dumps(
         value,
+        allow_nan=False,
         ensure_ascii=False,
         sort_keys=True,
         separators=(",", ":"),
     ).encode("utf-8")
+
+
+def _unique_json_object(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
+    value: dict[str, Any] = {}
+    for key, item in pairs:
+        if key in value:
+            raise ValueError("frontier JSON contains a duplicate object member")
+        value[key] = item
+    return value
+
+
+def _reject_non_finite_json(_value: str) -> None:
+    raise ValueError("frontier JSON contains a non-finite number")
+
+
+def _parse_finite_json_float(value: str) -> float:
+    number = float(value)
+    if not math.isfinite(number):
+        raise ValueError("frontier JSON contains a non-finite number")
+    return number
+
+
+def _strict_json(value: str) -> Any:
+    return json.loads(
+        value,
+        object_pairs_hook=_unique_json_object,
+        parse_constant=_reject_non_finite_json,
+        parse_float=_parse_finite_json_float,
+    )
+
+
+def _read_bounded_utf8(path: Any, maximum: int) -> str:
+    with path.open("rb") as source:
+        payload = source.read(maximum + 1)
+    if len(payload) > maximum:
+        raise ValueError("frontier JSON exceeds its byte budget")
+    return payload.decode("utf-8")
 
 
 def _tokenize(value: str) -> list[str]:
@@ -141,18 +246,21 @@ class FrontierIndex:
                 return
             try:
                 package = data_dir()
-                state = json.loads(
-                    package.joinpath("frontier-state.v1.json").read_text(
-                        encoding="utf-8"
-                    )
+                state = _strict_json(_read_bounded_utf8(
+                    package.joinpath("frontier-state.v1.json"),
+                    _MAX_FRONTIER_STATE_BYTES,
+                ))
+                candidate_text = _read_bounded_utf8(
+                    package.joinpath("frontier-candidates.public.jsonl"),
+                    _MAX_FRONTIER_CANDIDATE_SET_BYTES,
                 )
-                rows = [
-                    json.loads(line)
-                    for line in package.joinpath(
-                        "frontier-candidates.public.jsonl"
-                    ).read_text(encoding="utf-8").splitlines()
-                    if line.strip()
-                ]
+                rows = []
+                for line in candidate_text.splitlines():
+                    if not line.strip():
+                        continue
+                    if len(line.encode("utf-8")) > _MAX_FRONTIER_CANDIDATE_LINE_BYTES:
+                        raise ValueError("frontier candidate exceeds its byte budget")
+                    rows.append(_strict_json(line))
                 self._validate(state, rows)
                 candidates = tuple(
                     FrontierCandidate(
@@ -206,17 +314,32 @@ class FrontierIndex:
     def _validate(state: Any, rows: list[Any]) -> None:
         if not isinstance(state, dict) or state.get("schema") != FRONTIER_STATE_SCHEMA:
             raise ValueError("unsupported frontier state")
+        # status() exposes this document. A digest is not a publication policy:
+        # reject undeclared fields even when an upstream writer rehashes them.
+        if set(state) != _STATE_FIELDS:
+            raise ValueError("frontier state fields are invalid")
+        if state["learning_definition"] != _LEARNING_DEFINITION:
+            raise ValueError("frontier learning definition drifted")
         if state.get("state") != "REVIEW_REQUIRED":
             raise ValueError("frontier state must remain review-required")
         if state.get("public_content_access") != "HANDLES_ONLY":
             raise ValueError("public frontier access must remain handles-only")
+        if state.get("controller_content_access") != "AUTHORIZED_CONTROLLER_ONLY":
+            raise ValueError("frontier controller access boundary drifted")
+        if state.get("merge_authority") != "NONE":
+            raise ValueError("frontier state must not grant merge authority")
+        for field in ("private_graph_nodes_loaded", "raw_graph_nodes_admitted_to_gradients"):
+            if type(state[field]) is not int or state[field] != 0:
+                raise ValueError("frontier private graph boundary drifted")
+        if state.get("lambda") != "CONJECTURE_1":
+            raise ValueError("frontier mathematical claim boundary drifted")
         if state.get("training_authority") != "NONE":
             raise ValueError("frontier state must not grant training authority")
         if state.get("promotion_authority") != "NONE":
             raise ValueError("frontier state must not grant promotion authority")
         if state.get("execution_authority") != "NONE":
             raise ValueError("frontier state must not grant execution authority")
-        if int(state.get("candidate_count") or -1) != len(rows):
+        if type(state.get("candidate_count")) is not int or state["candidate_count"] != len(rows):
             raise ValueError("frontier candidate count mismatch")
 
         seen: set[str] = set()
@@ -269,11 +392,18 @@ class FrontierIndex:
         sources = state.get("sources")
         if not isinstance(sources, list) or not sources:
             raise ValueError("frontier source receipts are missing")
-        if state.get("source_count") != len(sources):
+        if type(state.get("source_count")) is not int or state["source_count"] != len(sources):
             raise ValueError("frontier source receipt count mismatch")
         candidate_sources = {
-            (row.get("source_revision_kind", "git-sha1"), row["source_repository"],
-             row["source_path"] if row.get("source_revision_kind", "git-sha1") == "git-sha1" else "")
+            (
+                row.get("source_revision_kind", "git-sha1"),
+                row["source_repository"],
+                (
+                    row["source_path"]
+                    if row.get("source_revision_kind", "git-sha1") == "git-sha1"
+                    else _METADATA_RECEIPT_PATH
+                ),
+            )
             for row in rows
         }
         receipt_sources: set[tuple[str, str, str]] = set()
@@ -281,20 +411,31 @@ class FrontierIndex:
         for source in sources:
             if not isinstance(source, dict):
                 raise ValueError("invalid frontier source receipt")
+            if _SOURCE_FIELDS - set(source) or set(source) - (_SOURCE_FIELDS | {"revision_kind"}):
+                raise ValueError("frontier source receipt fields are invalid")
             source_id = source.get("source_id")
             if not isinstance(source_id, str) or not source_id or source_id in source_ids:
                 raise ValueError("frontier source receipt is not unique")
             source_ids.add(source_id)
             revision_kind = source.get("revision_kind", "git-sha1")
+            if revision_kind not in ("git-sha1", "metadata-capture-sha256"):
+                raise ValueError("frontier source receipt revision is not exact")
+            if type(source["candidate_count"]) is not int or source["candidate_count"] < 1:
+                raise ValueError("frontier source receipt count is invalid")
             repository, path = source.get("repository"), source.get("path")
             if not isinstance(repository, str) or not repository or not isinstance(path, str) or not path:
                 raise ValueError("frontier source receipt identity is invalid")
-            source_key = (revision_kind, repository, path if revision_kind == "git-sha1" else "")
+            source_key = (revision_kind, repository, path)
             if source_key in receipt_sources:
                 raise ValueError("frontier source receipt is not unique")
+            expected_identity = _SOURCE_RECEIPT_IDENTITIES.get(source_key)
+            if expected_identity is None:
+                raise ValueError("frontier source receipt binding mismatch")
+            if expected_identity != (source_id, source.get("parser")):
+                raise ValueError("frontier source receipt identity is invalid")
             receipt_sources.add(source_key)
             revision_pattern = _HEX_64 if revision_kind == "metadata-capture-sha256" else _HEX_40
-            if revision_kind not in {"git-sha1", "metadata-capture-sha256"} or not revision_pattern.fullmatch(str(source.get("revision") or "")):
+            if not revision_pattern.fullmatch(str(source.get("revision") or "")):
                 raise ValueError("frontier source receipt revision is not exact")
             if not _HEX_64.fullmatch(str(source.get("content_sha256") or "")):
                 raise ValueError("frontier source receipt digest is malformed")
@@ -310,6 +451,19 @@ class FrontierIndex:
                     raise ValueError("frontier source receipt binding mismatch")
         if receipt_sources != candidate_sources:
             raise ValueError("frontier candidates lack source receipts")
+        for field, expected in (
+            ("source_kind_counts", dict(Counter(row["source_kind"] for row in rows))),
+            ("quant_domain_counts", dict(Counter(row["quant_domain"] for row in rows if row.get("quant_domain")))),
+        ):
+            counts = state[field]
+            if (not isinstance(counts, dict) or counts != expected
+                    or any(type(value) is not int or value < 1 for value in counts.values())):
+                raise ValueError("frontier aggregate counts do not match candidates")
+        expected_digest = state["state_sha256"]
+        body = {key: value for key, value in state.items() if key != "state_sha256"}
+        if (not isinstance(expected_digest, str) or not _HEX_64.fullmatch(expected_digest)
+                or hashlib.sha256(_canonical_bytes(body)).hexdigest() != expected_digest):
+            raise ValueError("frontier state digest mismatch")
 
     @property
     def ready(self) -> bool:
