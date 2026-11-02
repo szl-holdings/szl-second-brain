@@ -7,7 +7,6 @@ No server, provider, training job, or signing operation is started.
 from __future__ import annotations
 
 import argparse
-from contextlib import ExitStack
 import importlib.metadata
 import json
 from pathlib import Path
@@ -29,11 +28,12 @@ def main() -> None:
     assert not Path.cwd().resolve().is_relative_to(checkout), "run outside the checkout"
     assert all(not Path(p).resolve().is_relative_to(checkout) for p in sys.path), sys.path
 
-    with ExitStack() as stack:
-        for target in ("socket.create_connection", "socket.socket.connect",
-                       "socket.socket.connect_ex"):
-            stack.enter_context(patch(target, side_effect=reject_network))
-
+    # Keep high-level connections blocked while imports and the client portal are
+    # created. On Windows, asyncio builds its internal wakeup socket with the
+    # low-level ``socket.connect`` API, so apply those two guards only after the
+    # in-process portal is running. Context managers enter left-to-right and exit
+    # right-to-left, restoring the socket methods before the portal closes.
+    with patch("socket.create_connection", side_effect=reject_network):
         import second_brain
         from fastapi.testclient import TestClient
         import second_brain.routes_legacy as routes_legacy
@@ -51,7 +51,11 @@ def main() -> None:
         assert not routes_legacy.RECEIPT.exists(), "wheel unexpectedly contains training records"
         assert not routes_legacy.EVAL.exists(), "wheel unexpectedly contains evaluation records"
 
-        with TestClient(app) as client:
+        with (
+            TestClient(app) as client,
+            patch("socket.socket.connect", side_effect=reject_network),
+            patch("socket.socket.connect_ex", side_effect=reject_network),
+        ):
             ready = client.get("/readyz")
             assert ready.status_code == 200, ready.text
             assert ready.json()["ready"] is True
