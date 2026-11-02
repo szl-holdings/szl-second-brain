@@ -161,3 +161,17 @@ jobs:
           assert all(handle["sourceIdentity"]["fullTextLicence"] == "NOT_INFERRED" for handle in research_handles)
           PY
           )
+      - name: Prove installed-wheel web routes outside the checkout without network
+        shell: bash
+        run: |
+          set -euo pipefail
+          venv="$RUNNER_TEMP/szl-second-brain-installed"
+          wheel=(dist/*.whl)
+          test "${#wheel[@]}" -eq 1
+          # Reuse the declared runtime/test closure, without an editable source install.
+          "$venv/bin/python" -m pip install --disable-pip-version-check "${wheel[0]}[test]"
+          (
+            cd "$RUNNER_TEMP"
+            "$venv/bin/python" -I "$GITHUB_WORKSPACE/tools/check_installed_web.py" \
+              --checkout "$GITHUB_WORKSPACE"
+          )
