@@ -23,6 +23,9 @@ from second_brain._data import data_dir
 _TOKEN_RE = re.compile(r"[a-z0-9][a-z0-9_.:/+-]{1,63}")
 _HEX_40 = re.compile(r"^[0-9a-f]{40}$")
 _HEX_64 = re.compile(r"^[0-9a-f]{64}$")
+_MAX_FRONTIER_STATE_BYTES = 64 * 1024
+_MAX_FRONTIER_CANDIDATE_SET_BYTES = 4 * 1024 * 1024
+_MAX_FRONTIER_CANDIDATE_LINE_BYTES = 64 * 1024
 
 FRONTIER_STATE_SCHEMA = "szl.second-brain.frontier-state/v1"
 FRONTIER_CANDIDATE_SCHEMA = "szl.second-brain.frontier-candidate/v1"
@@ -115,10 +118,48 @@ class FrontierBoundaryError(RuntimeError):
 def _canonical_bytes(value: Any) -> bytes:
     return json.dumps(
         value,
+        allow_nan=False,
         ensure_ascii=False,
         sort_keys=True,
         separators=(",", ":"),
     ).encode("utf-8")
+
+
+def _unique_json_object(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
+    value: dict[str, Any] = {}
+    for key, item in pairs:
+        if key in value:
+            raise ValueError("frontier JSON contains a duplicate object member")
+        value[key] = item
+    return value
+
+
+def _reject_non_finite_json(_value: str) -> None:
+    raise ValueError("frontier JSON contains a non-finite number")
+
+
+def _parse_finite_json_float(value: str) -> float:
+    number = float(value)
+    if not math.isfinite(number):
+        raise ValueError("frontier JSON contains a non-finite number")
+    return number
+
+
+def _strict_json(value: str) -> Any:
+    return json.loads(
+        value,
+        object_pairs_hook=_unique_json_object,
+        parse_constant=_reject_non_finite_json,
+        parse_float=_parse_finite_json_float,
+    )
+
+
+def _read_bounded_utf8(path: Any, maximum: int) -> str:
+    with path.open("rb") as source:
+        payload = source.read(maximum + 1)
+    if len(payload) > maximum:
+        raise ValueError("frontier JSON exceeds its byte budget")
+    return payload.decode("utf-8")
 
 
 def _tokenize(value: str) -> list[str]:
@@ -205,18 +246,21 @@ class FrontierIndex:
                 return
             try:
                 package = data_dir()
-                state = json.loads(
-                    package.joinpath("frontier-state.v1.json").read_text(
-                        encoding="utf-8"
-                    )
+                state = _strict_json(_read_bounded_utf8(
+                    package.joinpath("frontier-state.v1.json"),
+                    _MAX_FRONTIER_STATE_BYTES,
+                ))
+                candidate_text = _read_bounded_utf8(
+                    package.joinpath("frontier-candidates.public.jsonl"),
+                    _MAX_FRONTIER_CANDIDATE_SET_BYTES,
                 )
-                rows = [
-                    json.loads(line)
-                    for line in package.joinpath(
-                        "frontier-candidates.public.jsonl"
-                    ).read_text(encoding="utf-8").splitlines()
-                    if line.strip()
-                ]
+                rows = []
+                for line in candidate_text.splitlines():
+                    if not line.strip():
+                        continue
+                    if len(line.encode("utf-8")) > _MAX_FRONTIER_CANDIDATE_LINE_BYTES:
+                        raise ValueError("frontier candidate exceeds its byte budget")
+                    rows.append(_strict_json(line))
                 self._validate(state, rows)
                 candidates = tuple(
                     FrontierCandidate(

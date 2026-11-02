@@ -145,3 +145,68 @@ def test_single_candidate_source_count_is_an_integer_not_a_boolean(snapshot, cou
     assert body["ready"] is expected_ready
     capabilities = client.get("/api/v1/retrieval-capabilities").json()
     assert capabilities["frontier_memory"]["ready"] is expected_ready
+
+
+def _assert_frontier_withheld():
+    client = TestClient(app)
+    body = client.get("/api/v1/frontier-status").json()
+    assert body["ready"] is False
+    assert body["state"] == "UNAVAILABLE"
+    assert client.get("/api/v1/frontier-handles?q=formula").json()["handles"] == []
+
+
+@pytest.mark.parametrize("member", ['"state"', r'"\u0073tate"'])
+def test_duplicate_top_level_state_members_are_rejected(snapshot, member):
+    state, path = snapshot
+    # Last-key-wins decoding preserves the committed logical digest, so this
+    # raw document passed before duplicate-member admission was enforced.
+    path.write_text("{" + member + ':"AUTO_MERGE",' + json.dumps(state)[1:])
+    _assert_frontier_withheld()
+
+
+def test_nested_duplicate_source_members_are_rejected(snapshot):
+    state, path = snapshot
+    source = state["sources"][0]
+    source_text = json.dumps(source, separators=(",", ":"))
+    ambiguous_source = '{"parser":"python_contract",' + source_text[1:]
+    state_text = json.dumps(state, separators=(",", ":"))
+    path.write_text(state_text.replace(source_text, ambiguous_source, 1))
+    _assert_frontier_withheld()
+
+
+@pytest.mark.parametrize("member", ['"content"', r'"\u0063ontent"'])
+def test_duplicate_candidate_members_are_rejected(snapshot, member):
+    state, path = snapshot
+    candidates_path = path.parent / "frontier-candidates.public.jsonl"
+    lines = candidates_path.read_text().splitlines()
+    lines[0] = "{" + member + ":" + json.dumps(SENTINEL) + "," + lines[0][1:]
+    candidates_path.write_text("\n".join(lines) + "\n")
+    path.write_text(json.dumps(state))
+    _assert_frontier_withheld()
+
+
+@pytest.mark.parametrize("number", ["NaN", "Infinity", "-Infinity", "1e999"])
+def test_non_finite_candidate_numbers_are_rejected(snapshot, number):
+    state, path = snapshot
+    candidates_path = path.parent / "frontier-candidates.public.jsonl"
+    lines = candidates_path.read_text().splitlines()
+    lines[0] = lines[0][:-1] + ',"numeric_evidence":' + number + "}"
+    # Reproduce the old permissive decoder and bind its logical representation.
+    rows = [json.loads(line) for line in lines]
+    candidate_bytes = b"".join(
+        json.dumps(row, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode() + b"\n"
+        for row in rows
+    )
+    state["candidate_set_sha256"] = hashlib.sha256(candidate_bytes).hexdigest()
+    _digest(state)
+    candidates_path.write_text("\n".join(lines) + "\n")
+    path.write_text(json.dumps(state))
+    _assert_frontier_withheld()
+
+
+def test_strict_decoder_preserves_finite_json_and_enforces_byte_budget(tmp_path):
+    assert frontier._strict_json('{"value":1.5e2}') == {"value": 150.0}
+    oversized = tmp_path / "oversized.json"
+    oversized.write_bytes(b"x" * 9)
+    with pytest.raises(ValueError, match="byte budget"):
+        frontier._read_bounded_utf8(oversized, 8)
