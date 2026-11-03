@@ -514,10 +514,16 @@ def forum_pilot_candidates(
     # szl-science-forum-corpus@edf05833 removed it from both rows and public
     # hashes; do not require or reintroduce it. Keep the public schema exact,
     # including the topic, URL, rights and review bindings checked below.
+    # szl-science-forum-corpus@e56e65e4 bound the record-v2 release contract:
+    # source_content_license is a required public field that is null unless
+    # publication_rights is "licensed". Only operator-authorized rows are
+    # admitted here, so the field must be present and null; anything else is
+    # an unreviewed rights path and fails closed.
     expected = {
         "source_id", "source_url", "topic_id", "post_number", "title",
         "summary", "need_ids", "review_state", "observed_at",
-        "posted_at", "publication_rights", "rights_evidence",
+        "posted_at", "publication_rights", "source_content_license",
+        "rights_evidence",
     }
     rows: dict[str, dict[str, Any]] = {}
     for line in lines:
@@ -537,6 +543,7 @@ def forum_pilot_candidates(
             or row["source_url"] != source_url
             or row["need_ids"] != need_ids
             or row["publication_rights"] != "operator_authorized"
+            or row["source_content_license"] is not None
             or row["review_state"] != "operator_labeled"
             or not isinstance(row["rights_evidence"], str)
             or not row["rights_evidence"].strip()

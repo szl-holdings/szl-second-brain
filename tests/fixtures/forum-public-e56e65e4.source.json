@@ -1,0 +1,8 @@
+{
+  "source_repository": "szl-holdings/szl-science-forum-corpus",
+  "source_revision": "e56e65e426bbd11246e9d0b344d3ac9ee5d7ffb2",
+  "source_path": "dataset/sources.public.jsonl",
+  "sha256": "57a6f8daff59b92a1d22f1724e11e936955d3269446a494dfd2e00a9a6a324ce",
+  "scope": "Exact reviewed public metadata and original summaries only; private attribution is omitted; record-v2 binds a null source_content_license for operator-authorized rows.",
+  "authority": "NONE"
+}
