@@ -113,7 +113,8 @@ def forum_rows() -> list[dict]:
         "need_ids": ["artifact_replay", "blocked_allocation", "measurement_harmonization", "skill_import_provenance"],
         "review_state": "operator_labeled",
         "observed_at": "2026-10-02", "posted_at": None,
-        "publication_rights": "operator_authorized", "rights_evidence": "Operator-authored summary",
+        "publication_rights": "operator_authorized", "source_content_license": None,
+        "rights_evidence": "Operator-authored summary",
     }
     sharing = {
         **row,
@@ -145,6 +146,8 @@ def test_forum_pilot_parser_accepts_two_reviewed_topics_in_either_order() -> Non
     ("source_id", "ai4science:999:1", "rights or source binding"),
     ("source_url", "https://example.com", "rights or source binding"),
     ("topic_id", True, "rights or source binding"),
+    ("source_content_license", "CC-BY-4.0", "rights or source binding"),
+    ("source_content_license", "", "rights or source binding"),
     ("body", "unapproved text", "metadata fields"),
     ("raw", "unapproved text", "metadata fields"),
     ("cooked", "unapproved text", "metadata fields"),
@@ -157,6 +160,15 @@ def test_forum_pilot_parser_rejects_drift_in_either_topic(field, value, match) -
         rows = forum_rows()
         rows[position][field] = value
         with pytest.raises(RefreshError, match=match):
+            forum_pilot_candidates(spec, "a" * 40, encode_forum(rows))
+
+
+def test_forum_pilot_parser_requires_the_record_v2_licence_field() -> None:
+    spec = next(source for source in SOURCES if source.source_id == "science_forum_pilot")
+    for position in (0, 1):
+        rows = forum_rows()
+        del rows[position]["source_content_license"]
+        with pytest.raises(RefreshError, match="metadata fields"):
             forum_pilot_candidates(spec, "a" * 40, encode_forum(rows))
 
 

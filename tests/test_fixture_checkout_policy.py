@@ -9,8 +9,8 @@ import subprocess
 import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
-FIXTURE = "tests/fixtures/forum-public-edf05833.jsonl"
-DIGEST = "85c196628b64b21dab5f3ecffb466201bc57784dc4c6485c1a86cf45542b87f8"
+FIXTURE = "tests/fixtures/forum-public-e56e65e4.jsonl"
+DIGEST = "57a6f8daff59b92a1d22f1724e11e936955d3269446a494dfd2e00a9a6a324ce"
 
 
 @pytest.mark.parametrize("preserve_bytes", [False, True])
