@@ -36,7 +36,12 @@ def main() -> None:
         assert health["ok"] is True and health["chunk_count"] == 575
         assert health["publication_eligible"] is False
         with urlopen("http://127.0.0.1:7860/", timeout=3) as response:
-            assert 'canvas id="holo"' in response.read().decode("utf-8")
+            assert 'Search evidence' in response.read().decode("utf-8")
+        assert read_json("/readyz")["ready"] is True
+        bundle = read_json("/api/v1/query?q=formula%20authority")
+        assert bundle["retrieve"]["handles"]
+        assert set(bundle["plan"]["citedNodeIds"]) <= {h["nodeId"] for h in bundle["retrieve"]["handles"]}
+        assert bundle["frontier"]["state"] == "REVIEW_REQUIRED"
         capabilities = read_json("/api/v1/retrieval-capabilities")
         assert capabilities["public_content_access"] == "HANDLES_ONLY"
         frontier = read_json("/api/v1/frontier-status")

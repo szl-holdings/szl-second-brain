@@ -18,7 +18,7 @@ def test_health_and_index() -> None:
 
 def test_canvas_is_zero_cdn() -> None:
     c = TestClient(app)
-    page = c.get("/")
+    page = c.get("/hologram")
     assert page.status_code == 200
     html = page.text
     assert "cdn." not in html.lower()
@@ -28,8 +28,7 @@ def test_canvas_is_zero_cdn() -> None:
     assert "holographic" in html.lower()
     assert 'id="handles"' in html
     assert 'id="plan"' in html
-    assert "/retrieve?q=" in html
-    assert "/plan?q=" in html
+    assert "/api/v1/query?q=" in html
     assert "UNAVAILABLE" in html
 
 
