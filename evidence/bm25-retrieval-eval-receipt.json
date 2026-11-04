@@ -1,0 +1,2224 @@
+{
+  "schema": "szl.second-brain.bm25-eval.receipt/v1",
+  "status": "MEASURED",
+  "credit": "Stephen Lutar",
+  "timestamp_utc": "2026-11-04T17:48:46Z",
+  "git_sha": "df418d2987be479a212ae0b50a3ebc54b593d84f",
+  "source_repository": "szl-holdings/szl-second-brain",
+  "query_fixture_revision": "bm25-eval-queries.v1",
+  "query_fixture_sha256": "ab19f97737f54f522e355f581a63e9f74639f51fc6ff0228029c1c37656011ac",
+  "query_count": 30,
+  "ks": [
+    5,
+    10
+  ],
+  "retriever": {
+    "kind": "SOFTWARE",
+    "algorithm": "SecondBrainIndex BM25-like (TF/(TF+1.2)*IDF*qf; corpus-order tie-break)",
+    "dense": false,
+    "graph_rag": false,
+    "hirag": false,
+    "content_access": "HANDLES_ONLY",
+    "index_is_model_weights": false,
+    "raw_graph_nodes_admitted_to_gradients": 0,
+    "lambda_status": "CONJECTURE_1"
+  },
+  "corpus": {
+    "path": "data/brain-corpus.public.jsonl",
+    "chunk_count_loaded": 575,
+    "public_chunk_count_declared": 575,
+    "file_sha256": "387337acbd8fe443637102fe7ea75387fa4c3d9d746d8ab6e2d14d6c138aad8f",
+    "manifest_projection_sha256": "d02487523b451b390125bc3c0a20e259c44b5715528fac69cf789ca56755ea10",
+    "manifest_public_chunk_count": 575,
+    "by_source": {
+      "doc": 152,
+      "formula": 269,
+      "ingest": 143,
+      "invariant": 11
+    },
+    "secret_scan": "PASS"
+  },
+  "limitations": [
+    "Lexical overlap rank is never correctness.",
+    "No dense embedder, reranker, or generation provider in this receipt.",
+    "No GraphRAG/HiRAG parity claim.",
+    "NO_SUPPORT abstention cases measure empty-gold policy pressure, not navigator abstain.",
+    "Receipt is UNSIGNED content checksum, not an attestation."
+  ],
+  "metrics": {
+    "recall": {
+      "@5": {
+        "micro_recall": {
+          "success": 32,
+          "total": 32,
+          "rate": 1.0
+        },
+        "macro_recall_mean": 1.0,
+        "all_required": {
+          "success": 21,
+          "total": 21,
+          "rate": 1.0
+        }
+      },
+      "@10": {
+        "micro_recall": {
+          "success": 32,
+          "total": 32,
+          "rate": 1.0
+        },
+        "macro_recall_mean": 1.0,
+        "all_required": {
+          "success": 21,
+          "total": 21,
+          "rate": 1.0
+        }
+      }
+    },
+    "citation_gold_hit_rate": {
+      "@5": {
+        "success": 21,
+        "total": 21,
+        "rate": 1.0
+      },
+      "@10": {
+        "success": 21,
+        "total": 21,
+        "rate": 1.0
+      }
+    },
+    "handle_contract_ok": {
+      "success": 30,
+      "total": 30,
+      "rate": 1.0
+    },
+    "abstention": {
+      "empty_index_correct": {
+        "success": 3,
+        "total": 3,
+        "rate": 1.0
+      },
+      "empty_index_count_correct": 3,
+      "no_support_cases": 6,
+      "no_support_ready_true_count": 6,
+      "no_support_ready_false_count": 0
+    },
+    "abstention_note": "EMPTY_INDEX expects ready=false (no lexical hit). NO_SUPPORT has no gold answer chunk; BM25 may still return weak lexical noise — counted as ready_true, not as correctness.",
+    "retrieve_cases": 21,
+    "abstain_empty_index_cases": 3,
+    "abstain_no_support_cases": 6
+  },
+  "details": [
+    {
+      "id": "r-lambda-ledger",
+      "intent": "RETRIEVE",
+      "family": "entity-formula",
+      "abstain_mode": null,
+      "query": "Lambda uniqueness conjecture TH_L1 formula-ledger",
+      "ready": true,
+      "returned_k": 10,
+      "handles_ok": true,
+      "relevant": [
+        "formula:led-9b9f5e8bb845",
+        "ingest:lutar-lean:001",
+        "ingest:szl-formula-ledger:001"
+      ],
+      "expect_cite": [
+        "formula:led-9b9f5e8bb845",
+        "ingest:szl-formula-ledger:001"
+      ],
+      "ranked_ids": [
+        "ingest:szl-formula-ledger:001",
+        "formula:led-9b9f5e8bb845",
+        "doc:architecture-notes:0010",
+        "ingest:lutar-lean:001",
+        "doc:data-surfaces:0064",
+        "doc:data-surfaces:0062",
+        "doc:data-surfaces:0066",
+        "doc:data-surfaces:0063",
+        "ingest:szl-formula-ledger:000",
+        "doc:data-surfaces:0002"
+      ],
+      "scores": [
+        15.0531,
+        13.485,
+        7.3404,
+        7.1801,
+        6.6564,
+        6.3515,
+        6.0718,
+        5.9812,
+        5.7545,
+        5.3717
+      ],
+      "per_k": {
+        "@5": {
+          "retrieved": [
+            "ingest:szl-formula-ledger:001",
+            "formula:led-9b9f5e8bb845",
+            "doc:architecture-notes:0010",
+            "ingest:lutar-lean:001",
+            "doc:data-surfaces:0064"
+          ],
+          "relevant_hits": 3,
+          "relevant_total": 3,
+          "recall": 1.0,
+          "all_required": true,
+          "cite_hit": true
+        },
+        "@10": {
+          "retrieved": [
+            "ingest:szl-formula-ledger:001",
+            "formula:led-9b9f5e8bb845",
+            "doc:architecture-notes:0010",
+            "ingest:lutar-lean:001",
+            "doc:data-surfaces:0064",
+            "doc:data-surfaces:0062",
+            "doc:data-surfaces:0066",
+            "doc:data-surfaces:0063",
+            "ingest:szl-formula-ledger:000",
+            "doc:data-surfaces:0002"
+          ],
+          "relevant_hits": 3,
+          "relevant_total": 3,
+          "recall": 1.0,
+          "all_required": true,
+          "cite_hit": true
+        }
+      }
+    },
+    {
+      "id": "r-lambda-blocks",
+      "intent": "RETRIEVE",
+      "family": "entity-formula",
+      "abstain_mode": null,
+      "query": "conj:lambda-uniqueness formal-blocks",
+      "ready": true,
+      "returned_k": 10,
+      "handles_ok": true,
+      "relevant": [
+        "formula:blk-d1507e347013"
+      ],
+      "expect_cite": [
+        "formula:blk-d1507e347013"
+      ],
+      "ranked_ids": [
+        "formula:blk-d1507e347013",
+        "formula:blk-9ff3e45e4855",
+        "ingest:szl-formula-ledger:001",
+        "formula:led-9b9f5e8bb845",
+        "formula:blk-241f275821d0",
+        "doc:data-surfaces:0062",
+        "formula:blk-ae5cf8ecd248",
+        "formula:blk-e8871f70778d",
+        "formula:blk-b16c3ad1b5cb",
+        "formula:blk-f0f630a03266"
+      ],
+      "scores": [
+        9.5096,
+        6.3259,
+        5.703,
+        5.2424,
+        5.2382,
+        5.1526,
+        4.7047,
+        4.7047,
+        4.6179,
+        4.6179
+      ],
+      "per_k": {
+        "@5": {
+          "retrieved": [
+            "formula:blk-d1507e347013",
+            "formula:blk-9ff3e45e4855",
+            "ingest:szl-formula-ledger:001",
+            "formula:led-9b9f5e8bb845",
+            "formula:blk-241f275821d0"
+          ],
+          "relevant_hits": 1,
+          "relevant_total": 1,
+          "recall": 1.0,
+          "all_required": true,
+          "cite_hit": true
+        },
+        "@10": {
+          "retrieved": [
+            "formula:blk-d1507e347013",
+            "formula:blk-9ff3e45e4855",
+            "ingest:szl-formula-ledger:001",
+            "formula:led-9b9f5e8bb845",
+            "formula:blk-241f275821d0",
+            "doc:data-surfaces:0062",
+            "formula:blk-ae5cf8ecd248",
+            "formula:blk-e8871f70778d",
+            "formula:blk-b16c3ad1b5cb",
+            "formula:blk-f0f630a03266"
+          ],
+          "relevant_hits": 1,
+          "relevant_total": 1,
+          "recall": 1.0,
+          "all_required": true,
+          "cite_hit": true
+        }
+      }
+    },
+    {
+      "id": "r-lambda-discipline",
+      "intent": "RETRIEVE",
+      "family": "entity-formula",
+      "abstain_mode": null,
+      "query": "Conjecture discipline unconditional Lambda uniqueness machine-checked FALSE",
+      "ready": true,
+      "returned_k": 10,
+      "handles_ok": true,
+      "relevant": [
+        "ingest:lutar-lean:001"
+      ],
+      "expect_cite": [
+        "ingest:lutar-lean:001"
+      ],
+      "ranked_ids": [
+        "ingest:lutar-lean:001",
+        "formula:led-9b9f5e8bb845",
+        "doc:data-surfaces:0063",
+        "ingest:szl-formula-ledger:001",
+        "doc:data-surfaces:0062",
+        "ingest:szl-formula-ledger:000",
+        "doc:data-surfaces:0064",
+        "doc:data-surfaces:0083",
+        "formula:blk-d1507e347013",
+        "doc:architecture-notes:0010"
+      ],
+      "scores": [
+        18.1787,
+        15.3358,
+        14.3202,
+        12.9587,
+        9.5228,
+        8.043,
+        7.2259,
+        5.3035,
+        4.6514,
+        4.1858
+      ],
+      "per_k": {
+        "@5": {
+          "retrieved": [
+            "ingest:lutar-lean:001",
+            "formula:led-9b9f5e8bb845",
+            "doc:data-surfaces:0063",
+            "ingest:szl-formula-ledger:001",
+            "doc:data-surfaces:0062"
+          ],
+          "relevant_hits": 1,
+          "relevant_total": 1,
+          "recall": 1.0,
+          "all_required": true,
+          "cite_hit": true
+        },
+        "@10": {
+          "retrieved": [
+            "ingest:lutar-lean:001",
+            "formula:led-9b9f5e8bb845",
+            "doc:data-surfaces:0063",
+            "ingest:szl-formula-ledger:001",
+            "doc:data-surfaces:0062",
+            "ingest:szl-formula-ledger:000",
+            "doc:data-surfaces:0064",
+            "doc:data-surfaces:0083",
+            "formula:blk-d1507e347013",
+            "doc:architecture-notes:0010"
+          ],
+          "relevant_hits": 1,
+          "relevant_total": 1,
+          "recall": 1.0,
+          "all_required": true,
+          "cite_hit": true
+        }
+      }
+    },
+    {
+      "id": "r-lutar-spine",
+      "intent": "RETRIEVE",
+      "family": "entity-ingest",
+      "abstain_mode": null,
+      "query": "lutar-lean Lambda invariant formal spine",
+      "ready": true,
+      "returned_k": 10,
+      "handles_ok": true,
+      "relevant": [
+        "ingest:lutar-lean:000"
+      ],
+      "expect_cite": [
+        "ingest:lutar-lean:000"
+      ],
+      "ranked_ids": [
+        "ingest:lutar-lean:000",
+        "doc:data-surfaces:0062",
+        "doc:architecture-notes:0011",
+        "formula:blk-2472673c128d",
+        "formula:blk-2dc613c350e0",
+        "formula:blk-32b7372b84bf",
+        "formula:blk-047fe1641268",
+        "formula:blk-974919bf9e3c",
+        "formula:blk-73d8a32ebc50",
+        "formula:blk-0222abbd0ce6"
+      ],
+      "scores": [
+        10.275,
+        9.3885,
+        7.2097,
+        7.0879,
+        7.0879,
+        6.7996,
+        6.5347,
+        6.5347,
+        6.416,
+        6.2464
+      ],
+      "per_k": {
+        "@5": {
+          "retrieved": [
+            "ingest:lutar-lean:000",
+            "doc:data-surfaces:0062",
+            "doc:architecture-notes:0011",
+            "formula:blk-2472673c128d",
+            "formula:blk-2dc613c350e0"
+          ],
+          "relevant_hits": 1,
+          "relevant_total": 1,
+          "recall": 1.0,
+          "all_required": true,
+          "cite_hit": true
+        },
+        "@10": {
+          "retrieved": [
+            "ingest:lutar-lean:000",
+            "doc:data-surfaces:0062",
+            "doc:architecture-notes:0011",
+            "formula:blk-2472673c128d",
+            "formula:blk-2dc613c350e0",
+            "formula:blk-32b7372b84bf",
+            "formula:blk-047fe1641268",
+            "formula:blk-974919bf9e3c",
+            "formula:blk-73d8a32ebc50",
+            "formula:blk-0222abbd0ce6"
+          ],
+          "relevant_hits": 1,
+          "relevant_total": 1,
+          "recall": 1.0,
+          "all_required": true,
+          "cite_hit": true
+        }
+      }
+    },
+    {
+      "id": "r-lean-window",
+      "intent": "RETRIEVE",
+      "family": "entity-doc",
+      "abstain_mode": null,
+      "query": "GET /lean proof ledger lutar-lean",
+      "ready": true,
+      "returned_k": 10,
+      "handles_ok": true,
+      "relevant": [
+        "doc:data-surfaces:0062"
+      ],
+      "expect_cite": [
+        "doc:data-surfaces:0062"
+      ],
+      "ranked_ids": [
+        "doc:data-surfaces:0062",
+        "doc:architecture-notes:0011",
+        "doc:architecture-notes:0010",
+        "doc:data-surfaces:0046",
+        "doc:data-surfaces:0064",
+        "ingest:lutar-lean:000",
+        "doc:data-surfaces:0082",
+        "invariant:ouroboros-doctrine",
+        "ingest:lean-kernel:002",
+        "ingest:lean-kernel:000"
+      ],
+      "scores": [
+        14.3431,
+        13.0575,
+        12.4081,
+        12.1665,
+        10.1384,
+        10.0241,
+        9.6212,
+        8.4791,
+        8.174,
+        8.1608
+      ],
+      "per_k": {
+        "@5": {
+          "retrieved": [
+            "doc:data-surfaces:0062",
+            "doc:architecture-notes:0011",
+            "doc:architecture-notes:0010",
+            "doc:data-surfaces:0046",
+            "doc:data-surfaces:0064"
+          ],
+          "relevant_hits": 1,
+          "relevant_total": 1,
+          "recall": 1.0,
+          "all_required": true,
+          "cite_hit": true
+        },
+        "@10": {
+          "retrieved": [
+            "doc:data-surfaces:0062",
+            "doc:architecture-notes:0011",
+            "doc:architecture-notes:0010",
+            "doc:data-surfaces:0046",
+            "doc:data-surfaces:0064",
+            "ingest:lutar-lean:000",
+            "doc:data-surfaces:0082",
+            "invariant:ouroboros-doctrine",
+            "ingest:lean-kernel:002",
+            "ingest:lean-kernel:000"
+          ],
+          "relevant_hits": 1,
+          "relevant_total": 1,
+          "recall": 1.0,
+          "all_required": true,
+          "cite_hit": true
+        }
+      }
+    },
+    {
+      "id": "r-ouroboros-continuity",
+      "intent": "RETRIEVE",
+      "family": "entity-invariant",
+      "abstain_mode": null,
+      "query": "Ouroboros receipt chain continuity invariants",
+      "ready": true,
+      "returned_k": 10,
+      "handles_ok": true,
+      "relevant": [
+        "ingest:radicle-heartwood:001",
+        "invariant:receipt-chain-continuity"
+      ],
+      "expect_cite": [
+        "invariant:receipt-chain-continuity"
+      ],
+      "ranked_ids": [
+        "ingest:radicle-heartwood:001",
+        "doc:data-surfaces:0083",
+        "doc:architecture-notes:0010",
+        "doc:architecture-notes:0011",
+        "invariant:receipt-chain-continuity",
+        "invariant:ouroboros-doctrine",
+        "doc:data-surfaces:0084",
+        "doc:data-surfaces:0078",
+        "doc:data-surfaces:0046",
+        "doc:data-surfaces:0068"
+      ],
+      "scores": [
+        12.5383,
+        11.9113,
+        10.8497,
+        10.8286,
+        8.7765,
+        8.0741,
+        7.2053,
+        7.1241,
+        6.1406,
+        6.1334
+      ],
+      "per_k": {
+        "@5": {
+          "retrieved": [
+            "ingest:radicle-heartwood:001",
+            "doc:data-surfaces:0083",
+            "doc:architecture-notes:0010",
+            "doc:architecture-notes:0011",
+            "invariant:receipt-chain-continuity"
+          ],
+          "relevant_hits": 2,
+          "relevant_total": 2,
+          "recall": 1.0,
+          "all_required": true,
+          "cite_hit": true
+        },
+        "@10": {
+          "retrieved": [
+            "ingest:radicle-heartwood:001",
+            "doc:data-surfaces:0083",
+            "doc:architecture-notes:0010",
+            "doc:architecture-notes:0011",
+            "invariant:receipt-chain-continuity",
+            "invariant:ouroboros-doctrine",
+            "doc:data-surfaces:0084",
+            "doc:data-surfaces:0078",
+            "doc:data-surfaces:0046",
+            "doc:data-surfaces:0068"
+          ],
+          "relevant_hits": 2,
+          "relevant_total": 2,
+          "recall": 1.0,
+          "all_required": true,
+          "cite_hit": true
+        }
+      }
+    },
+    {
+      "id": "r-receipt-recompute",
+      "intent": "RETRIEVE",
+      "family": "entity-invariant",
+      "abstain_mode": null,
+      "query": "receipt chain recomputes over its own tail",
+      "ready": true,
+      "returned_k": 10,
+      "handles_ok": true,
+      "relevant": [
+        "invariant:receipt-chain-continuity"
+      ],
+      "expect_cite": [
+        "invariant:receipt-chain-continuity"
+      ],
+      "ranked_ids": [
+        "invariant:receipt-chain-continuity",
+        "ingest:radicle-heartwood:001",
+        "invariant:ouroboros-doctrine",
+        "doc:architecture-notes:0011",
+        "doc:data-surfaces:0070",
+        "doc:data-surfaces:0083",
+        "doc:data-surfaces:0046",
+        "doc:architecture-notes:0010",
+        "doc:data-surfaces:0079",
+        "doc:data-surfaces:0098"
+      ],
+      "scores": [
+        13.8304,
+        13.4301,
+        11.4311,
+        8.5498,
+        8.4826,
+        8.4446,
+        8.3786,
+        7.4067,
+        7.3125,
+        7.2948
+      ],
+      "per_k": {
+        "@5": {
+          "retrieved": [
+            "invariant:receipt-chain-continuity",
+            "ingest:radicle-heartwood:001",
+            "invariant:ouroboros-doctrine",
+            "doc:architecture-notes:0011",
+            "doc:data-surfaces:0070"
+          ],
+          "relevant_hits": 1,
+          "relevant_total": 1,
+          "recall": 1.0,
+          "all_required": true,
+          "cite_hit": true
+        },
+        "@10": {
+          "retrieved": [
+            "invariant:receipt-chain-continuity",
+            "ingest:radicle-heartwood:001",
+            "invariant:ouroboros-doctrine",
+            "doc:architecture-notes:0011",
+            "doc:data-surfaces:0070",
+            "doc:data-surfaces:0083",
+            "doc:data-surfaces:0046",
+            "doc:architecture-notes:0010",
+            "doc:data-surfaces:0079",
+            "doc:data-surfaces:0098"
+          ],
+          "relevant_hits": 1,
+          "relevant_total": 1,
+          "recall": 1.0,
+          "all_required": true,
+          "cite_hit": true
+        }
+      }
+    },
+    {
+      "id": "r-ed25519",
+      "intent": "RETRIEVE",
+      "family": "entity-invariant",
+      "abstain_mode": null,
+      "query": "ed25519 signed receipt verify",
+      "ready": true,
+      "returned_k": 10,
+      "handles_ok": true,
+      "relevant": [
+        "ingest:radicle-heartwood:000",
+        "invariant:receipt-ed25519-verify"
+      ],
+      "expect_cite": [
+        "invariant:receipt-ed25519-verify"
+      ],
+      "ranked_ids": [
+        "ingest:radicle-heartwood:000",
+        "invariant:receipt-ed25519-verify",
+        "doc:architecture-notes:0010",
+        "doc:data-surfaces:0079",
+        "doc:architecture-notes:0009",
+        "doc:data-surfaces:0074",
+        "doc:data-surfaces:0084",
+        "doc:data-surfaces:0078",
+        "ingest:hallucination-tooling-survey:001",
+        "doc:architecture-notes:0011"
+      ],
+      "scores": [
+        10.0453,
+        9.5909,
+        9.2989,
+        8.0872,
+        8.0872,
+        8.06,
+        7.9893,
+        7.8197,
+        7.7538,
+        7.4432
+      ],
+      "per_k": {
+        "@5": {
+          "retrieved": [
+            "ingest:radicle-heartwood:000",
+            "invariant:receipt-ed25519-verify",
+            "doc:architecture-notes:0010",
+            "doc:data-surfaces:0079",
+            "doc:architecture-notes:0009"
+          ],
+          "relevant_hits": 2,
+          "relevant_total": 2,
+          "recall": 1.0,
+          "all_required": true,
+          "cite_hit": true
+        },
+        "@10": {
+          "retrieved": [
+            "ingest:radicle-heartwood:000",
+            "invariant:receipt-ed25519-verify",
+            "doc:architecture-notes:0010",
+            "doc:data-surfaces:0079",
+            "doc:architecture-notes:0009",
+            "doc:data-surfaces:0074",
+            "doc:data-surfaces:0084",
+            "doc:data-surfaces:0078",
+            "ingest:hallucination-tooling-survey:001",
+            "doc:architecture-notes:0011"
+          ],
+          "relevant_hits": 2,
+          "relevant_total": 2,
+          "recall": 1.0,
+          "all_required": true,
+          "cite_hit": true
+        }
+      }
+    },
+    {
+      "id": "r-flywheel",
+      "intent": "RETRIEVE",
+      "family": "entity-invariant",
+      "abstain_mode": null,
+      "query": "Flywheel eats only its own verified tail",
+      "ready": true,
+      "returned_k": 10,
+      "handles_ok": true,
+      "relevant": [
+        "invariant:flywheel-lineage"
+      ],
+      "expect_cite": [
+        "invariant:flywheel-lineage"
+      ],
+      "ranked_ids": [
+        "invariant:flywheel-lineage",
+        "doc:architecture-notes:0011",
+        "invariant:ouroboros-doctrine",
+        "doc:data-surfaces:0084",
+        "ingest:neuro-jepa:003",
+        "ingest:radicle-heartwood:001",
+        "doc:data-surfaces:0017",
+        "doc:data-surfaces:0033",
+        "doc:data-surfaces:0046",
+        "doc:data-surfaces:0077"
+      ],
+      "scores": [
+        17.1294,
+        14.9731,
+        10.8553,
+        10.8065,
+        9.4697,
+        8.171,
+        8.066,
+        7.9993,
+        7.7969,
+        7.7577
+      ],
+      "per_k": {
+        "@5": {
+          "retrieved": [
+            "invariant:flywheel-lineage",
+            "doc:architecture-notes:0011",
+            "invariant:ouroboros-doctrine",
+            "doc:data-surfaces:0084",
+            "ingest:neuro-jepa:003"
+          ],
+          "relevant_hits": 1,
+          "relevant_total": 1,
+          "recall": 1.0,
+          "all_required": true,
+          "cite_hit": true
+        },
+        "@10": {
+          "retrieved": [
+            "invariant:flywheel-lineage",
+            "doc:architecture-notes:0011",
+            "invariant:ouroboros-doctrine",
+            "doc:data-surfaces:0084",
+            "ingest:neuro-jepa:003",
+            "ingest:radicle-heartwood:001",
+            "doc:data-surfaces:0017",
+            "doc:data-surfaces:0033",
+            "doc:data-surfaces:0046",
+            "doc:data-surfaces:0077"
+          ],
+          "relevant_hits": 1,
+          "relevant_total": 1,
+          "recall": 1.0,
+          "all_required": true,
+          "cite_hit": true
+        }
+      }
+    },
+    {
+      "id": "r-signed-atomic",
+      "intent": "RETRIEVE",
+      "family": "entity-invariant",
+      "abstain_mode": null,
+      "query": "signed columns atomic all-present or all-absent",
+      "ready": true,
+      "returned_k": 10,
+      "handles_ok": true,
+      "relevant": [
+        "invariant:signed-columns-atomic"
+      ],
+      "expect_cite": [
+        "invariant:signed-columns-atomic"
+      ],
+      "ranked_ids": [
+        "invariant:signed-columns-atomic",
+        "doc:data-surfaces:0083",
+        "doc:architecture-notes:0010",
+        "ingest:github-supply-chain:000",
+        "doc:data-surfaces:0041",
+        "doc:architecture-notes:0011",
+        "doc:data-surfaces:0073",
+        "doc:data-surfaces:0075",
+        "doc:data-surfaces:0002",
+        "ingest:gitlab:001"
+      ],
+      "scores": [
+        17.4917,
+        14.929,
+        10.3046,
+        7.2171,
+        7.1998,
+        6.982,
+        6.6827,
+        6.3713,
+        6.2223,
+        6.1517
+      ],
+      "per_k": {
+        "@5": {
+          "retrieved": [
+            "invariant:signed-columns-atomic",
+            "doc:data-surfaces:0083",
+            "doc:architecture-notes:0010",
+            "ingest:github-supply-chain:000",
+            "doc:data-surfaces:0041"
+          ],
+          "relevant_hits": 1,
+          "relevant_total": 1,
+          "recall": 1.0,
+          "all_required": true,
+          "cite_hit": true
+        },
+        "@10": {
+          "retrieved": [
+            "invariant:signed-columns-atomic",
+            "doc:data-surfaces:0083",
+            "doc:architecture-notes:0010",
+            "ingest:github-supply-chain:000",
+            "doc:data-surfaces:0041",
+            "doc:architecture-notes:0011",
+            "doc:data-surfaces:0073",
+            "doc:data-surfaces:0075",
+            "doc:data-surfaces:0002",
+            "ingest:gitlab:001"
+          ],
+          "relevant_hits": 1,
+          "relevant_total": 1,
+          "recall": 1.0,
+          "all_required": true,
+          "cite_hit": true
+        }
+      }
+    },
+    {
+      "id": "r-factory",
+      "intent": "RETRIEVE",
+      "family": "entity-invariant",
+      "abstain_mode": null,
+      "query": "factory batch integrity conjecture counts",
+      "ready": true,
+      "returned_k": 10,
+      "handles_ok": true,
+      "relevant": [
+        "invariant:factory-batch-integrity"
+      ],
+      "expect_cite": [
+        "invariant:factory-batch-integrity"
+      ],
+      "ranked_ids": [
+        "invariant:factory-batch-integrity",
+        "doc:replit:0009",
+        "doc:data-surfaces:0064",
+        "doc:data-surfaces:0065",
+        "doc:data-surfaces:0063",
+        "doc:data-surfaces:0066",
+        "doc:data-surfaces:0072",
+        "doc:architecture-notes:0011",
+        "doc:data-surfaces:0070",
+        "formula:blk-53abea9a263b"
+      ],
+      "scores": [
+        16.0582,
+        11.6658,
+        10.845,
+        10.1752,
+        4.5112,
+        3.5087,
+        3.5087,
+        3.5087,
+        3.3693,
+        3.0989
+      ],
+      "per_k": {
+        "@5": {
+          "retrieved": [
+            "invariant:factory-batch-integrity",
+            "doc:replit:0009",
+            "doc:data-surfaces:0064",
+            "doc:data-surfaces:0065",
+            "doc:data-surfaces:0063"
+          ],
+          "relevant_hits": 1,
+          "relevant_total": 1,
+          "recall": 1.0,
+          "all_required": true,
+          "cite_hit": true
+        },
+        "@10": {
+          "retrieved": [
+            "invariant:factory-batch-integrity",
+            "doc:replit:0009",
+            "doc:data-surfaces:0064",
+            "doc:data-surfaces:0065",
+            "doc:data-surfaces:0063",
+            "doc:data-surfaces:0066",
+            "doc:data-surfaces:0072",
+            "doc:architecture-notes:0011",
+            "doc:data-surfaces:0070",
+            "formula:blk-53abea9a263b"
+          ],
+          "relevant_hits": 1,
+          "relevant_total": 1,
+          "recall": 1.0,
+          "all_required": true,
+          "cite_hit": true
+        }
+      }
+    },
+    {
+      "id": "r-fibre",
+      "intent": "RETRIEVE",
+      "family": "entity-formula",
+      "abstain_mode": null,
+      "query": "formal-blocks thm:fibre-injectivity",
+      "ready": true,
+      "returned_k": 10,
+      "handles_ok": true,
+      "relevant": [
+        "formula:blk-005ff9bca51b"
+      ],
+      "expect_cite": [
+        "formula:blk-005ff9bca51b"
+      ],
+      "ranked_ids": [
+        "formula:blk-005ff9bca51b",
+        "formula:blk-85574c7ca503",
+        "formula:blk-5909356132c0",
+        "formula:blk-c2a995d3e756",
+        "formula:blk-010f120f0199",
+        "formula:blk-0222abbd0ce6",
+        "formula:blk-022feaafafdb",
+        "formula:blk-0473550d0f81",
+        "formula:blk-047fe1641268",
+        "formula:blk-04dc0868db12"
+      ],
+      "scores": [
+        9.2803,
+        5.9248,
+        3.9299,
+        3.9299,
+        3.4074,
+        3.4074,
+        3.4074,
+        3.4074,
+        3.4074,
+        3.4074
+      ],
+      "per_k": {
+        "@5": {
+          "retrieved": [
+            "formula:blk-005ff9bca51b",
+            "formula:blk-85574c7ca503",
+            "formula:blk-5909356132c0",
+            "formula:blk-c2a995d3e756",
+            "formula:blk-010f120f0199"
+          ],
+          "relevant_hits": 1,
+          "relevant_total": 1,
+          "recall": 1.0,
+          "all_required": true,
+          "cite_hit": true
+        },
+        "@10": {
+          "retrieved": [
+            "formula:blk-005ff9bca51b",
+            "formula:blk-85574c7ca503",
+            "formula:blk-5909356132c0",
+            "formula:blk-c2a995d3e756",
+            "formula:blk-010f120f0199",
+            "formula:blk-0222abbd0ce6",
+            "formula:blk-022feaafafdb",
+            "formula:blk-0473550d0f81",
+            "formula:blk-047fe1641268",
+            "formula:blk-04dc0868db12"
+          ],
+          "relevant_hits": 1,
+          "relevant_total": 1,
+          "recall": 1.0,
+          "all_required": true,
+          "cite_hit": true
+        }
+      }
+    },
+    {
+      "id": "r-ktransformers",
+      "intent": "RETRIEVE",
+      "family": "entity-ingest",
+      "abstain_mode": null,
+      "query": "ktransformers CPU GPU offloading arithmetic intensity",
+      "ready": true,
+      "returned_k": 10,
+      "handles_ok": true,
+      "relevant": [
+        "ingest:ktransformers:000"
+      ],
+      "expect_cite": [
+        "ingest:ktransformers:000"
+      ],
+      "ranked_ids": [
+        "ingest:ktransformers:000",
+        "ingest:ktransformers:005",
+        "ingest:glm-5-2:000",
+        "ingest:ktransformers:007",
+        "doc:data-surfaces:0046",
+        "ingest:ktransformers:002",
+        "ingest:ktransformers:004",
+        "ingest:ktransformers:006",
+        "doc:architecture-notes:0010",
+        "ingest:airllm:000"
+      ],
+      "scores": [
+        18.8779,
+        9.1431,
+        8.3722,
+        7.7567,
+        7.69,
+        7.69,
+        7.6258,
+        6.7738,
+        6.2425,
+        6.1184
+      ],
+      "per_k": {
+        "@5": {
+          "retrieved": [
+            "ingest:ktransformers:000",
+            "ingest:ktransformers:005",
+            "ingest:glm-5-2:000",
+            "ingest:ktransformers:007",
+            "doc:data-surfaces:0046"
+          ],
+          "relevant_hits": 1,
+          "relevant_total": 1,
+          "recall": 1.0,
+          "all_required": true,
+          "cite_hit": true
+        },
+        "@10": {
+          "retrieved": [
+            "ingest:ktransformers:000",
+            "ingest:ktransformers:005",
+            "ingest:glm-5-2:000",
+            "ingest:ktransformers:007",
+            "doc:data-surfaces:0046",
+            "ingest:ktransformers:002",
+            "ingest:ktransformers:004",
+            "ingest:ktransformers:006",
+            "doc:architecture-notes:0010",
+            "ingest:airllm:000"
+          ],
+          "relevant_hits": 1,
+          "relevant_total": 1,
+          "recall": 1.0,
+          "all_required": true,
+          "cite_hit": true
+        }
+      }
+    },
+    {
+      "id": "r-radicle",
+      "intent": "RETRIEVE",
+      "family": "entity-ingest",
+      "abstain_mode": null,
+      "query": "Radicle Ed25519-signed refs sovereign git",
+      "ready": true,
+      "returned_k": 10,
+      "handles_ok": true,
+      "relevant": [
+        "ingest:radicle-heartwood:000"
+      ],
+      "expect_cite": [
+        "ingest:radicle-heartwood:000"
+      ],
+      "ranked_ids": [
+        "ingest:radicle-heartwood:000",
+        "doc:architecture-notes:0010",
+        "doc:architecture-notes:0009",
+        "doc:replit:0003",
+        "invariant:receipt-ed25519-verify",
+        "ingest:gitea:000",
+        "doc:data-surfaces:0079",
+        "doc:data-surfaces:0057",
+        "doc:data-surfaces:0073",
+        "doc:data-surfaces:0085"
+      ],
+      "scores": [
+        17.7202,
+        16.9379,
+        7.2662,
+        5.7598,
+        5.4453,
+        5.0149,
+        4.7939,
+        4.6601,
+        4.4916,
+        4.2538
+      ],
+      "per_k": {
+        "@5": {
+          "retrieved": [
+            "ingest:radicle-heartwood:000",
+            "doc:architecture-notes:0010",
+            "doc:architecture-notes:0009",
+            "doc:replit:0003",
+            "invariant:receipt-ed25519-verify"
+          ],
+          "relevant_hits": 1,
+          "relevant_total": 1,
+          "recall": 1.0,
+          "all_required": true,
+          "cite_hit": true
+        },
+        "@10": {
+          "retrieved": [
+            "ingest:radicle-heartwood:000",
+            "doc:architecture-notes:0010",
+            "doc:architecture-notes:0009",
+            "doc:replit:0003",
+            "invariant:receipt-ed25519-verify",
+            "ingest:gitea:000",
+            "doc:data-surfaces:0079",
+            "doc:data-surfaces:0057",
+            "doc:data-surfaces:0073",
+            "doc:data-surfaces:0085"
+          ],
+          "relevant_hits": 1,
+          "relevant_total": 1,
+          "recall": 1.0,
+          "all_required": true,
+          "cite_hit": true
+        }
+      }
+    },
+    {
+      "id": "r-heartwood-ouroboros",
+      "intent": "RETRIEVE",
+      "family": "cross-source",
+      "abstain_mode": null,
+      "query": "Append-only tamper-evident history Ouroboros heartwood",
+      "ready": true,
+      "returned_k": 10,
+      "handles_ok": true,
+      "relevant": [
+        "ingest:radicle-heartwood:001",
+        "invariant:receipt-chain-continuity"
+      ],
+      "expect_cite": [
+        "ingest:radicle-heartwood:001"
+      ],
+      "ranked_ids": [
+        "ingest:radicle-heartwood:001",
+        "invariant:receipt-chain-continuity",
+        "doc:architecture-notes:0010",
+        "doc:data-surfaces:0078",
+        "doc:data-surfaces:0084",
+        "invariant:ouroboros-doctrine",
+        "doc:data-surfaces:0082",
+        "doc:architecture-notes:0007",
+        "ingest:mem0:000",
+        "doc:data-surfaces:0025"
+      ],
+      "scores": [
+        16.2458,
+        8.0247,
+        6.9493,
+        6.2709,
+        6.0442,
+        6.0442,
+        5.6627,
+        5.6579,
+        5.4238,
+        4.9059
+      ],
+      "per_k": {
+        "@5": {
+          "retrieved": [
+            "ingest:radicle-heartwood:001",
+            "invariant:receipt-chain-continuity",
+            "doc:architecture-notes:0010",
+            "doc:data-surfaces:0078",
+            "doc:data-surfaces:0084"
+          ],
+          "relevant_hits": 2,
+          "relevant_total": 2,
+          "recall": 1.0,
+          "all_required": true,
+          "cite_hit": true
+        },
+        "@10": {
+          "retrieved": [
+            "ingest:radicle-heartwood:001",
+            "invariant:receipt-chain-continuity",
+            "doc:architecture-notes:0010",
+            "doc:data-surfaces:0078",
+            "doc:data-surfaces:0084",
+            "invariant:ouroboros-doctrine",
+            "doc:data-surfaces:0082",
+            "doc:architecture-notes:0007",
+            "ingest:mem0:000",
+            "doc:data-surfaces:0025"
+          ],
+          "relevant_hits": 2,
+          "relevant_total": 2,
+          "recall": 1.0,
+          "all_required": true,
+          "cite_hit": true
+        }
+      }
+    },
+    {
+      "id": "r-bm25s",
+      "intent": "RETRIEVE",
+      "family": "entity-ingest",
+      "abstain_mode": null,
+      "query": "BM25S dependency-free lexical retrieval",
+      "ready": true,
+      "returned_k": 10,
+      "handles_ok": true,
+      "relevant": [
+        "ingest:bm25s:001"
+      ],
+      "expect_cite": [
+        "ingest:bm25s:001"
+      ],
+      "ranked_ids": [
+        "ingest:bm25s:001",
+        "doc:data-surfaces:0049",
+        "doc:data-surfaces:0072",
+        "doc:architecture-notes:0010",
+        "doc:replit:0008",
+        "ingest:colbert:001",
+        "ingest:graphrag:000",
+        "doc:replit:0007",
+        "ingest:graphrag:002",
+        "ingest:splade:000"
+      ],
+      "scores": [
+        12.7385,
+        10.6927,
+        10.562,
+        9.7442,
+        8.3815,
+        7.9001,
+        5.2639,
+        4.5346,
+        4.1181,
+        4.1181
+      ],
+      "per_k": {
+        "@5": {
+          "retrieved": [
+            "ingest:bm25s:001",
+            "doc:data-surfaces:0049",
+            "doc:data-surfaces:0072",
+            "doc:architecture-notes:0010",
+            "doc:replit:0008"
+          ],
+          "relevant_hits": 1,
+          "relevant_total": 1,
+          "recall": 1.0,
+          "all_required": true,
+          "cite_hit": true
+        },
+        "@10": {
+          "retrieved": [
+            "ingest:bm25s:001",
+            "doc:data-surfaces:0049",
+            "doc:data-surfaces:0072",
+            "doc:architecture-notes:0010",
+            "doc:replit:0008",
+            "ingest:colbert:001",
+            "ingest:graphrag:000",
+            "doc:replit:0007",
+            "ingest:graphrag:002",
+            "ingest:splade:000"
+          ],
+          "relevant_hits": 1,
+          "relevant_total": 1,
+          "recall": 1.0,
+          "all_required": true,
+          "cite_hit": true
+        }
+      }
+    },
+    {
+      "id": "r-quant",
+      "intent": "RETRIEVE",
+      "family": "entity-doc",
+      "abstain_mode": null,
+      "query": "GET /quant quant-finance estate series",
+      "ready": true,
+      "returned_k": 10,
+      "handles_ok": true,
+      "relevant": [
+        "doc:data-surfaces:0060",
+        "doc:data-surfaces:0061"
+      ],
+      "expect_cite": [
+        "doc:data-surfaces:0060"
+      ],
+      "ranked_ids": [
+        "doc:data-surfaces:0060",
+        "doc:data-surfaces:0061",
+        "ingest:ktransformers:007",
+        "doc:data-surfaces:0038",
+        "doc:replit:0005",
+        "doc:architecture-notes:0006",
+        "doc:RELEASE:0002",
+        "doc:replit:0003",
+        "ingest:ktransformers:001",
+        "doc:architecture-notes:0010"
+      ],
+      "scores": [
+        16.6966,
+        9.3334,
+        7.5381,
+        7.4184,
+        7.2688,
+        5.0185,
+        4.797,
+        4.797,
+        4.797,
+        4.5287
+      ],
+      "per_k": {
+        "@5": {
+          "retrieved": [
+            "doc:data-surfaces:0060",
+            "doc:data-surfaces:0061",
+            "ingest:ktransformers:007",
+            "doc:data-surfaces:0038",
+            "doc:replit:0005"
+          ],
+          "relevant_hits": 2,
+          "relevant_total": 2,
+          "recall": 1.0,
+          "all_required": true,
+          "cite_hit": true
+        },
+        "@10": {
+          "retrieved": [
+            "doc:data-surfaces:0060",
+            "doc:data-surfaces:0061",
+            "ingest:ktransformers:007",
+            "doc:data-surfaces:0038",
+            "doc:replit:0005",
+            "doc:architecture-notes:0006",
+            "doc:RELEASE:0002",
+            "doc:replit:0003",
+            "ingest:ktransformers:001",
+            "doc:architecture-notes:0010"
+          ],
+          "relevant_hits": 2,
+          "relevant_total": 2,
+          "recall": 1.0,
+          "all_required": true,
+          "cite_hit": true
+        }
+      }
+    },
+    {
+      "id": "r-brain-lanes",
+      "intent": "RETRIEVE",
+      "family": "entity-doc",
+      "abstain_mode": null,
+      "query": "brain ask two lanes private Brain never blend",
+      "ready": true,
+      "returned_k": 10,
+      "handles_ok": true,
+      "relevant": [
+        "doc:data-surfaces:0072"
+      ],
+      "expect_cite": [
+        "doc:data-surfaces:0072"
+      ],
+      "ranked_ids": [
+        "doc:data-surfaces:0072",
+        "doc:replit:0008",
+        "doc:data-surfaces:0058",
+        "doc:data-surfaces:0074",
+        "doc:data-surfaces:0073",
+        "doc:architecture-notes:0010",
+        "doc:replit:0005",
+        "doc:replit:0003",
+        "ingest:rrf-cormack2009:000",
+        "doc:replit:0012"
+      ],
+      "scores": [
+        20.7199,
+        20.0776,
+        16.703,
+        15.493,
+        14.2811,
+        12.1701,
+        11.2144,
+        10.3141,
+        9.4804,
+        8.7173
+      ],
+      "per_k": {
+        "@5": {
+          "retrieved": [
+            "doc:data-surfaces:0072",
+            "doc:replit:0008",
+            "doc:data-surfaces:0058",
+            "doc:data-surfaces:0074",
+            "doc:data-surfaces:0073"
+          ],
+          "relevant_hits": 1,
+          "relevant_total": 1,
+          "recall": 1.0,
+          "all_required": true,
+          "cite_hit": true
+        },
+        "@10": {
+          "retrieved": [
+            "doc:data-surfaces:0072",
+            "doc:replit:0008",
+            "doc:data-surfaces:0058",
+            "doc:data-surfaces:0074",
+            "doc:data-surfaces:0073",
+            "doc:architecture-notes:0010",
+            "doc:replit:0005",
+            "doc:replit:0003",
+            "ingest:rrf-cormack2009:000",
+            "doc:replit:0012"
+          ],
+          "relevant_hits": 1,
+          "relevant_total": 1,
+          "recall": 1.0,
+          "all_required": true,
+          "cite_hit": true
+        }
+      }
+    },
+    {
+      "id": "r-two-lanes-theme",
+      "intent": "RETRIEVE",
+      "family": "global-theme",
+      "abstain_mode": null,
+      "query": "knowledge wall grounded retrieval two lanes never blend private graph unavailable",
+      "ready": true,
+      "returned_k": 10,
+      "handles_ok": true,
+      "relevant": [
+        "doc:data-surfaces:0072",
+        "doc:data-surfaces:0073",
+        "doc:replit:0008"
+      ],
+      "expect_cite": [
+        "doc:data-surfaces:0072",
+        "doc:replit:0008"
+      ],
+      "ranked_ids": [
+        "doc:data-surfaces:0072",
+        "doc:replit:0008",
+        "doc:data-surfaces:0073",
+        "doc:data-surfaces:0074",
+        "doc:data-surfaces:0058",
+        "doc:architecture-notes:0010",
+        "ingest:zep-graphiti:001",
+        "doc:replit:0003",
+        "doc:data-surfaces:0041",
+        "doc:RELEASE:0006"
+      ],
+      "scores": [
+        26.0569,
+        19.6535,
+        15.2496,
+        12.0563,
+        11.9321,
+        10.6698,
+        10.3782,
+        9.6729,
+        7.8535,
+        7.7356
+      ],
+      "per_k": {
+        "@5": {
+          "retrieved": [
+            "doc:data-surfaces:0072",
+            "doc:replit:0008",
+            "doc:data-surfaces:0073",
+            "doc:data-surfaces:0074",
+            "doc:data-surfaces:0058"
+          ],
+          "relevant_hits": 3,
+          "relevant_total": 3,
+          "recall": 1.0,
+          "all_required": true,
+          "cite_hit": true
+        },
+        "@10": {
+          "retrieved": [
+            "doc:data-surfaces:0072",
+            "doc:replit:0008",
+            "doc:data-surfaces:0073",
+            "doc:data-surfaces:0074",
+            "doc:data-surfaces:0058",
+            "doc:architecture-notes:0010",
+            "ingest:zep-graphiti:001",
+            "doc:replit:0003",
+            "doc:data-surfaces:0041",
+            "doc:RELEASE:0006"
+          ],
+          "relevant_hits": 3,
+          "relevant_total": 3,
+          "recall": 1.0,
+          "all_required": true,
+          "cite_hit": true
+        }
+      }
+    },
+    {
+      "id": "r-decay",
+      "intent": "RETRIEVE",
+      "family": "cross-source",
+      "abstain_mode": null,
+      "query": "decay ledger GET /decay",
+      "ready": true,
+      "returned_k": 10,
+      "handles_ok": true,
+      "relevant": [
+        "doc:data-surfaces:0070",
+        "doc:data-surfaces:0071",
+        "ingest:ferguson-decay-ledger:000"
+      ],
+      "expect_cite": [
+        "doc:data-surfaces:0070"
+      ],
+      "ranked_ids": [
+        "doc:data-surfaces:0048",
+        "doc:data-surfaces:0070",
+        "doc:data-surfaces:0071",
+        "ingest:topaz-fabricated-citations:001",
+        "ingest:ferguson-decay-ledger:000",
+        "doc:architecture-notes:0010",
+        "ingest:ferguson-decay-ledger:001",
+        "ingest:ferguson-decay-ledger:002",
+        "ingest:provenance-frontiers:001",
+        "doc:replit:0003"
+      ],
+      "scores": [
+        11.1856,
+        10.7299,
+        8.8756,
+        8.4939,
+        8.1098,
+        7.8171,
+        7.3021,
+        6.8525,
+        5.7602,
+        5.6536
+      ],
+      "per_k": {
+        "@5": {
+          "retrieved": [
+            "doc:data-surfaces:0048",
+            "doc:data-surfaces:0070",
+            "doc:data-surfaces:0071",
+            "ingest:topaz-fabricated-citations:001",
+            "ingest:ferguson-decay-ledger:000"
+          ],
+          "relevant_hits": 3,
+          "relevant_total": 3,
+          "recall": 1.0,
+          "all_required": true,
+          "cite_hit": true
+        },
+        "@10": {
+          "retrieved": [
+            "doc:data-surfaces:0048",
+            "doc:data-surfaces:0070",
+            "doc:data-surfaces:0071",
+            "ingest:topaz-fabricated-citations:001",
+            "ingest:ferguson-decay-ledger:000",
+            "doc:architecture-notes:0010",
+            "ingest:ferguson-decay-ledger:001",
+            "ingest:ferguson-decay-ledger:002",
+            "ingest:provenance-frontiers:001",
+            "doc:replit:0003"
+          ],
+          "relevant_hits": 3,
+          "relevant_total": 3,
+          "recall": 1.0,
+          "all_required": true,
+          "cite_hit": true
+        }
+      }
+    },
+    {
+      "id": "r-formula-answers",
+      "intent": "RETRIEVE",
+      "family": "entity-doc",
+      "abstain_mode": null,
+      "query": "formula answers route formulaAnswers",
+      "ready": true,
+      "returned_k": 10,
+      "handles_ok": true,
+      "relevant": [
+        "doc:data-surfaces:0066",
+        "doc:data-surfaces:0067"
+      ],
+      "expect_cite": [
+        "doc:data-surfaces:0066",
+        "doc:data-surfaces:0067"
+      ],
+      "ranked_ids": [
+        "doc:data-surfaces:0067",
+        "doc:data-surfaces:0066",
+        "doc:replit:0003",
+        "doc:data-surfaces:0068",
+        "doc:data-surfaces:0072",
+        "doc:replit:0008",
+        "doc:data-surfaces:0087",
+        "doc:data-surfaces:0002",
+        "doc:data-surfaces:0061",
+        "doc:data-surfaces:0070"
+      ],
+      "scores": [
+        12.5122,
+        9.9983,
+        6.4304,
+        4.3219,
+        4.2939,
+        3.7168,
+        2.9482,
+        2.4184,
+        2.4184,
+        2.1778
+      ],
+      "per_k": {
+        "@5": {
+          "retrieved": [
+            "doc:data-surfaces:0067",
+            "doc:data-surfaces:0066",
+            "doc:replit:0003",
+            "doc:data-surfaces:0068",
+            "doc:data-surfaces:0072"
+          ],
+          "relevant_hits": 2,
+          "relevant_total": 2,
+          "recall": 1.0,
+          "all_required": true,
+          "cite_hit": true
+        },
+        "@10": {
+          "retrieved": [
+            "doc:data-surfaces:0067",
+            "doc:data-surfaces:0066",
+            "doc:replit:0003",
+            "doc:data-surfaces:0068",
+            "doc:data-surfaces:0072",
+            "doc:replit:0008",
+            "doc:data-surfaces:0087",
+            "doc:data-surfaces:0002",
+            "doc:data-surfaces:0061",
+            "doc:data-surfaces:0070"
+          ],
+          "relevant_hits": 2,
+          "relevant_total": 2,
+          "recall": 1.0,
+          "all_required": true,
+          "cite_hit": true
+        }
+      }
+    },
+    {
+      "id": "a-empty",
+      "intent": "ABSTAIN",
+      "family": "abstention",
+      "abstain_mode": "EMPTY_INDEX",
+      "query": "",
+      "ready": false,
+      "returned_k": 0,
+      "handles_ok": true,
+      "relevant": [],
+      "expect_cite": [],
+      "ranked_ids": [],
+      "scores": [],
+      "per_k": {
+        "@5": {
+          "retrieved": [],
+          "relevant_hits": 0,
+          "relevant_total": 0,
+          "recall": null,
+          "all_required": false,
+          "cite_hit": false
+        },
+        "@10": {
+          "retrieved": [],
+          "relevant_hits": 0,
+          "relevant_total": 0,
+          "recall": null,
+          "all_required": false,
+          "cite_hit": false
+        }
+      }
+    },
+    {
+      "id": "a-unknown-tokens",
+      "intent": "ABSTAIN",
+      "family": "abstention",
+      "abstain_mode": "EMPTY_INDEX",
+      "query": "zzqxymplughq",
+      "ready": false,
+      "returned_k": 0,
+      "handles_ok": true,
+      "relevant": [],
+      "expect_cite": [],
+      "ranked_ids": [],
+      "scores": [],
+      "per_k": {
+        "@5": {
+          "retrieved": [],
+          "relevant_hits": 0,
+          "relevant_total": 0,
+          "recall": null,
+          "all_required": false,
+          "cite_hit": false
+        },
+        "@10": {
+          "retrieved": [],
+          "relevant_hits": 0,
+          "relevant_total": 0,
+          "recall": null,
+          "all_required": false,
+          "cite_hit": false
+        }
+      }
+    },
+    {
+      "id": "a-unknown-tokens-2",
+      "intent": "ABSTAIN",
+      "family": "abstention",
+      "abstain_mode": "EMPTY_INDEX",
+      "query": "xyzzyplughqwerty2099",
+      "ready": false,
+      "returned_k": 0,
+      "handles_ok": true,
+      "relevant": [],
+      "expect_cite": [],
+      "ranked_ids": [],
+      "scores": [],
+      "per_k": {
+        "@5": {
+          "retrieved": [],
+          "relevant_hits": 0,
+          "relevant_total": 0,
+          "recall": null,
+          "all_required": false,
+          "cite_hit": false
+        },
+        "@10": {
+          "retrieved": [],
+          "relevant_hits": 0,
+          "relevant_total": 0,
+          "recall": null,
+          "all_required": false,
+          "cite_hit": false
+        }
+      }
+    },
+    {
+      "id": "a-worldcup-2099",
+      "intent": "ABSTAIN",
+      "family": "abstention",
+      "abstain_mode": "NO_SUPPORT",
+      "query": "Who won the 2099 world cup according to the corpus?",
+      "ready": true,
+      "returned_k": 10,
+      "handles_ok": true,
+      "relevant": [],
+      "expect_cite": [],
+      "ranked_ids": [
+        "ingest:neuro-jepa:003",
+        "formula:blk-32d151a66538",
+        "doc:data-surfaces:0058",
+        "doc:data-surfaces:0066",
+        "doc:data-surfaces:0072",
+        "doc:data-surfaces:0010",
+        "ingest:zep-graphiti:001",
+        "ingest:provenance-frontiers:000",
+        "doc:data-surfaces:0061",
+        "doc:architecture-notes:0010"
+      ],
+      "scores": [
+        3.5917,
+        3.0286,
+        2.9401,
+        2.8701,
+        2.6493,
+        2.6121,
+        2.6121,
+        2.6121,
+        2.4601,
+        2.4601
+      ],
+      "per_k": {
+        "@5": {
+          "retrieved": [
+            "ingest:neuro-jepa:003",
+            "formula:blk-32d151a66538",
+            "doc:data-surfaces:0058",
+            "doc:data-surfaces:0066",
+            "doc:data-surfaces:0072"
+          ],
+          "relevant_hits": 0,
+          "relevant_total": 0,
+          "recall": null,
+          "all_required": false,
+          "cite_hit": false
+        },
+        "@10": {
+          "retrieved": [
+            "ingest:neuro-jepa:003",
+            "formula:blk-32d151a66538",
+            "doc:data-surfaces:0058",
+            "doc:data-surfaces:0066",
+            "doc:data-surfaces:0072",
+            "doc:data-surfaces:0010",
+            "ingest:zep-graphiti:001",
+            "ingest:provenance-frontiers:000",
+            "doc:data-surfaces:0061",
+            "doc:architecture-notes:0010"
+          ],
+          "relevant_hits": 0,
+          "relevant_total": 0,
+          "recall": null,
+          "all_required": false,
+          "cite_hit": false
+        }
+      }
+    },
+    {
+      "id": "a-secret-launch",
+      "intent": "ABSTAIN",
+      "family": "abstention",
+      "abstain_mode": "NO_SUPPORT",
+      "query": "What is the secret launch code for the physical effector?",
+      "ready": true,
+      "returned_k": 10,
+      "handles_ok": true,
+      "relevant": [],
+      "expect_cite": [],
+      "ranked_ids": [
+        "doc:architecture-notes:0008",
+        "doc:sovereign-forge-honesty-audit:0002",
+        "doc:data-surfaces:0074",
+        "doc:data-surfaces:0079",
+        "doc:replit:0006",
+        "formula:fdx-d0e797e5cbfe",
+        "doc:architecture-notes:0010",
+        "doc:data-surfaces:0046",
+        "ingest:onedev:000",
+        "doc:data-surfaces:0049"
+      ],
+      "scores": [
+        3.7618,
+        3.7618,
+        3.0445,
+        3.0445,
+        3.0445,
+        3.0286,
+        3.0043,
+        2.8374,
+        2.6191,
+        2.432
+      ],
+      "per_k": {
+        "@5": {
+          "retrieved": [
+            "doc:architecture-notes:0008",
+            "doc:sovereign-forge-honesty-audit:0002",
+            "doc:data-surfaces:0074",
+            "doc:data-surfaces:0079",
+            "doc:replit:0006"
+          ],
+          "relevant_hits": 0,
+          "relevant_total": 0,
+          "recall": null,
+          "all_required": false,
+          "cite_hit": false
+        },
+        "@10": {
+          "retrieved": [
+            "doc:architecture-notes:0008",
+            "doc:sovereign-forge-honesty-audit:0002",
+            "doc:data-surfaces:0074",
+            "doc:data-surfaces:0079",
+            "doc:replit:0006",
+            "formula:fdx-d0e797e5cbfe",
+            "doc:architecture-notes:0010",
+            "doc:data-surfaces:0046",
+            "ingest:onedev:000",
+            "doc:data-surfaces:0049"
+          ],
+          "relevant_hits": 0,
+          "relevant_total": 0,
+          "recall": null,
+          "all_required": false,
+          "cite_hit": false
+        }
+      }
+    },
+    {
+      "id": "a-unpublished-earnings",
+      "intent": "ABSTAIN",
+      "family": "abstention",
+      "abstain_mode": "NO_SUPPORT",
+      "query": "Cite a Brain node about tomorrow's unpublished earnings",
+      "ready": true,
+      "returned_k": 10,
+      "handles_ok": true,
+      "relevant": [],
+      "expect_cite": [],
+      "ranked_ids": [
+        "doc:data-surfaces:0073",
+        "doc:replit:0008",
+        "doc:data-surfaces:0046",
+        "ingest:perplexity-brain:000",
+        "ingest:nvidia-vera:004",
+        "doc:architecture-notes:0010",
+        "ingest:raptor-rag:000",
+        "doc:data-surfaces:0080",
+        "doc:data-surfaces:0072",
+        "doc:data-surfaces:0074"
+      ],
+      "scores": [
+        8.5293,
+        6.5115,
+        6.0677,
+        5.9905,
+        5.2428,
+        5.1111,
+        3.9683,
+        3.906,
+        3.3302,
+        3.2693
+      ],
+      "per_k": {
+        "@5": {
+          "retrieved": [
+            "doc:data-surfaces:0073",
+            "doc:replit:0008",
+            "doc:data-surfaces:0046",
+            "ingest:perplexity-brain:000",
+            "ingest:nvidia-vera:004"
+          ],
+          "relevant_hits": 0,
+          "relevant_total": 0,
+          "recall": null,
+          "all_required": false,
+          "cite_hit": false
+        },
+        "@10": {
+          "retrieved": [
+            "doc:data-surfaces:0073",
+            "doc:replit:0008",
+            "doc:data-surfaces:0046",
+            "ingest:perplexity-brain:000",
+            "ingest:nvidia-vera:004",
+            "doc:architecture-notes:0010",
+            "ingest:raptor-rag:000",
+            "doc:data-surfaces:0080",
+            "doc:data-surfaces:0072",
+            "doc:data-surfaces:0074"
+          ],
+          "relevant_hits": 0,
+          "relevant_total": 0,
+          "recall": null,
+          "all_required": false,
+          "cite_hit": false
+        }
+      }
+    },
+    {
+      "id": "a-owner-setup",
+      "intent": "ABSTAIN",
+      "family": "abstention",
+      "abstain_mode": "NO_SUPPORT",
+      "query": "Retrieve the excluded OWNER-SETUP.md chunk content",
+      "ready": true,
+      "returned_k": 10,
+      "handles_ok": true,
+      "relevant": [],
+      "expect_cite": [],
+      "ranked_ids": [
+        "doc:data-surfaces:0073",
+        "doc:replit:0012",
+        "doc:data-surfaces:0058",
+        "doc:data-surfaces:0072",
+        "doc:sovereign-forge-honesty-audit:0002",
+        "doc:architecture-notes:0015",
+        "doc:sovereign-forge-honesty-audit:0000",
+        "ingest:raptor-rag:000",
+        "ingest:graphrag:000",
+        "doc:sovereign-forge-honesty-audit:0003"
+      ],
+      "scores": [
+        12.1305,
+        8.5433,
+        8.2753,
+        8.2082,
+        7.7087,
+        7.2419,
+        6.6612,
+        6.5945,
+        6.0896,
+        5.892
+      ],
+      "per_k": {
+        "@5": {
+          "retrieved": [
+            "doc:data-surfaces:0073",
+            "doc:replit:0012",
+            "doc:data-surfaces:0058",
+            "doc:data-surfaces:0072",
+            "doc:sovereign-forge-honesty-audit:0002"
+          ],
+          "relevant_hits": 0,
+          "relevant_total": 0,
+          "recall": null,
+          "all_required": false,
+          "cite_hit": false
+        },
+        "@10": {
+          "retrieved": [
+            "doc:data-surfaces:0073",
+            "doc:replit:0012",
+            "doc:data-surfaces:0058",
+            "doc:data-surfaces:0072",
+            "doc:sovereign-forge-honesty-audit:0002",
+            "doc:architecture-notes:0015",
+            "doc:sovereign-forge-honesty-audit:0000",
+            "ingest:raptor-rag:000",
+            "ingest:graphrag:000",
+            "doc:sovereign-forge-honesty-audit:0003"
+          ],
+          "relevant_hits": 0,
+          "relevant_total": 0,
+          "recall": null,
+          "all_required": false,
+          "cite_hit": false
+        }
+      }
+    },
+    {
+      "id": "a-private-9464",
+      "intent": "ABSTAIN",
+      "family": "abstention",
+      "abstain_mode": "NO_SUPPORT",
+      "query": "Which private 9464-node graph row proves Lambda is a theorem?",
+      "ready": true,
+      "returned_k": 10,
+      "handles_ok": true,
+      "relevant": [],
+      "expect_cite": [],
+      "ranked_ids": [
+        "doc:data-surfaces:0073",
+        "formula:blk-9c684f75fc73",
+        "formula:blk-5909356132c0",
+        "formula:blk-047fe1641268",
+        "doc:data-surfaces:0007",
+        "ingest:zep-graphiti:001",
+        "formula:blk-41b87668330e",
+        "doc:data-surfaces:0072",
+        "doc:replit:0008",
+        "doc:data-surfaces:0070"
+      ],
+      "scores": [
+        7.2828,
+        6.0884,
+        5.9397,
+        5.7416,
+        5.3289,
+        5.1761,
+        5.0975,
+        5.0881,
+        5.0881,
+        5.0633
+      ],
+      "per_k": {
+        "@5": {
+          "retrieved": [
+            "doc:data-surfaces:0073",
+            "formula:blk-9c684f75fc73",
+            "formula:blk-5909356132c0",
+            "formula:blk-047fe1641268",
+            "doc:data-surfaces:0007"
+          ],
+          "relevant_hits": 0,
+          "relevant_total": 0,
+          "recall": null,
+          "all_required": false,
+          "cite_hit": false
+        },
+        "@10": {
+          "retrieved": [
+            "doc:data-surfaces:0073",
+            "formula:blk-9c684f75fc73",
+            "formula:blk-5909356132c0",
+            "formula:blk-047fe1641268",
+            "doc:data-surfaces:0007",
+            "ingest:zep-graphiti:001",
+            "formula:blk-41b87668330e",
+            "doc:data-surfaces:0072",
+            "doc:replit:0008",
+            "doc:data-surfaces:0070"
+          ],
+          "relevant_hits": 0,
+          "relevant_total": 0,
+          "recall": null,
+          "all_required": false,
+          "cite_hit": false
+        }
+      }
+    },
+    {
+      "id": "a-nvml-unattached",
+      "intent": "ABSTAIN",
+      "family": "abstention",
+      "abstain_mode": "NO_SUPPORT",
+      "query": "Give me the NVML joule reading from a meter that is not attached",
+      "ready": true,
+      "returned_k": 10,
+      "handles_ok": true,
+      "relevant": [],
+      "expect_cite": [],
+      "ranked_ids": [
+        "doc:sovereign-forge-honesty-audit:0004",
+        "doc:data-surfaces:0096",
+        "ingest:compute-pillars:000",
+        "doc:sovereign-forge-honesty-audit:0003",
+        "doc:sovereign-forge-honesty-audit:0010",
+        "doc:data-surfaces:0098",
+        "doc:architecture-notes:0008",
+        "doc:data-surfaces:0075",
+        "doc:data-surfaces:0045",
+        "doc:data-surfaces:0046"
+      ],
+      "scores": [
+        9.5838,
+        7.0891,
+        6.1468,
+        5.7318,
+        5.5919,
+        5.3561,
+        5.3434,
+        4.9609,
+        4.1686,
+        4.1686
+      ],
+      "per_k": {
+        "@5": {
+          "retrieved": [
+            "doc:sovereign-forge-honesty-audit:0004",
+            "doc:data-surfaces:0096",
+            "ingest:compute-pillars:000",
+            "doc:sovereign-forge-honesty-audit:0003",
+            "doc:sovereign-forge-honesty-audit:0010"
+          ],
+          "relevant_hits": 0,
+          "relevant_total": 0,
+          "recall": null,
+          "all_required": false,
+          "cite_hit": false
+        },
+        "@10": {
+          "retrieved": [
+            "doc:sovereign-forge-honesty-audit:0004",
+            "doc:data-surfaces:0096",
+            "ingest:compute-pillars:000",
+            "doc:sovereign-forge-honesty-audit:0003",
+            "doc:sovereign-forge-honesty-audit:0010",
+            "doc:data-surfaces:0098",
+            "doc:architecture-notes:0008",
+            "doc:data-surfaces:0075",
+            "doc:data-surfaces:0045",
+            "doc:data-surfaces:0046"
+          ],
+          "relevant_hits": 0,
+          "relevant_total": 0,
+          "recall": null,
+          "all_required": false,
+          "cite_hit": false
+        }
+      }
+    }
+  ],
+  "git_sha_note": "Pins main tip that carries the 575-chunk corpus + SecondBrainIndex BM25 under test. Eval tooling in this PR is additive and does not change scores."
+}
