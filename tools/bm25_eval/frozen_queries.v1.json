@@ -1,0 +1,359 @@
+{
+  "schema": "szl.second-brain.bm25-eval.queries/v1",
+  "revision": "bm25-eval-queries.v1",
+  "credit": "Stephen Lutar",
+  "honesty": "MEASURED BM25 baseline only. Gold labels are human judgments over the admitted 575-chunk public projection. No dense, GraphRAG, or HiRAG claim.",
+  "corpus": "data/brain-corpus.public.jsonl",
+  "public_chunk_count_declared": 575,
+  "content_access": "HANDLES_ONLY",
+  "lambda_status": "CONJECTURE_1",
+  "queries": [
+    {
+      "id": "r-lambda-ledger",
+      "intent": "RETRIEVE",
+      "family": "entity-formula",
+      "query": "Lambda uniqueness conjecture TH_L1 formula-ledger",
+      "relevant": [
+        "formula:led-9b9f5e8bb845",
+        "ingest:szl-formula-ledger:001",
+        "ingest:lutar-lean:001"
+      ],
+      "expect_cite": [
+        "formula:led-9b9f5e8bb845",
+        "ingest:szl-formula-ledger:001"
+      ]
+    },
+    {
+      "id": "r-lambda-blocks",
+      "intent": "RETRIEVE",
+      "family": "entity-formula",
+      "query": "conj:lambda-uniqueness formal-blocks",
+      "relevant": [
+        "formula:blk-d1507e347013"
+      ],
+      "expect_cite": [
+        "formula:blk-d1507e347013"
+      ]
+    },
+    {
+      "id": "r-lambda-discipline",
+      "intent": "RETRIEVE",
+      "family": "entity-formula",
+      "query": "Conjecture discipline unconditional Lambda uniqueness machine-checked FALSE",
+      "relevant": [
+        "ingest:lutar-lean:001"
+      ],
+      "expect_cite": [
+        "ingest:lutar-lean:001"
+      ]
+    },
+    {
+      "id": "r-lutar-spine",
+      "intent": "RETRIEVE",
+      "family": "entity-ingest",
+      "query": "lutar-lean Lambda invariant formal spine",
+      "relevant": [
+        "ingest:lutar-lean:000"
+      ],
+      "expect_cite": [
+        "ingest:lutar-lean:000"
+      ]
+    },
+    {
+      "id": "r-lean-window",
+      "intent": "RETRIEVE",
+      "family": "entity-doc",
+      "query": "GET /lean proof ledger lutar-lean",
+      "relevant": [
+        "doc:data-surfaces:0062"
+      ],
+      "expect_cite": [
+        "doc:data-surfaces:0062"
+      ]
+    },
+    {
+      "id": "r-ouroboros-continuity",
+      "intent": "RETRIEVE",
+      "family": "entity-invariant",
+      "query": "Ouroboros receipt chain continuity invariants",
+      "relevant": [
+        "invariant:receipt-chain-continuity",
+        "ingest:radicle-heartwood:001"
+      ],
+      "expect_cite": [
+        "invariant:receipt-chain-continuity"
+      ]
+    },
+    {
+      "id": "r-receipt-recompute",
+      "intent": "RETRIEVE",
+      "family": "entity-invariant",
+      "query": "receipt chain recomputes over its own tail",
+      "relevant": [
+        "invariant:receipt-chain-continuity"
+      ],
+      "expect_cite": [
+        "invariant:receipt-chain-continuity"
+      ]
+    },
+    {
+      "id": "r-ed25519",
+      "intent": "RETRIEVE",
+      "family": "entity-invariant",
+      "query": "ed25519 signed receipt verify",
+      "relevant": [
+        "invariant:receipt-ed25519-verify",
+        "ingest:radicle-heartwood:000"
+      ],
+      "expect_cite": [
+        "invariant:receipt-ed25519-verify"
+      ]
+    },
+    {
+      "id": "r-flywheel",
+      "intent": "RETRIEVE",
+      "family": "entity-invariant",
+      "query": "Flywheel eats only its own verified tail",
+      "relevant": [
+        "invariant:flywheel-lineage"
+      ],
+      "expect_cite": [
+        "invariant:flywheel-lineage"
+      ]
+    },
+    {
+      "id": "r-signed-atomic",
+      "intent": "RETRIEVE",
+      "family": "entity-invariant",
+      "query": "signed columns atomic all-present or all-absent",
+      "relevant": [
+        "invariant:signed-columns-atomic"
+      ],
+      "expect_cite": [
+        "invariant:signed-columns-atomic"
+      ]
+    },
+    {
+      "id": "r-factory",
+      "intent": "RETRIEVE",
+      "family": "entity-invariant",
+      "query": "factory batch integrity conjecture counts",
+      "relevant": [
+        "invariant:factory-batch-integrity"
+      ],
+      "expect_cite": [
+        "invariant:factory-batch-integrity"
+      ]
+    },
+    {
+      "id": "r-fibre",
+      "intent": "RETRIEVE",
+      "family": "entity-formula",
+      "query": "formal-blocks thm:fibre-injectivity",
+      "relevant": [
+        "formula:blk-005ff9bca51b"
+      ],
+      "expect_cite": [
+        "formula:blk-005ff9bca51b"
+      ]
+    },
+    {
+      "id": "r-ktransformers",
+      "intent": "RETRIEVE",
+      "family": "entity-ingest",
+      "query": "ktransformers CPU GPU offloading arithmetic intensity",
+      "relevant": [
+        "ingest:ktransformers:000"
+      ],
+      "expect_cite": [
+        "ingest:ktransformers:000"
+      ]
+    },
+    {
+      "id": "r-radicle",
+      "intent": "RETRIEVE",
+      "family": "entity-ingest",
+      "query": "Radicle Ed25519-signed refs sovereign git",
+      "relevant": [
+        "ingest:radicle-heartwood:000"
+      ],
+      "expect_cite": [
+        "ingest:radicle-heartwood:000"
+      ]
+    },
+    {
+      "id": "r-heartwood-ouroboros",
+      "intent": "RETRIEVE",
+      "family": "cross-source",
+      "query": "Append-only tamper-evident history Ouroboros heartwood",
+      "relevant": [
+        "ingest:radicle-heartwood:001",
+        "invariant:receipt-chain-continuity"
+      ],
+      "expect_cite": [
+        "ingest:radicle-heartwood:001"
+      ]
+    },
+    {
+      "id": "r-bm25s",
+      "intent": "RETRIEVE",
+      "family": "entity-ingest",
+      "query": "BM25S dependency-free lexical retrieval",
+      "relevant": [
+        "ingest:bm25s:001"
+      ],
+      "expect_cite": [
+        "ingest:bm25s:001"
+      ]
+    },
+    {
+      "id": "r-quant",
+      "intent": "RETRIEVE",
+      "family": "entity-doc",
+      "query": "GET /quant quant-finance estate series",
+      "relevant": [
+        "doc:data-surfaces:0060",
+        "doc:data-surfaces:0061"
+      ],
+      "expect_cite": [
+        "doc:data-surfaces:0060"
+      ]
+    },
+    {
+      "id": "r-brain-lanes",
+      "intent": "RETRIEVE",
+      "family": "entity-doc",
+      "query": "brain ask two lanes private Brain never blend",
+      "relevant": [
+        "doc:data-surfaces:0072"
+      ],
+      "expect_cite": [
+        "doc:data-surfaces:0072"
+      ]
+    },
+    {
+      "id": "r-two-lanes-theme",
+      "intent": "RETRIEVE",
+      "family": "global-theme",
+      "query": "knowledge wall grounded retrieval two lanes never blend private graph unavailable",
+      "relevant": [
+        "doc:data-surfaces:0072",
+        "doc:replit:0008",
+        "doc:data-surfaces:0073"
+      ],
+      "expect_cite": [
+        "doc:data-surfaces:0072",
+        "doc:replit:0008"
+      ]
+    },
+    {
+      "id": "r-decay",
+      "intent": "RETRIEVE",
+      "family": "cross-source",
+      "query": "decay ledger GET /decay",
+      "relevant": [
+        "doc:data-surfaces:0070",
+        "doc:data-surfaces:0071",
+        "ingest:ferguson-decay-ledger:000"
+      ],
+      "expect_cite": [
+        "doc:data-surfaces:0070"
+      ]
+    },
+    {
+      "id": "r-formula-answers",
+      "intent": "RETRIEVE",
+      "family": "entity-doc",
+      "query": "formula answers route formulaAnswers",
+      "relevant": [
+        "doc:data-surfaces:0066",
+        "doc:data-surfaces:0067"
+      ],
+      "expect_cite": [
+        "doc:data-surfaces:0066",
+        "doc:data-surfaces:0067"
+      ]
+    },
+    {
+      "id": "a-empty",
+      "intent": "ABSTAIN",
+      "abstain_mode": "EMPTY_INDEX",
+      "family": "abstention",
+      "query": "",
+      "relevant": [],
+      "expect_cite": []
+    },
+    {
+      "id": "a-unknown-tokens",
+      "intent": "ABSTAIN",
+      "abstain_mode": "EMPTY_INDEX",
+      "family": "abstention",
+      "query": "zzqxymplughq",
+      "relevant": [],
+      "expect_cite": []
+    },
+    {
+      "id": "a-unknown-tokens-2",
+      "intent": "ABSTAIN",
+      "abstain_mode": "EMPTY_INDEX",
+      "family": "abstention",
+      "query": "xyzzyplughqwerty2099",
+      "relevant": [],
+      "expect_cite": []
+    },
+    {
+      "id": "a-worldcup-2099",
+      "intent": "ABSTAIN",
+      "abstain_mode": "NO_SUPPORT",
+      "family": "abstention",
+      "query": "Who won the 2099 world cup according to the corpus?",
+      "relevant": [],
+      "expect_cite": []
+    },
+    {
+      "id": "a-secret-launch",
+      "intent": "ABSTAIN",
+      "abstain_mode": "NO_SUPPORT",
+      "family": "abstention",
+      "query": "What is the secret launch code for the physical effector?",
+      "relevant": [],
+      "expect_cite": []
+    },
+    {
+      "id": "a-unpublished-earnings",
+      "intent": "ABSTAIN",
+      "abstain_mode": "NO_SUPPORT",
+      "family": "abstention",
+      "query": "Cite a Brain node about tomorrow's unpublished earnings",
+      "relevant": [],
+      "expect_cite": []
+    },
+    {
+      "id": "a-owner-setup",
+      "intent": "ABSTAIN",
+      "abstain_mode": "NO_SUPPORT",
+      "family": "abstention",
+      "query": "Retrieve the excluded OWNER-SETUP.md chunk content",
+      "relevant": [],
+      "expect_cite": []
+    },
+    {
+      "id": "a-private-9464",
+      "intent": "ABSTAIN",
+      "abstain_mode": "NO_SUPPORT",
+      "family": "abstention",
+      "query": "Which private 9464-node graph row proves Lambda is a theorem?",
+      "relevant": [],
+      "expect_cite": []
+    },
+    {
+      "id": "a-nvml-unattached",
+      "intent": "ABSTAIN",
+      "abstain_mode": "NO_SUPPORT",
+      "family": "abstention",
+      "query": "Give me the NVML joule reading from a meter that is not attached",
+      "relevant": [],
+      "expect_cite": []
+    }
+  ]
+}
