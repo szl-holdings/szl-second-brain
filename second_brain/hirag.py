@@ -167,14 +167,29 @@ def gate_v1(axes: list[float], weights: list[float], tau: float) -> tuple[str, O
 ADMISSIBLE_LICENSES = {"apache-2.0", "mit", "cc-by-4.0", "bsd-3-clause"}
 
 
+def metadata_presence_trust_anchor(node: EvidenceNode) -> bool:
+    """Explicit WEAK trust anchor: accepts any non-empty receipt/revision pair.
+    This is metadata presence only - it does NOT verify content binding, chain
+    membership, or issuer scope. Callers that need verified receipts must supply
+    a real verifier. Kept as a named, explicit opt-in so the fail-closed default
+    is never silently weakened."""
+    return bool(node.receipt_hash) and bool(node.source_revision)
+
+
 class HIRAG:
     def __init__(self, dag: ProvenanceDAG, tau: float = 0.5,
                  weights: Optional[dict[str, float]] = None,
-                 freshness_window_s: float = 30 * 24 * 3600) -> None:
+                 freshness_window_s: float = 30 * 24 * 3600,
+                 trust_anchor: Optional[Any] = None) -> None:
+        """trust_anchor: callable(EvidenceNode) -> bool that verifies a node's
+        receipt against a real trust root (chain membership, content binding,
+        issuer scope). FAIL-CLOSED DEFAULT: None means no anchor is supplied and
+        the receipt axis scores 0.0 - unverifiable receipts veto admission."""
         self.dag = dag
         self.tau = tau
         self.weights = self._validated_weights(weights)
         self.freshness_window_s = freshness_window_s
+        self.trust_anchor = trust_anchor
 
     @staticmethod
     def _validated_weights(weights):
@@ -190,8 +205,18 @@ class HIRAG:
     def _axes_for(self, node: EvidenceNode, relevance: float,
                   now: Optional[float] = None) -> dict[str, float]:
         now = now if now is not None else time.time()
-        receipt_valid = 1.0 if node.receipt_valid(chain_head=None) else 0.0
-        license_ok = 1.0 if (node.license or "unknown").lower() in ADMISSIBLE_LICENSES else 0.0
+        if self.trust_anchor is None:
+            receipt_valid = 0.0   # fail closed: no trust anchor, unverifiable receipt
+        else:
+            receipt_valid = 1.0 if self.trust_anchor(node) else 0.0
+        # Transitive license contract: the node AND every ancestor in its
+        # evidence chain must be admissible. An unknown-license ancestor must
+        # not pass through an admissible child.
+        chain_ids = self.dag.evidence_chain(node.node_id)
+        licenses_ok = all(
+            (self.dag.nodes[cid].license or "unknown").lower() in ADMISSIBLE_LICENSES
+            for cid in chain_ids)
+        license_ok = 1.0 if licenses_ok else 0.0
         age = max(0.0, now - node.ingested_at)
         freshness = max(0.0, 1.0 - age / self.freshness_window_s)
         integ = self.dag.derivation_integrity(node.node_id)
@@ -208,13 +233,20 @@ class HIRAG:
     def admit(self, node_id: str, relevance: float,
               now: Optional[float] = None) -> dict[str, Any]:
         """Admission decision for one retrieved node. Returns the receipt."""
+        if node_id not in self.dag.nodes:
+            return self._refusal(node_id, "HIRAG_UNKNOWN_NODE", now)
         node = self.dag.nodes[node_id]
-        axes = self._axes_for(node, relevance, now)
-        names = list(self.weights.keys())
-        scores = [axes[a] for a in names]
-        w = [self.weights[a] for a in names]
-        lam = lambda_v1(scores, w)
-        verdict, code = gate_v1(scores, w, self.tau)
+        try:
+            axes = self._axes_for(node, relevance, now)
+            names = list(self.weights.keys())
+            scores = [axes[a] for a in names]
+            w = [self.weights[a] for a in names]
+            verdict, code = gate_v1(scores, w, self.tau)
+            lam = lambda_v1(scores, w)
+        except HiragError as e:
+            # fail closed: an invalid configuration or input must still produce
+            # a structured BLOCK receipt, never an unrecorded exception
+            return self._refusal(node_id, e.code, now)
         return {
             "schema": SCHEMA,
             "node_id": node_id,
@@ -225,6 +257,23 @@ class HIRAG:
             "code": code,
             "admitted": verdict == GO,
             "evidence_chain": self.dag.evidence_chain(node_id),
+            "lambda_status": "ADVISORY",
+            "conjecture_status": "Conjecture 1 (machine-checked false as stated); not a theorem",
+            "truth_label": "MEASURED_ADMISSION_DECISION",
+        }
+
+    def _refusal(self, node_id: str, code: str, now: Optional[float]) -> dict[str, Any]:
+        """Structured BLOCK receipt for invalid inputs/configurations."""
+        return {
+            "schema": SCHEMA,
+            "node_id": node_id,
+            "axes": {},
+            "lambda": 0.0,
+            "tau": self.tau,
+            "verdict": BLOCK,
+            "code": code,
+            "admitted": False,
+            "evidence_chain": [],
             "lambda_status": "ADVISORY",
             "conjecture_status": "Conjecture 1 (machine-checked false as stated); not a theorem",
             "truth_label": "MEASURED_ADMISSION_DECISION",
@@ -256,8 +305,11 @@ def selfcheck() -> bool:
                         time.time() - 100, level=0))
     dag.add(EvidenceNode("sum1", "summary", "h2" * 16, "abc123", "apache-2.0",
                         time.time() - 50, derived_from=["src1"], level=1))
-    h = HIRAG(dag, tau=0.5)
+    h = HIRAG(dag, tau=0.5, trust_anchor=metadata_presence_trust_anchor)
     ok = h.admit("sum1", 0.9)["admitted"] is True
+    # fail-closed default: without a trust anchor, unverifiable receipts veto
+    h_noanchor = HIRAG(dag, tau=0.5)
+    ok &= h_noanchor.admit("sum1", 0.9)["code"] == ZERO_VETO
     # zero-veto: broken receipt refuses admission regardless of relevance
     dag.add(EvidenceNode("bad1", "unproven", "", "abc123", "apache-2.0",
                          time.time(), level=0))
