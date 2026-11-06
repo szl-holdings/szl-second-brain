@@ -2,7 +2,7 @@
 """HIRAG adversarial tests: 9/9 must pass; the gate fails closed everywhere."""
 import sys, time, unittest
 sys.path.insert(0, ".")
-from second_brain.hirag import (EvidenceNode, ProvenanceDAG, HIRAG, HiragError,
+from second_brain.hirag import (EvidenceNode, ProvenanceDAG, HIRAG, HiragError, metadata_presence_trust_anchor,
                                 lambda_v1, gate_v1, ZERO_VETO, NUMERIC_TIE)
 
 class TestHIRAG(unittest.TestCase):
@@ -104,3 +104,53 @@ class TestAdmissionContract(unittest.TestCase):
         r = HIRAG(self._dag(), tau=0.5).admit("derived", 1.0)
         self.assertFalse(r["admitted"])
         self.assertEqual(r["code"], ZERO_VETO)
+
+
+class TestTrustAnchorAndTransitiveContract(unittest.TestCase):
+    """Post-#70 regression tests: trust anchor, transitive license, error receipts."""
+
+    def _node(self, dag, nid, lic="mit", parents=()):
+        dag.add(EvidenceNode(nid, "c", "h" * 16, "r", lic, time.time(),
+                             derived_from=list(parents)))
+
+    def test_no_trust_anchor_fails_closed(self):
+        # P1: forged receipt strings must NOT admit without a trusted anchor
+        dag = ProvenanceDAG()
+        self._node(dag, "forged")
+        r = HIRAG(dag, tau=0.5).admit("forged", 1.0)
+        self.assertFalse(r["admitted"])
+        self.assertEqual(r["code"], ZERO_VETO)
+
+    def test_metadata_anchor_is_explicit_opt_in(self):
+        dag = ProvenanceDAG()
+        self._node(dag, "n")
+        r = HIRAG(dag, tau=0.5, trust_anchor=metadata_presence_trust_anchor).admit("n", 1.0)
+        self.assertTrue(r["admitted"])   # explicit weak opt-in, honestly labeled
+        # and the anchor actually decides:
+        r2 = HIRAG(dag, tau=0.5, trust_anchor=lambda n: False).admit("n", 1.0)
+        self.assertFalse(r2["admitted"])
+
+    def test_unknown_license_ancestor_vetoes_child(self):
+        # P2: an unknown-license ancestor must not pass through an MIT child
+        dag = ProvenanceDAG()
+        self._node(dag, "src", lic="unknown")
+        self._node(dag, "child", lic="mit", parents=["src"])
+        r = HIRAG(dag, tau=0.5, trust_anchor=metadata_presence_trust_anchor).admit("child", 1.0)
+        self.assertFalse(r["admitted"])
+        self.assertEqual(r["code"], ZERO_VETO)
+
+    def test_admit_invalid_relevance_returns_block_receipt(self):
+        # P3: invalid input must produce a structured BLOCK receipt, not a raise
+        dag = ProvenanceDAG()
+        self._node(dag, "n")
+        r = HIRAG(dag, tau=0.5, trust_anchor=metadata_presence_trust_anchor).admit("n", 1.5)
+        self.assertEqual(r["verdict"], "BLOCK")
+        self.assertEqual(r["code"], "HIRAG_RELEVANCE_OUT_OF_RANGE")
+        self.assertFalse(r["admitted"])
+
+    def test_unknown_node_returns_block_receipt(self):
+        dag = ProvenanceDAG()
+        self._node(dag, "n")
+        r = HIRAG(dag, tau=0.5).admit("ghost", 1.0)
+        self.assertEqual(r["verdict"], "BLOCK")
+        self.assertEqual(r["code"], "HIRAG_UNKNOWN_NODE")
