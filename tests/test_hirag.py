@@ -154,3 +154,49 @@ class TestTrustAnchorAndTransitiveContract(unittest.TestCase):
         r = HIRAG(dag, tau=0.5).admit("ghost", 1.0)
         self.assertEqual(r["verdict"], "BLOCK")
         self.assertEqual(r["code"], "HIRAG_UNKNOWN_NODE")
+
+
+class TestProvenanceHardening(unittest.TestCase):
+    """Post-#72 hardening: anchor-transitive integrity, finite timestamps,
+    freshness-window validation, strict-JSON-safe receipts."""
+
+    def _dag(self):
+        dag = ProvenanceDAG()
+        dag.add(EvidenceNode("p", "c", "h" * 16, "r", "mit", time.time()))
+        dag.add(EvidenceNode("child", "c", "h2" * 16, "r2", "mit", time.time(),
+                             derived_from=["p"]))
+        return dag
+
+    def test_anchor_rejected_ancestor_vetoes_child(self):
+        # the trust anchor decides parent validity too, not just the node's own
+        dag = self._dag()
+        r = HIRAG(dag, tau=0.5, trust_anchor=lambda n: n.node_id != "p").admit("child", 1.0)
+        self.assertFalse(r["admitted"])
+        self.assertEqual(r["axes"]["derivation_integrity"], 0.0)
+
+    def test_no_anchor_derivation_fails_closed(self):
+        dag = self._dag()
+        r = HIRAG(dag, tau=0.5).admit("child", 1.0)
+        self.assertEqual(r["axes"]["derivation_integrity"], 0.0)
+        self.assertFalse(r["admitted"])
+
+    def test_nonfinite_timestamp_rejected_at_insertion(self):
+        dag = ProvenanceDAG()
+        with self.assertRaises(HiragError) as cm:
+            dag.add(EvidenceNode("n", "c", "h", "r", "mit", float("nan")))
+        self.assertEqual(cm.exception.code, "HIRAG_NONFINITE_TIMESTAMP")
+
+    def test_zero_freshness_window_rejected_at_construction(self):
+        dag = self._dag()
+        with self.assertRaises(HiragError) as cm:
+            HIRAG(dag, tau=0.5, freshness_window_s=0.0,
+                  trust_anchor=metadata_presence_trust_anchor)
+        self.assertEqual(cm.exception.code, "HIRAG_FRESHNESS_WINDOW_INVALID")
+
+    def test_nan_tau_receipt_is_strict_json(self):
+        import json
+        dag = self._dag()
+        r = HIRAG(dag, tau=float("nan"),
+                  trust_anchor=metadata_presence_trust_anchor).admit("child", 1.0)
+        self.assertIsNone(r["tau"])   # non-finite tau never enters the receipt
+        json.dumps(r, allow_nan=False)  # must not raise
