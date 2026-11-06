@@ -16,8 +16,13 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.12"
+      - name: Stage Space payload (Dockerfile COPY sources must be in the manifest)
+        run: python tools/check_space_payload.py --stage "$RUNNER_TEMP/space-payload"
       - name: Build explicit runtime copy set
-        run: docker build --tag szl-second-brain:ci .
+        run: docker build --tag szl-second-brain:ci "$RUNNER_TEMP/space-payload"
       - name: Exercise runtime files without external network or writes
         run: |
           docker run --rm --interactive --network none --read-only \
@@ -36,6 +41,8 @@ jobs:
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: "3.12"
+      - name: Require Space payload manifest to cover Dockerfile COPY sources
+        run: python tools/check_space_payload.py
       - name: Install the package with its test extra (clean-machine contract)
         # Exactly what a contributor runs on a fresh machine; requirements.txt stays the container input.
         run: python -m pip install --disable-pip-version-check -e ".[test]"
