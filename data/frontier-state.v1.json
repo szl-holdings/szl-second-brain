@@ -1,6 +1,6 @@
 {
-  "candidate_count": 144,
-  "candidate_set_sha256": "3fb2cf2b7e55ecf179cf76e6afe97bcbbbd8fa645d1595bc0abb7440cf64e54a",
+  "candidate_count": 150,
+  "candidate_set_sha256": "61ff93558d0dfb6f6dcf947677255cc2030454a7a1a3a8841835144e32ecaac8",
   "controller_content_access": "AUTHORIZED_CONTROLLER_ONLY",
   "execution_authority": "NONE",
   "lambda": "CONJECTURE_1",
@@ -30,28 +30,28 @@
     "executable-formula": 21,
     "formula-authority": 1,
     "forum-insight": 2,
-    "python-contract": 5,
+    "python-contract": 7,
     "quant-domain": 9,
     "research-metadata": 6,
-    "source-document": 62
+    "source-document": 66
   },
   "sources": [
     {
       "candidate_count": 8,
-      "content_sha256": "660ab48c30f0718c7383ecdecfce7148998836941dd663ce67a02ba85e3d09c3",
+      "content_sha256": "c3bb1817ac7edae652ff7b8e3ac3fa99bad02bbb06a3c9024e5da69204f8466e",
       "parser": "public_estate",
       "path": "governance/public-estate.v1.json",
       "repository": "szl-holdings/a11oy",
-      "revision": "0860babc5da069dd713e4a81ef77d66eb214a24c",
+      "revision": "545bc9a8c6391e181dd261cb434d2311a61c824d",
       "source_id": "a11oy_public_estate"
     },
     {
-      "candidate_count": 5,
-      "content_sha256": "2a1644066c931bd2a73e880c60666765cb10607c4282c22206cb8be01d177e22",
+      "candidate_count": 7,
+      "content_sha256": "1fb7b74670e600dfcfd8a4ad1a11ca4fbf848022c57e4d7ed2edbf70f7f85bf6",
       "parser": "python_contract",
       "path": "inference/production.py",
       "repository": "szl-holdings/szl-forge",
-      "revision": "943f6ab987bbe120cae32649c46c3a5f0b6f9e9b",
+      "revision": "815a3a1ca1318f5bd969b936af664cfe73a146f8",
       "source_id": "forge_production_controller"
     },
     {
@@ -73,30 +73,30 @@
       "source_id": "governed_kernel_suite"
     },
     {
-      "candidate_count": 21,
-      "content_sha256": "475b11bdafb47d1f8cc84c865fe4067e609f9e7f58e8ad51dd2718c052182027",
+      "candidate_count": 23,
+      "content_sha256": "6113e7cf3be190b18f1ee3da0c440d92c96086f7bd5cf15c74d878c68ee949a5",
       "parser": "markdown",
       "path": "README.md",
       "repository": "szl-holdings/anatomy",
-      "revision": "0c27d5823079493087a822fa1abe37387785f28f",
+      "revision": "b9e87733cd228fb73d30f5a8abc3e3ea27f57fa2",
       "source_id": "living_anatomy"
     },
     {
-      "candidate_count": 12,
-      "content_sha256": "6e27c66f382f221e2472760381ffb21bd206a7f24b5403f90aca603d2cb15ba3",
+      "candidate_count": 13,
+      "content_sha256": "1e9e77c4ccf8fc9d2a1a765f1e7bd72f373ddade93596aedf3949a8c12ff80fb",
       "parser": "markdown",
       "path": "README.md",
       "repository": "szl-holdings/szl-nemo",
-      "revision": "229503457d99a1514e7d9ca788fa3cf07b3c3ef4",
+      "revision": "70f8659baab7ad69a9e6b1931f61d91aef4c6e96",
       "source_id": "nemo_witness"
     },
     {
-      "candidate_count": 5,
-      "content_sha256": "89d8680d357055dc99460228e46ceb8dad784d875de69864498d85e6851cfabc",
+      "candidate_count": 6,
+      "content_sha256": "96d4b1f2eb7cd24b6aa58c63924b701d27b4a8f491fafefa1cb9a06cbb18df72",
       "parser": "markdown",
       "path": "README.md",
       "repository": "szl-holdings/szl-ouroboros",
-      "revision": "a9a0aaa2cb548c23f7aa6f7c4996dccf0a61a262",
+      "revision": "b4705f1294237cadd99ccee6edc10567d5da6dd1",
       "source_id": "ouroboros_runtime"
     },
     {
@@ -121,15 +121,15 @@
     },
     {
       "candidate_count": 2,
-      "content_sha256": "85c196628b64b21dab5f3ecffb466201bc57784dc4c6485c1a86cf45542b87f8",
+      "content_sha256": "57a6f8daff59b92a1d22f1724e11e936955d3269446a494dfd2e00a9a6a324ce",
       "parser": "forum_pilot",
       "path": "dataset/sources.public.jsonl",
       "repository": "szl-holdings/szl-science-forum-corpus",
-      "revision": "edf05833d34b9cb84383bb8cf7b86b0f9b48f1dc",
+      "revision": "e56e65e426bbd11246e9d0b344d3ac9ee5d7ffb2",
       "source_id": "science_forum_pilot"
     }
   ],
   "state": "REVIEW_REQUIRED",
-  "state_sha256": "c41da91e636cd2fd8c485cdd33b68f7af739e98ca809ea5fc8f62d676839dd24",
+  "state_sha256": "2f94b8aa8b139793a25cf19dafda554a66a416c0f654fccc5ca6c7304c2a4694",
   "training_authority": "NONE"
 }
