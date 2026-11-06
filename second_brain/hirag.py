@@ -281,12 +281,13 @@ class HIRAG:
 
     def _refusal(self, node_id: str, code: str, now: Optional[float]) -> dict[str, Any]:
         """Structured BLOCK receipt for invalid inputs/configurations."""
+        tau_out = self.tau if (_is_real(self.tau) and math.isfinite(self.tau)) else None
         return {
             "schema": SCHEMA,
             "node_id": node_id,
             "axes": {},
             "lambda": 0.0,
-            "tau": self.tau,
+            "tau": tau_out,
             "verdict": BLOCK,
             "code": code,
             "admitted": False,
