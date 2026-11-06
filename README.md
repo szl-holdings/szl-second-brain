@@ -319,3 +319,5 @@ review_content = review_hydrator.hydrate(
 
 GitHub is the source of truth; the Hugging Face Space is a deployed public
 surface. Apache-2.0. Doctrine v11.
+
+Estate on Hugging Face: models, datasets and Spaces are published under the [SZLHOLDINGS](https://huggingface.co/SZLHOLDINGS) org.

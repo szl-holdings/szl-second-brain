@@ -1,0 +1,28 @@
+cff-version: 1.2.0
+message: If you use this software, please cite it using the metadata from this file.
+type: software
+title: szl-holdings/szl-second-brain — Public second-brain retrieval hologram
+version: 1.5.0
+date-released: '2026-11-06'
+license: Apache-2.0
+url: https://huggingface.co/spaces/SZLHOLDINGS/szl-second-brain
+repository-code: https://github.com/szl-holdings/szl-second-brain
+authors:
+- family-names: Lutar
+  given-names: Stephen P.
+  name-suffix: Jr.
+  orcid: https://orcid.org/0009-0001-0110-4173
+  affiliation: SZL Holdings
+keywords:
+- knowledge-base
+- retrieval
+- szl-holdings
+- python
+- huggingface
+- spaces
+- hologram
+- governed-ai
+identifiers:
+- type: doi
+  value: 10.5281/zenodo.19944926
+  description: Concept DOI for the canonical Ouroboros Thesis (always resolves to the latest version)
