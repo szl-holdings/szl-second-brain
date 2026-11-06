@@ -12,8 +12,7 @@ on:
         default: "manual frontier refresh"
 
 permissions:
-  contents: write
-  pull-requests: read
+  contents: read
 
 concurrency:
   group: continuous-frontier-memory
@@ -21,6 +20,9 @@ concurrency:
 
 jobs:
   refresh:
+    permissions:
+      contents: write
+      pull-requests: read
     if: github.repository == 'szl-holdings/szl-second-brain'
     runs-on: ubuntu-24.04
     timeout-minutes: 20
