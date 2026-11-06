@@ -86,6 +86,10 @@ class ProvenanceDAG:
     def add(self, node: EvidenceNode) -> None:
         if node.node_id in self.nodes:
             raise HiragError("HIRAG_DUPLICATE_NODE", node.node_id)
+        if not _is_real(node.ingested_at) or \
+                (isinstance(node.ingested_at, float) and not math.isfinite(node.ingested_at)):
+            raise HiragError("HIRAG_NONFINITE_TIMESTAMP",
+                             f"node {node.node_id} ingested_at must be a finite real")
         for parent in node.derived_from:
             if parent not in self.nodes:
                 raise HiragError("HIRAG_UNKNOWN_PARENT", f"{node.node_id} -> {parent}")
@@ -190,6 +194,11 @@ class HIRAG:
         self.weights = self._validated_weights(weights)
         self.freshness_window_s = freshness_window_s
         self.trust_anchor = trust_anchor
+        if not _is_real(freshness_window_s) or \
+                (isinstance(freshness_window_s, float) and not math.isfinite(freshness_window_s)) \
+                or freshness_window_s <= 0:
+            raise HiragError("HIRAG_FRESHNESS_WINDOW_INVALID",
+                             "freshness_window_s must be a positive finite real")
 
     @staticmethod
     def _validated_weights(weights):
@@ -217,9 +226,16 @@ class HIRAG:
             (self.dag.nodes[cid].license or "unknown").lower() in ADMISSIBLE_LICENSES
             for cid in chain_ids)
         license_ok = 1.0 if licenses_ok else 0.0
+        # derivation integrity uses the SAME trust anchor as the node itself:
+        # an anchor-rejected ancestor must veto the descendant (all-edges,
+        # transitive). Without an anchor, integrity fails closed (0.0).
+        if self.trust_anchor is None:
+            integ = 0.0
+        else:
+            integ = 1.0 if all(self.trust_anchor(self.dag.nodes[cid])
+                                for cid in chain_ids) else 0.0
         age = max(0.0, now - node.ingested_at)
         freshness = max(0.0, 1.0 - age / self.freshness_window_s)
-        integ = self.dag.derivation_integrity(node.node_id)
         if not _is_real(relevance) or not (0.0 <= relevance <= 1.0):
             raise HiragError("HIRAG_RELEVANCE_OUT_OF_RANGE", str(relevance))
         return {
@@ -247,12 +263,13 @@ class HIRAG:
             # fail closed: an invalid configuration or input must still produce
             # a structured BLOCK receipt, never an unrecorded exception
             return self._refusal(node_id, e.code, now)
+        tau_out = self.tau if (_is_real(self.tau) and math.isfinite(self.tau)) else None
         return {
             "schema": SCHEMA,
             "node_id": node_id,
             "axes": axes,
             "lambda": round(lam, 9),
-            "tau": self.tau,
+            "tau": tau_out,
             "verdict": verdict,
             "code": code,
             "admitted": verdict == GO,
@@ -264,12 +281,13 @@ class HIRAG:
 
     def _refusal(self, node_id: str, code: str, now: Optional[float]) -> dict[str, Any]:
         """Structured BLOCK receipt for invalid inputs/configurations."""
+        tau_out = self.tau if (_is_real(self.tau) and math.isfinite(self.tau)) else None
         return {
             "schema": SCHEMA,
             "node_id": node_id,
             "axes": {},
             "lambda": 0.0,
-            "tau": self.tau,
+            "tau": tau_out,
             "verdict": BLOCK,
             "code": code,
             "admitted": False,
