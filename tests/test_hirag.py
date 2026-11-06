@@ -51,3 +51,56 @@ class TestHIRAG(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+class TestAdmissionContract(unittest.TestCase):
+    """Regression tests for the four admission defects (averaging, weight
+    omission, chain-head binding, unknown license). Fail closed everywhere."""
+
+    def _dag(self):
+        dag = ProvenanceDAG()
+        dag.add(EvidenceNode("good", "g", "h" * 16, "r1", "mit", time.time()))
+        dag.add(EvidenceNode("bad", "b", "", "r1", "mit", time.time()))
+        dag.add(EvidenceNode("derived", "d", "h" * 16, "r2", "mit", time.time(),
+                             derived_from=["good", "bad"]))
+        return dag
+
+    def test_one_broken_parent_vetoes(self):
+        # D1: averaging let one broken parent of two score 0.5; now it must be 0.0
+        self.assertEqual(self._dag().derivation_integrity("derived"), 0.0)
+
+    def test_weight_omission_fails_closed(self):
+        # D2: custom weights cannot drop mandatory axes
+        with self.assertRaises(HiragError):
+            HIRAG(self._dag(), tau=0.5, weights={"relevance": 1.0})
+
+    def test_extra_axis_fails_closed(self):
+        with self.assertRaises(HiragError):
+            HIRAG(self._dag(), tau=0.5, weights={
+                "source_receipt_valid": 0.2, "license_admissible": 0.2,
+                "freshness": 0.2, "relevance": 0.2,
+                "derivation_integrity": 0.1, "extra": 0.1})
+
+    def test_chain_head_binding(self):
+        # D3: a supplied chain head must match the node's declared claim
+        n = EvidenceNode("x", "t", "h" * 16, "r", "mit", time.time())
+        self.assertFalse(n.receipt_valid("forged-head"))          # no claim -> False
+        n2 = EvidenceNode("x", "t", "h" * 16, "r", "mit", time.time(),
+                          chain_head_claim="head-abc")
+        self.assertTrue(n2.receipt_valid("head-abc"))
+        self.assertFalse(n2.receipt_valid("other-head"))
+        self.assertTrue(n2.receipt_valid(None))                   # metadata presence only
+
+    def test_unknown_license_vetoes(self):
+        # D4: unknown rights fail closed, not admissible by string match
+        dag = ProvenanceDAG()
+        dag.add(EvidenceNode("u", "t", "h" * 16, "r", "unknown", time.time()))
+        r = HIRAG(dag, tau=0.5).admit("u", 0.99)
+        self.assertFalse(r["admitted"])
+        self.assertEqual(r["code"], ZERO_VETO)
+
+    def test_broken_parent_node_refused_full_weights(self):
+        # even with full canonical weights, a derived node with one broken
+        # parent must refuse (derivation_integrity = 0.0 vetoes)
+        r = HIRAG(self._dag(), tau=0.5).admit("derived", 1.0)
+        self.assertFalse(r["admitted"])
+        self.assertEqual(r["code"], ZERO_VETO)

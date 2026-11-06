@@ -64,14 +64,19 @@ class EvidenceNode:
     derived_from: list[str] = field(default_factory=list)  # parent node_ids
     level: int = 0                          # hierarchy level (0 = source chunk)
 
+    chain_head_claim: Optional[str] = None  # declared membership head, if any
+
     def receipt_valid(self, chain_head: Optional[str]) -> bool:
-        """Receipt validity: hash present and, when a chain head is supplied,
-        the node claims membership honestly (non-empty hash, declared revision)."""
+        """Receipt validity. With no chain head this is metadata presence only
+        (non-empty hash and revision) - it is NOT chain verification. When a
+        chain head is supplied, the node must declare a matching membership
+        claim; an absent or mismatched claim fails closed (False)."""
         if not self.receipt_hash or not self.source_revision:
             return False
         if chain_head is None:
             return True
-        return bool(self.receipt_hash) and bool(self.source_revision)
+        return (self.chain_head_claim is not None
+                and self.chain_head_claim == chain_head)
 
 
 @dataclass
@@ -88,19 +93,17 @@ class ProvenanceDAG:
         self.nodes[node.node_id] = node
 
     def derivation_integrity(self, node_id: str, verify_parent=None) -> float:
-        """1.0 iff every derived-from edge verifies. A node with no parents is
+        """All-edges veto: 1.0 iff EVERY edge verifies, 0.0 if any fails. A node with no parents is
         a source chunk: integrity is its receipt validity."""
         node = self.nodes[node_id]
         if not node.derived_from:
             return 1.0 if node.receipt_hash else 0.0
-        ok = 0
         for parent_id in node.derived_from:
             parent = self.nodes[parent_id]
-            if verify_parent is not None:
-                ok += 1 if verify_parent(parent) else 0
-            else:
-                ok += 1 if parent.receipt_hash else 0
-        return ok / len(node.derived_from)
+            valid = verify_parent(parent) if verify_parent is not None else bool(parent.receipt_hash)
+            if not valid:
+                return 0.0
+        return 1.0
 
     def evidence_chain(self, node_id: str) -> list[str]:
         """The derived-from path from a node to its source chunks (DAG order)."""
@@ -159,7 +162,9 @@ def gate_v1(axes: list[float], weights: list[float], tau: float) -> tuple[str, O
 
 # ── HIRAG: hierarchical retrieval + admission ───────────────────────────────
 
-ADMISSIBLE_LICENSES = {"apache-2.0", "mit", "cc-by-4.0", "bsd-3-clause", "unknown"}
+# Unknown rights are NOT admissible: fail closed. An "unknown" license
+# requires an explicit owner-approved corpus policy before admission.
+ADMISSIBLE_LICENSES = {"apache-2.0", "mit", "cc-by-4.0", "bsd-3-clause"}
 
 
 class HIRAG:
@@ -168,8 +173,19 @@ class HIRAG:
                  freshness_window_s: float = 30 * 24 * 3600) -> None:
         self.dag = dag
         self.tau = tau
-        self.weights = weights or dict(DEFAULT_WEIGHTS)
+        self.weights = self._validated_weights(weights)
         self.freshness_window_s = freshness_window_s
+
+    @staticmethod
+    def _validated_weights(weights):
+        """Admission weights must cover exactly the canonical axis set. Missing,
+        extra, or unknown axes fail closed: a ranking weight configuration can
+        never silently drop a mandatory provenance/rights/integrity axis."""
+        w = dict(weights) if weights is not None else dict(DEFAULT_WEIGHTS)
+        if set(w.keys()) != set(AXES):
+            raise HiragError("HIRAG_AXIS_SET_INVALID",
+                             "weights must cover exactly %s; got %s" % (sorted(AXES), sorted(w.keys())))
+        return w
 
     def _axes_for(self, node: EvidenceNode, relevance: float,
                   now: Optional[float] = None) -> dict[str, float]:
