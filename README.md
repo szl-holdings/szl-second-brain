@@ -7,7 +7,7 @@ sdk: docker
 app_port: 7860
 pinned: false
 license: apache-2.0
-short_description: Governed retrieval and review-gated continuous frontier memory.
+short_description: Governed retrieval; review-gated continuous frontier memory.
 tags:
   - retrieval
   - hybrid-search
