@@ -305,7 +305,6 @@ def selfcheck() -> bool:
                         time.time() - 100, level=0))
     dag.add(EvidenceNode("sum1", "summary", "h2" * 16, "abc123", "apache-2.0",
                         time.time() - 50, derived_from=["src1"], level=1))
-    from second_brain.hirag import metadata_presence_trust_anchor
     h = HIRAG(dag, tau=0.5, trust_anchor=metadata_presence_trust_anchor)
     ok = h.admit("sum1", 0.9)["admitted"] is True
     # fail-closed default: without a trust anchor, unverifiable receipts veto
