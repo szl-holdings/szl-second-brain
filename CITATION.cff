@@ -1,0 +1,28 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it using the metadata from this file."
+type: software
+title: "SZL Second Brain — governed hybrid retrieval and review-gated continuous frontier memory"
+abstract: >-
+  A governed memory plane for SZL inference: public handles and digests
+  outside; authorized content hydration inside the trusted controller.
+  Governed hybrid retrieval and review-gated continuous frontier memory.
+  Lambda uniqueness remains Conjecture 1.
+version: "1.5.0"
+license: Apache-2.0
+repository-code: "https://github.com/szl-holdings/szl-second-brain"
+url: "https://huggingface.co/spaces/SZLHOLDINGS/szl-second-brain"
+authors:
+  - family-names: "Lutar"
+    given-names: "Stephen P."
+    name-suffix: "Jr."
+    orcid: "https://orcid.org/0009-0001-0110-4173"
+    affiliation: "SZL Holdings"
+keywords:
+  - governed-ai
+  - retrieval
+  - hybrid-search
+  - knowledge-base
+  - governance
+  - fail-closed
+  - evidence
+  - szl-holdings
