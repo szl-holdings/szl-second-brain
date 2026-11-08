@@ -1,0 +1,24 @@
+{
+ "schema": "szl.receipt/v1",
+ "skill": "szl-sweep",
+ "skill_version": "1.0.0",
+ "action": "grammar",
+ "generated_at": "2026-11-08T14:13:29.145147+00:00",
+ "inputs": {},
+ "outputs": {
+  "triggers": [
+   "szl holdings sweep",
+   "szl sweep",
+   "estate sweep"
+  ],
+  "actions": {
+   "battery <model@sha>": "run the 6-probe confabulation battery on a pinned model",
+   "receipts [--limit N]": "read back recent khipu receipts",
+   "grammar": "print this grammar"
+  },
+  "doctrine": "a trigger phrase is a pointer into a governed capability; the readback is a receipt"
+ },
+ "verdict": "OK",
+ "payload_digest": "134c5672820c88248fbafed701fd5f1a198f95c8155b130aa346f507bde9dacc",
+ "doctrine": "receipts prove the stated property only; failures stay published"
+}
