@@ -16,7 +16,7 @@ verdict verbatim, PASS or FAIL.
 """
 from __future__ import annotations
 
-import argparse, datetime as dt, hashlib, json, os, sys
+import argparse, datetime as dt, hashlib, json, os
 
 RECEIPT_SCHEMA = "szl.receipt/v1"
 SKILL_VERSION = "1.0.0"
