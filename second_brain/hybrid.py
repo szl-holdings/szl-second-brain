@@ -93,6 +93,24 @@ class HybridSecondBrain:
             raise RetrievalBoundaryError("fallback settings must be Boolean")
         self.allow_sparse_fallback, self.allow_reranker_fallback = allow_sparse_fallback, allow_reranker_fallback
 
+    def configuration_observation(self) -> dict[str, Any]:
+        """Read configuration without invoking providers or implying qualification.
+
+        Presence is not participation, availability, quality or authorization.
+        A query's ranking_receipt remains the evidence for actual participation.
+        Provider objects and their arbitrary metadata are deliberately not exposed.
+        """
+        brain = self.brain.snapshot()
+        return {
+            "schema": "szl.second-brain.configuration-observation/v1",
+            "dense_provider_configured": self.dense_provider is not None,
+            "reranker_configured": self.reranker is not None,
+            "corpus_generation_sha256": brain.generation_sha256,
+            "corpus_row_count": brain.n,
+            "scope": "CONFIGURATION_ONLY",
+            "participation_evidence": "QUERY_RANKING_RECEIPT_REQUIRED",
+        }
+
     def _sparse(self, query: str, candidate_k: int) -> tuple[list[str], list[float]]:
         hit = self.brain.search_candidates(query, limit=candidate_k)
         handles, scores = hit.get("handles", []), hit.get("scores", [])
@@ -299,3 +317,4 @@ def hybrid_context(query: str, k: int = 6) -> dict[str, Any]:
 __all__ = ["AccessAuthorizer", "AuthorizedHydrator", "DenseProvider", "HybridSecondBrain", "Reranker",
            "RetrievalBoundaryError", "ProviderUnavailable", "SCHEMA_HYBRID", "SCHEMA_HYDRATION",
            "hybrid_context", "hybrid_index", "reset_hybrid_index"]
+
