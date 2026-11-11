@@ -24,6 +24,7 @@ from __future__ import annotations
 import hashlib
 import math
 from collections.abc import Mapping, Sequence
+from types import MappingProxyType
 from typing import Any
 
 from second_brain.corpus import Corpus
@@ -72,8 +73,13 @@ class CorpusAdmission:
             if not isinstance(meta, Mapping):
                 raise CorpusAdmissionError("missing owner metadata for node " + row.node_id)
             ingested_at = meta.get("ingested_at")
-            if (not isinstance(ingested_at, (int, float)) or isinstance(ingested_at, bool)
-                    or not math.isfinite(ingested_at)):
+            try:
+                timestamp_ok = (isinstance(ingested_at, (int, float))
+                                and not isinstance(ingested_at, bool)
+                                and math.isfinite(ingested_at))
+            except OverflowError:  # e.g. a huge int that cannot convert to float
+                timestamp_ok = False
+            if not timestamp_ok:
                 raise CorpusAdmissionError("measured ingested_at is required for node " + row.node_id)
             license_value = meta.get("license")
             if license_value is None:
@@ -94,8 +100,11 @@ class CorpusAdmission:
             raise CorpusAdmissionError("hirag configuration rejected: " + str(exc)) from exc
 
     @property
-    def dag(self) -> ProvenanceDAG:
-        return self._hirag.dag
+    def licenses(self) -> Mapping[str, str]:
+        """Read-only owner-declared license values, passed through exactly.
+        The admission DAG itself is deliberately NOT exposed: mutating a node
+        after construction would bypass the validated corpus binding."""
+        return MappingProxyType(dict(self._licenses))
 
     def _content_binding_anchor(self, node: EvidenceNode) -> bool:
         """Receipt axis: the node carries the verified content digest AND is

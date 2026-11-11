@@ -123,7 +123,7 @@ class AdmissionWiringTests(unittest.TestCase):
         licenses = {"n1": declared, "n2": declared, "n3": declared}
         brain, admission = self._corpus_pair(licenses)
         for node_id in self.texts:
-            self.assertEqual(admission.dag.nodes[node_id].license, declared)
+            self.assertEqual(admission.licenses[node_id], declared)
         result = HybridSecondBrain(brain, admission=admission).context(
             "formula authority retrieval admission", k=3)
         self.assertEqual(result["ranking_receipt"]["admission_detail"]["admitted_count"], 3)
@@ -153,8 +153,9 @@ class AdmissionWiringTests(unittest.TestCase):
     def test_corpus_admission_requires_measured_ingested_at_and_bound_generation(self):
         path, generation = _write_corpus(self.directory, self.texts, self.licenses)
         corpus = load_corpus(path)
-        # ingested_at must be a measured real: missing or non-numeric fails closed
-        for bad in (None, "yesterday", True):
+        # ingested_at must be a measured real: missing, non-numeric, oversized
+        # (a value that cannot convert to float must not escape as OverflowError)
+        for bad in (None, "yesterday", True, 10 ** 1000):
             meta = {node_id: {"license": self.licenses[node_id], "ingested_at": bad}
                     for node_id in self.texts}
             with self.assertRaises(CorpusAdmissionError):
