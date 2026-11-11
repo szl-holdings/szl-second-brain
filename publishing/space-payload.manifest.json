@@ -25,6 +25,7 @@
     "second_brain/__init__.py",
     "second_brain/__main__.py",
     "second_brain/_data.py",
+    "second_brain/admission.py",
     "second_brain/console.py",
     "second_brain/corpus.py",
     "second_brain/embedding_cache.py",
