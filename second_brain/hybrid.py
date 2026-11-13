@@ -13,6 +13,7 @@ from collections.abc import Mapping, Sequence
 from pathlib import Path
 from typing import Any, Protocol
 
+from second_brain.admission import CorpusAdmission
 from second_brain.corpus import CorpusIntegrityError, load_corpus
 from second_brain.retrieve import CORPUS, SecondBrainIndex, canonical_sha256, index
 
@@ -80,8 +81,12 @@ class HybridSecondBrain:
                  dense_provider: DenseProvider | None = None, reranker: Reranker | None = None,
                  sparse_weight: float = 1.0, dense_weight: float = 1.0, rrf_k: int = 60,
                  candidate_multiplier: int = 4, per_source_limit: int = 3,
-                 allow_sparse_fallback: bool = True, allow_reranker_fallback: bool = True) -> None:
+                 allow_sparse_fallback: bool = True, allow_reranker_fallback: bool = True,
+                 admission: CorpusAdmission | None = None) -> None:
         self.brain = brain if brain is not None else index()
+        if admission is not None and not isinstance(admission, CorpusAdmission):
+            raise RetrievalBoundaryError("admission must be a CorpusAdmission instance")
+        self.admission = admission
         self.dense_provider, self.reranker = dense_provider, reranker
         self.sparse_weight, self.dense_weight = _finite_score(sparse_weight), _finite_score(dense_weight)
         if self.sparse_weight <= 0 or self.dense_weight <= 0:
@@ -200,6 +205,27 @@ class HybridSecondBrain:
                 counts[source] = counts.get(source, 0) + 1
                 if len(selected) >= requested_k:
                     break
+        # HIRAG admission (optional): the post-limit ranked selection is offered
+        # to the content-bound corpus admission gate. Refused nodes are dropped
+        # with NO backfill, and every per-node decision is recorded in the
+        # receipt. A generation mismatch fails closed at query time.
+        admission_state, admission_detail = "NOT_APPLIED", None
+        if self.admission is not None:
+            if self.admission.generation_sha256 != self.brain.generation_sha256:
+                raise RetrievalBoundaryError("admission corpus generation mismatch")
+            admitted_run = self.admission.admit_selection(selected)
+            admitted = set(admitted_run["admitted"])
+            selected = [node_id for node_id in selected if node_id in admitted]
+            admission_state = "APPLIED"
+            admission_detail = {
+                "gate": admitted_run["gate"],
+                "relevance_measure": admitted_run["relevance_measure"],
+                "admission_rate": admitted_run["admission_rate"],
+                "admitted_count": len(admitted_run["admitted"]),
+                "refused_count": len(admitted_run["refused"]),
+                "decisions": {receipt["node_id"]: receipt["admitted"]
+                              for receipt in admitted_run["receipts"]},
+            }
         handles = [{"nodeId": node_id, "nodeKind": "INDEX", "label": "DECLARED",
                     "note": authoritative[node_id]["title"][:160]} for node_id in selected]
         evidence = [{"node_id": node_id, "source": authoritative[node_id]["source"],
@@ -209,6 +235,8 @@ class HybridSecondBrain:
             mode += "+RERANKER"
         elif reranker_state == "UNAVAILABLE":
             mode += "+RERANKER_UNAVAILABLE"
+        if admission_state == "APPLIED":
+            mode += "+HIRAG_ADMISSION"
         if dense_binding != getattr(self.dense_provider, "binding", None):
             raise RetrievalBoundaryError("provider identity changed during retrieval")
         receipt = {"dense_binding": dense_binding, "mode": mode, "sparse": "OK", "dense": dense_state, "dense_error_type": dense_error,
@@ -218,6 +246,7 @@ class HybridSecondBrain:
                    "candidate_k": candidate_k, "sparse_candidate_count": len(sparse_ids),
                    "dense_candidate_count": len(dense_ids), "selected_count": len(selected),
                    "per_source_limit": self.per_source_limit, "generation_sha256": self.brain.generation_sha256,
+                   "admission": admission_state, "admission_detail": admission_detail,
                    "component_ranks": {node_id: component_ranks[node_id] for node_id in selected},
                    "sparse_scores": {node_id: sparse_scores[i] for i, node_id in enumerate(sparse_ids) if node_id in selected},
                    "dense_scores": {node_id: dense_scores[i] for i, node_id in enumerate(dense_ids) if node_id in selected}}
