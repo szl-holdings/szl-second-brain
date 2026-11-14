@@ -12,7 +12,7 @@
   "reused_source_sha256": {
     "second_brain/corpus.py": "1d2c86d0432b7e4b1b622d448a4d318c5b7ddfa9bf66ba9655546d039fe81bfa",
     "second_brain/retrieve.py": "189e01fc036f91ae1086a71289170f9789eebd3c19386089c85c4450fe5a20c3",
-    "second_brain/hybrid.py": "12ee932f90934322a35a134c782e7df317c84db4dfb6092af286762d1783f5b8"
+    "second_brain/hybrid.py": "873d6d12c57fcee4a0640e30a6d74d329c2c92e0df32ec5c416b5bb92e1d456a"
   },
   "report": {
     "schema": "szl.synthetic-showcase.evaluation/v1",
