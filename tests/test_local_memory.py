@@ -8,6 +8,7 @@ import sqlite3
 import sys
 import unittest
 from concurrent.futures import ThreadPoolExecutor
+from contextlib import closing
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from threading import Barrier, BrokenBarrierError
@@ -82,7 +83,8 @@ class LocalMemoryTests(unittest.TestCase):
                     memory.upsert(record)
                 # Simulate persisted corruption through an independent writer,
                 # then reopen so no in-process cache can mask the bad row.
-                with sqlite3.connect(database) as corruptor:
+                # SQLite's transaction context commits but does not close the handle.
+                with closing(sqlite3.connect(database)) as corruptor, corruptor:
                     corruptor.execute("UPDATE memory_record SET " + column + "=? WHERE record_id=?",
                                       (value, record.record_id))
                 with LocalMemory(database) as memory:
