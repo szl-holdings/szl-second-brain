@@ -205,6 +205,31 @@ new embedding model or dense-vector qualification in this release. Small local
 retrieval fixtures establish software integration; they are not a general
 retrieval benchmark, scientific proof, or AGI result.
 
+## Direct Lutar invariant reference
+
+`GET /api/v1/lutar-invariants` now exposes eight source-bound Lutar handles and
+24 named Lean carriers from `lutar-lean@59d6b026b8418f59bd6535d532bdeb7551b398f0`.
+The exact public `claims/locked-formulas.v1.json` bytes are retained with SHA-256
+`5e0358ae4e0ff6345a42e8c2711c675fa4ec2366267205912892e9e46ecf5a6f`.
+Every call rechecks the bytes. A missing or altered source returns unavailable
+and HTTP 503; current upstream head freshness is not inferred from this pin.
+
+The existing Anatomy feed includes this reference as a separate
+`lutar_invariants` section with its own readiness. Its readiness does not change
+the older frontier readiness field, candidate count or candidate-set digest.
+The reference is handles-only, not a proof replay. It names source declarations,
+not permission to execute code or a claim that a deployed runtime implements
+those theorems. Locked-eight membership, Lambda's false-as-stated unconditional
+uniqueness status, and all existing authority boundaries are preserved.
+
+The offline controller helper `second_brain.lutar_reference.curriculum_candidates`
+produces 16 **REVIEW_REQUIRED** source-attributed statement/domain/limit examples
+for a proposed next-run curriculum. These are not proof completions, not a model
+evaluation and not training approval. They are not added to the 575-chunk corpus,
+the existing frontier, the BrainNavigator weights, or the private graph. Running
+Flagship54 and the reviewed Flagship55 launch gates remain untouched. See
+`train/build_lutar_context_candidates.py` for an explicit, exclusive-output export.
+
 ## Formula and quant authority
 
 The frontier memory consumes `szl-holdings/szl-formulas` as the active executable

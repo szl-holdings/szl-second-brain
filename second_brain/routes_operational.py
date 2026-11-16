@@ -27,6 +27,14 @@ from second_brain.web_contracts import QueryRequest
 
 router = APIRouter()
 
+@router.get("/api/v1/lutar-invariants")
+def lutar_invariants_route() -> JSONResponse:
+    """Pinned Lutar metadata only; no proof, training or execution authority."""
+    from second_brain.lutar_reference import lutar_reference
+    payload = lutar_reference()
+    return JSONResponse(payload, status_code=200 if payload["ready"] else 503,
+                        headers={"Cache-Control": "no-store"})
+
 @router.get("/api/v1/retrieval-capabilities")
 def retrieval_capabilities() -> dict[str, Any]:
     frontier = frontier_status()
