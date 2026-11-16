@@ -349,3 +349,14 @@ On Hugging Face, this repository's Space is
 [SZLHOLDINGS/szl-second-brain](https://huggingface.co/spaces/SZLHOLDINGS/szl-second-brain);
 the estate's models, datasets and Spaces are published under the
 [SZLHOLDINGS](https://huggingface.co/SZLHOLDINGS) org.
+
+## Lutar scope-challenge development protocol
+
+The offline [development protocol](experiments/README.md) pairs declared theorem
+scope with broken-premise, unavailable-evidence and runtime-overclaim controls.
+It partitions the context pack by entire locked-formula families, rejects the
+all-16 export for this experiment, requires complete prediction coverage and
+reports explicit metric denominators. These public fixtures are not a blind
+benchmark, independently checked new proofs, model-training results or a
+qualification gate. Nothing is added to public HTTP payloads, the 575-chunk
+corpus, the private graph or current training jobs.

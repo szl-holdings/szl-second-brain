@@ -63,6 +63,28 @@ def main() -> None:
             assert ready.json()["execution_authority"] == "NONE"
             assert ready.json()["model_generation"] == "NOT_CONFIGURED"
 
+            from importlib import import_module
+            lutar_module = import_module("second_brain.lutar_reference")
+            assert lutar_module.data_file(lutar_module.SOURCE_FILE).is_relative_to(package)
+            reference = client.get("/api/v1/lutar-invariants")
+            assert reference.status_code == 200 and reference.headers["cache-control"] == "no-store"
+            lutar = reference.json()
+            assert lutar["declared_locked_count"] == 8 and lutar["declared_carrier_count"] == 24
+            assert [h["claimId"] for h in lutar["handles"]] == list(lutar_module.LOCKED_IDS)
+            assert lutar["source_sha256"] == lutar_module.SOURCE_SHA256
+            assert lutar["proof_replayed_here"] is False and lutar["runtime_refinement"] == "UNVERIFIED"
+            assert all(lutar[k] == "NONE" for k in ("training_authority", "promotion_authority", "execution_authority", "merge_authority"))
+            assert all("content" not in h and "text" not in h for h in lutar["handles"])
+            feed = client.get("/api/v1/anatomy-feed").json()
+            assert feed["lutar_invariants"]["handles_sha256"] == lutar["handles_sha256"]
+            frontier_before = client.get("/api/v1/frontier-status").json()
+            with patch.object(lutar_module, "data_file", return_value=package / "missing-lutar-source-fixture"):
+                unavailable = client.get("/api/v1/lutar-invariants")
+                assert unavailable.status_code == 503 and unavailable.json()["handles"] == []
+                assert client.get("/api/v1/anatomy-feed").json()["lutar_invariants"]["ready"] is False
+                assert client.get("/api/v1/frontier-status").json() == frontier_before
+            assert client.get("/api/v1/lutar-invariants").json()["ready"] is True
+
             query = {"q": "formula authority", "k": 4}
             response = client.get("/api/v1/query", params=query)
             assert response.status_code == 200, response.text
@@ -110,7 +132,8 @@ def main() -> None:
         print(json.dumps({"state": "PASS", "scope": "INSTALLED_WHEEL_WEB_ACCEPTANCE",
                           "version": distribution.version, "package_path": str(package),
                           "routes": ["/", "/hologram", "/readyz", "/api/v1/query",
-                                     "/api/v1/receipt", "/api/v1/eval"],
+                                     "/api/v1/receipt", "/api/v1/eval",
+                                     "/api/v1/lutar-invariants", "/api/v1/anatomy-feed"],
                           "optional_training_records": "UNAVAILABLE",
                           "network": "FORBIDDEN", "execution_authority": "NONE"}, sort_keys=True))
 
