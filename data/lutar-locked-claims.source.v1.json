@@ -1,0 +1,220 @@
+{
+  "schema": "szl.lutar.locked-formula-claims/v1",
+  "authority": "COMPILED_LOCKED_SURFACE",
+  "repository": "szl-holdings/lutar-lean",
+  "lean_toolchain": "leanprover/lean4:v4.35.0",
+  "compiled_import_path": "Lutar.Puriq.Formulas.ProvedFormulas",
+  "compiled_path": "Lutar/Puriq/Formulas/ProvedFormulas.lean",
+  "guard_path": "tools/lean/LockedGuard.lean",
+  "locked_count_theorem": "Lutar.Wave8.AxiomDisclosure.locked_count_eight",
+  "locked_ids": ["F1", "F4", "F7", "F11", "F12", "F18", "F19", "F22"],
+  "carrier_theorem_count": 24,
+  "trust_base": ["propext", "Classical.choice", "Quot.sound"],
+  "axiom_evidence": {
+    "method": "lake env lean tools/lean/LockedGuard.lean collectAxioms",
+    "manifest_schema": "szl.lutar.locked-formula-evidence/v1",
+    "manifest_builder": ".github/scripts/build_locked_formula_evidence.py",
+    "workflow_artifact_name_pattern": "lean-numbers-<github.sha>",
+    "workflow_artifact_member": "locked-formulas.evidence.json",
+    "workflow": ".github/workflows/lake-build.yml",
+    "step": "Locked-8 axiom guard (kernel-emitted, fail-closed)",
+    "python_check": "DOES_NOT_REPLAY_KERNEL",
+    "wave8_lockedDisclosed": "Hand-written axiom-name lists; not collectAxioms ground truth."
+  },
+  "genome_catalog": {
+    "separate_from_locked_set": true,
+    "note": "szl-formulas callable catalog counts and genome LOCKED-PROVEN labels are a different namespace from this Lean locked-8 surface."
+  },
+  "unbuilt_not_locked": {
+    "path": "Lutar/Puriq/Formulas/PuriqFormulaLean.lean",
+    "note": "Sorry-bearing companion. Stronger F1 fold/trace lemmas and extra F11/F12/F18/F19 names live here and are not lake-build locked."
+  },
+  "lambda": {
+    "formula_id": "F23",
+    "locked_proven": false,
+    "status": "CONJECTURE_1_OPEN_FALSE_AS_STATED",
+    "unconditional_declaration": "Conjecture1_LambdaUnique",
+    "counterexample": "maxAgg_ne_Lambda",
+    "conditional_results": ["TheoremU_LambdaUnique", "lambda_unique_of_separable"],
+    "not_a_calibrated_probability": true,
+    "not_an_authorization_gate": true,
+    "public_wording": "Lambda uniqueness is Conjecture 1. Unconditional uniqueness under bare A1-A5 is machine-checked false. Conditional uniqueness is experimental, outside the locked eight."
+  },
+  "khipu_distinctions": {
+    "f4_proves": "Acyclicity of a Nat-indexed edge list under the backward-edge invariant dst < src, including appending edges from a node k whose targets are all < k (k need not be fresh or maximal).",
+    "f4_does_not_prove": [
+      "Byzantine agreement",
+      "quorum safety under equivocation",
+      "single-valued-vote agreement of a deployed consensus runtime"
+    ],
+    "f7_proves": "Drain of an in-memory list queue equals the enqueued send order.",
+    "f7_does_not_prove": [
+      "FIFO under retries",
+      "deduplication",
+      "persistence",
+      "crash recovery",
+      "exactly-once delivery"
+    ],
+    "conjecture_2": "Khipu BFT safety remains open."
+  },
+  "claims": [
+    {
+      "claim_id": "F1",
+      "name": "Replay-Hash Determinism",
+      "exact_mathematical_statement": "For any f : α → β and x : α, f x = f x; and xs.map f = xs.map f.",
+      "hypotheses": [],
+      "theorem_declarations": [
+        "f1_replay_hash_determinism",
+        "f1_replay_trace_stable"
+      ],
+      "runtime_implementation_symbol": null,
+      "supported_input_domain": "Any Lean function application and list map. No runtime hash, log, or storage domain.",
+      "refinement_gap": "The compiled locked theorems are reflexive equality. They do not prove hash stability of a recorded log, persistence, or a production replay engine. Stronger fold/trace lemmas in unbuilt PuriqFormulaLean.lean are not locked.",
+      "test_vectors": [
+        {"input": "f = id, x = 3", "output": "id 3 = id 3"}
+      ],
+      "counterexamples": [],
+      "public_wording": "Locked F1 is reflexive equality of a pure application and of List.map. It is not a production replay-hash proof."
+    },
+    {
+      "claim_id": "F4",
+      "name": "Khipu DAG acyclicity under backward edges",
+      "exact_mathematical_statement": "If every edge (src, dst) satisfies dst < src, reachability strictly decreases the node index, so no node reaches itself; appending edges from a node k whose targets are all < k (k need not be fresh or maximal) preserves the invariant and acyclicity.",
+      "hypotheses": ["KhipuBackwardInvariant es", "new edges have source k and target < k"],
+      "theorem_declarations": [
+        "f4_khipu_no_self_loop",
+        "f4_khipu_acyclic_irrefl",
+        "f4_khipu_reach_strictly_smaller",
+        "f4_khipu_reach_decreases",
+        "f4_khipu_no_cycle",
+        "f4_khipu_append_preserves_invariant",
+        "f4_khipu_dag_acyclic_preserved"
+      ],
+      "runtime_implementation_symbol": "tools.locked_formula_runtime.khipu_backward_acyclic",
+      "supported_input_domain": "Finite lists of Nat×Nat edges obeying dst < src. Nodes are natural numbers, not runtime organ identities.",
+      "refinement_gap": "Does not prove acyclicity of a store that admits forward edges, concurrent writers, or Byzantine voters. Does not prove Khipu BFT.",
+      "test_vectors": [
+        {"input": "edges [(1,0),(2,1)]", "output": "acyclic"}
+      ],
+      "counterexamples": [
+        {"input": "edge (0,1) violating dst < src", "shows": "a two-cycle (0,1),(1,0) is possible without the invariant"}
+      ],
+      "public_wording": "Locked F4 proves acyclicity for the encoded backward-edge Nat DAG, including appending edges from a node k whose targets are all < k (k need not be fresh or maximal)."
+    },
+    {
+      "claim_id": "F7",
+      "name": "Chaski FIFO reception order",
+      "exact_mathematical_statement": "chaskiDrain (chaskiEnqueueAll [] msgs) = msgs, and the i-th drained element equals msgs[i]?.",
+      "hypotheses": ["Queue is List Nat", "enqueue appends to the back", "drain serves from the front", "no concurrent mutation"],
+      "theorem_declarations": [
+        "f7_chaski_enqueueAll_nil",
+        "f7_chaski_drain_eq",
+        "f7_chaski_enqueue_preserves_prefix",
+        "f7_chaski_head_is_oldest",
+        "f7_chaski_fifo_order",
+        "f7_chaski_fifo_positional"
+      ],
+      "runtime_implementation_symbol": "tools.locked_formula_runtime.chaski_fifo_drain",
+      "supported_input_domain": "In-memory finite lists of Nat message ids. No network, disk, or retry semantics.",
+      "refinement_gap": "Does not prove FIFO under retries, deduplication, persistence, or recovery. drain is definitionally the list itself.",
+      "test_vectors": [
+        {"input": "msgs = [10, 20, 30]", "output": "[10, 20, 30]"}
+      ],
+      "counterexamples": [
+        {"input": "retry re-enqueues 10 without dedup", "shows": "drain yields [10, 10]; exactly-once is not proved"}
+      ],
+      "public_wording": "Locked F7 proves send-order equals drain-order for the encoded list queue."
+    },
+    {
+      "claim_id": "F11",
+      "name": "Ayni reciprocity conservation",
+      "exact_mathematical_statement": "For b c : Int, (b + c) - c = b.",
+      "hypotheses": [],
+      "theorem_declarations": [
+        "f11_ayni_reciprocity_conservation"
+      ],
+      "runtime_implementation_symbol": null,
+      "supported_input_domain": "Lean integers. Not an economic, social, or ledger runtime.",
+      "refinement_gap": "Integer add-then-subtract cancellation. Does not prove conservation of a deployed event log or tit-for-tat strategy.",
+      "test_vectors": [
+        {"input": "b=5, c=3", "output": "5"}
+      ],
+      "counterexamples": [],
+      "public_wording": "Locked F11 is the integer identity (b + c) - c = b."
+    },
+    {
+      "claim_id": "F12",
+      "name": "Kuramoto additive fragment",
+      "exact_mathematical_statement": "For p1 p2 k : Nat, k * (p1 + p2) = k * p1 + k * p2.",
+      "hypotheses": [],
+      "theorem_declarations": [
+        "f12_kuramoto_additive"
+      ],
+      "runtime_implementation_symbol": null,
+      "supported_input_domain": "Natural-number multiplication and addition.",
+      "refinement_gap": "Left distributivity only. Not nonlinear Kuramoto synchronization.",
+      "test_vectors": [
+        {"input": "k=3, p1=2, p2=4", "output": "18 = 6 + 12"}
+      ],
+      "counterexamples": [],
+      "public_wording": "Locked F12 is Nat left distributivity, an additive fragment only."
+    },
+    {
+      "claim_id": "F18",
+      "name": "Reed-Solomon RS(10,6) parity arithmetic",
+      "exact_mathematical_statement": "(10 - 6 : Nat) = 4, and for e ≤ 4, 6 ≤ 10 - e.",
+      "hypotheses": ["e : Nat", "e ≤ 4 for the tolerance lemma"],
+      "theorem_declarations": [
+        "f18_reed_solomon_parity_count",
+        "f18_erasure_tolerance"
+      ],
+      "runtime_implementation_symbol": "tools.locked_formula_runtime.rs10_6_parity",
+      "supported_input_domain": "Natural-number shard counts with total=10 and data=6.",
+      "refinement_gap": "Parity-count arithmetic. Not an encoder, decoder, MDS proof, or erasure-recovery implementation.",
+      "test_vectors": [
+        {"input": "e=4", "output": "remaining >= 6"}
+      ],
+      "counterexamples": [
+        {"input": "e=5", "shows": "hypothesis e ≤ 4 fails; the locked lemma does not apply"}
+      ],
+      "public_wording": "Locked F18 is 10 - 6 = 4 and the inequality 6 ≤ 10 - e when e ≤ 4. It is not a Reed-Solomon codec."
+    },
+    {
+      "claim_id": "F19",
+      "name": "Bekenstein additive scaffolding",
+      "exact_mathematical_statement": "For s1 s2 : Nat, s1 ≤ s1 + s2; equivalently s ≤ s + d.",
+      "hypotheses": [],
+      "theorem_declarations": [
+        "f19_bekenstein_additive",
+        "f19_budget_monotone"
+      ],
+      "runtime_implementation_symbol": null,
+      "supported_input_domain": "Natural numbers.",
+      "refinement_gap": "Monotone Nat addition. Not the physical Bekenstein bound S ≤ 2πkRE/(ℏc).",
+      "test_vectors": [
+        {"input": "s1=2, s2=5", "output": "2 ≤ 7"}
+      ],
+      "counterexamples": [],
+      "public_wording": "Locked F19 is Nat add-right monotonicity, an additive fragment only."
+    },
+    {
+      "claim_id": "F22",
+      "name": "Khipu emit append-only monotonicity",
+      "exact_mathematical_statement": "seqLog n = List.range n; seqLog (n+1) = seqLog n ++ [n]; members of seqLog n are < n; and for i < j < n, (seqLog n)[i] < (seqLog n)[j].",
+      "hypotheses": ["i < j", "j < n"],
+      "theorem_declarations": [
+        "f22_emit_appends_length",
+        "f22_emit_strictly_greater",
+        "f22_khipu_emit_monotone"
+      ],
+      "runtime_implementation_symbol": "tools.locked_formula_runtime.seq_log_range",
+      "supported_input_domain": "Natural-number prefixes of List.range. Not an external clock, database sequence, or distributed log.",
+      "refinement_gap": "Proves monotonicity of List.range indices. Does not prove monotonicity of a deployed emit path.",
+      "test_vectors": [
+        {"input": "n=4, i=1, j=3", "output": "1 < 3"}
+      ],
+      "counterexamples": [],
+      "public_wording": "Locked F22 proves List.range sequence numbers strictly increase with position."
+    }
+  ]
+}

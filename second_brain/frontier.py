@@ -664,4 +664,7 @@ def anatomy_feed(*, k: int = 24) -> dict[str, Any]:
     )
     payload["schema"] = "szl.second-brain.anatomy-feed/v1"
     payload["purpose"] = "READ_ONLY_LIVING_ANATOMY_OBSERVATION"
+    # Separate pinned reference; do not change frontier counts or admit new content.
+    from second_brain.lutar_reference import lutar_reference
+    payload["lutar_invariants"] = lutar_reference()
     return payload
