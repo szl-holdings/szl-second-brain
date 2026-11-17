@@ -28,6 +28,11 @@ jobs:
           docker run --rm --interactive --network none --read-only \
             --cap-drop ALL --security-opt no-new-privileges \
             --entrypoint python szl-second-brain:ci - < tools/check_container_runtime.py
+      - name: Exercise Lutar lineage UI, API and Anatomy from the image
+        run: |
+          docker run --rm --interactive --network none --read-only \
+            --cap-drop ALL --security-opt no-new-privileges \
+            --entrypoint python szl-second-brain:ci - < tools/check_lutar_lineage_runtime.py
 
   selftest:
     runs-on: ubuntu-latest
@@ -181,4 +186,5 @@ jobs:
             cd "$RUNNER_TEMP"
             "$venv/bin/python" -I "$GITHUB_WORKSPACE/tools/check_installed_web.py" \
               --checkout "$GITHUB_WORKSPACE"
+            "$venv/bin/python" -I "$GITHUB_WORKSPACE/tools/check_lutar_lineage_runtime.py"
           )

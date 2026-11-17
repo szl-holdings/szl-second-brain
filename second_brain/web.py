@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import os
+from typing import Literal
 
 from fastapi import FastAPI, Query, Request
 from fastapi.exceptions import RequestValidationError
@@ -59,6 +60,17 @@ def _query_response(q: str, k: int) -> JSONResponse:
     bundle = query_bundle(q, k)
     return JSONResponse(bundle, status_code=503 if bundle["retrieve"]["state"] == "UNAVAILABLE" else 200,
                         headers={"Cache-Control": "no-store"})
+
+
+@app.get("/lutar", response_class=HTMLResponse)
+def lutar_console(scenario: Literal["observed", "withhold-source"] = Query("observed")) -> HTMLResponse:
+    from second_brain.lutar_lineage import lutar_lineage
+    from second_brain.lineage_console import render_lineage
+    payload = lutar_lineage(scenario=scenario)
+    return HTMLResponse(render_lineage(payload),
+                        status_code=200 if payload["observed_reference_ready"] else 503,
+                        headers={"Cache-Control": "no-store", "X-Content-Type-Options": "nosniff",
+                                 "Content-Security-Policy": "default-src 'none'; style-src 'unsafe-inline'; form-action 'self'; base-uri 'none'; frame-ancestors 'self'"})
 
 
 @app.get("/", response_class=HTMLResponse)

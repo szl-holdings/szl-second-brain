@@ -667,4 +667,7 @@ def anatomy_feed(*, k: int = 24) -> dict[str, Any]:
     # Separate pinned reference; do not change frontier counts or admit new content.
     from second_brain.lutar_reference import lutar_reference
     payload["lutar_invariants"] = lutar_reference()
+    # Derive both sections from the same read; never reinterpret source names as proofs.
+    from second_brain.lutar_lineage import _project_reference
+    payload["lutar_lineage"] = _project_reference(payload["lutar_invariants"])
     return payload

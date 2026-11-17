@@ -349,3 +349,19 @@ On Hugging Face, this repository's Space is
 [SZLHOLDINGS/szl-second-brain](https://huggingface.co/spaces/SZLHOLDINGS/szl-second-brain);
 the estate's models, datasets and Spaces are published under the
 [SZLHOLDINGS](https://huggingface.co/SZLHOLDINGS) org.
+
+## Lutar evidence lineage
+
+`/lutar` and `/api/v1/lutar-lineage` expose the same read-only projection of
+the pinned Lutar document: eight claim references and 24 carrier names, not
+newly replayed proofs. The main console links to the inspector, and the
+existing Anatomy feed includes the identical projection.
+
+The optional `scenario=withhold-source` is a labeled in-memory rehearsal: it
+removes reference support without changing files or invoking actions. Actual
+missing/changed source bytes return HTTP 503. Proof replay, semantic review,
+runtime refinement and model evaluation remain separate and unverified here.
+No training, execution, promotion or merge authority is granted.
+
+See [the architecture and research boundaries](docs/lutar-lineage-architecture.md).
+The unchanged Space publication contract remains review-gated and `publish=false`.
