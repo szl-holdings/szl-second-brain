@@ -114,7 +114,7 @@ def test_html_escapes_query_and_evidence():
 
 
 def test_unavailable_never_substitutes_sample(monkeypatch):
-    import second_brain.web as web
+    web = importlib.import_module('second_brain.web')
     def fail(*_):raise eg.EvidenceGraphError('secret-path-that-must-not-echo')
     monkeypatch.setattr(web,'evidence_snapshot',fail)
     with TestClient(app) as client:

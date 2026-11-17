@@ -5,7 +5,6 @@ uses an ephemeral loopback port, and never makes an external network request.
 """
 from __future__ import annotations
 
-import hashlib
 import html
 import json
 import os
@@ -14,7 +13,7 @@ import socket
 import subprocess
 import sys
 import time
-from urllib.error import HTTPError, URLError
+from urllib.error import URLError
 from urllib.request import ProxyHandler, build_opener
 
 

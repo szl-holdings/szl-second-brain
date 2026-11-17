@@ -1,6 +1,5 @@
 """Semantic/UI controls for source lineage; no proof or model-quality claims."""
 import copy
-import hashlib
 import html
 import importlib
 import json
