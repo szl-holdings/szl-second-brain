@@ -52,6 +52,19 @@ index is also [mirrored on Hugging Face at an exact revision](https://huggingfac
 that mirror does not grant training or promotion authority. An Anatomy source
 refresh and provider readback are separate release steps.
 
+## Source-bound evidence graph and optional agent-framework adapters
+`/evidence` is a server-rendered inspector over `/api/v1/evidence-graph`. Both
+use the same transaction projection, with typed public evidence handles, review
+candidates, Lutar source references, a software citation proposal and an unsigned
+result binding. The view does not execute tools, replay proofs, expose the private
+graph or configure a model. Missing or inconsistent source evidence is explicit.
+
+Optional LangChain, LangGraph and NVIDIA NeMo Relay factories reuse this exact
+contract without adding SDKs to the default runtime. See
+[the implementation and research decisions](docs/EVIDENCE_ECOSYSTEM_20261116.md)
+for installation, the F4-motivated runtime check's limits, canonical A11oy/Hatun
+ownership, telemetry privacy and the remaining release gates.
+
 ## Python frontend and backend
 
 The primary page is a Python-rendered evidence console. Run it with:

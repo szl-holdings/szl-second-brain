@@ -9,6 +9,8 @@ from fastapi.responses import HTMLResponse, JSONResponse
 
 from second_brain import __version__
 from second_brain.console import render_console
+from second_brain.evidence_console import render_evidence
+from second_brain.evidence_graph import EvidenceGraphError, SCHEMA as GRAPH_SCHEMA, evidence_snapshot
 from second_brain.hybrid import RetrievalBoundaryError
 from second_brain.routes_legacy import router as legacy_router
 from second_brain.routes_operational import router as operational_router
@@ -72,6 +74,34 @@ def console(q: str = Query("", max_length=2000), k: int = Query(6, ge=1, le=12))
         error = type(exc).__name__
     return HTMLResponse(render_console(q, k, status, bundle, error),
                         status_code=422 if error else 200,
+                        headers={"Cache-Control": "no-store", "X-Content-Type-Options": "nosniff",
+                                 "Content-Security-Policy": "default-src 'none'; style-src 'unsafe-inline'; form-action 'self'; base-uri 'none'; frame-ancestors 'self'"})
+
+
+
+@app.get("/api/v1/evidence-graph")
+def evidence_graph_api(q: str = Query("Lutar invariants", max_length=2000),
+                       k: int = Query(6, ge=1, le=12)) -> JSONResponse:
+    try:
+        value = evidence_snapshot(q, k)
+    except EvidenceGraphError:
+        value = {"schema": GRAPH_SCHEMA, "state": "UNAVAILABLE", "ready": False,
+                 "nodes": [], "edges": [], "execution_authority": "NONE",
+                 "reason": "LOCAL_EVIDENCE_CONTRACT_UNAVAILABLE"}
+    return JSONResponse(value, status_code=200 if value["ready"] else 503,
+                        headers={"Cache-Control": "no-store", "X-Content-Type-Options": "nosniff"})
+
+
+@app.get("/evidence", response_class=HTMLResponse)
+def evidence_graph_page(q: str = Query("Lutar invariants", max_length=2000),
+                        k: int = Query(6, ge=1, le=12)) -> HTMLResponse:
+    snapshot, error = None, None
+    try:
+        snapshot = evidence_snapshot(q, k)
+    except (EvidenceGraphError, RetrievalBoundaryError):
+        error = "LOCAL_EVIDENCE_CONTRACT_UNAVAILABLE"
+    return HTMLResponse(render_evidence(q, k, snapshot, error),
+                        status_code=200 if snapshot and snapshot["ready"] else 503,
                         headers={"Cache-Control": "no-store", "X-Content-Type-Options": "nosniff",
                                  "Content-Security-Policy": "default-src 'none'; style-src 'unsafe-inline'; form-action 'self'; base-uri 'none'; frame-ancestors 'self'"})
 
