@@ -10,7 +10,7 @@ means silent weight updates, automatic truth promotion, or autonomous execution.
 """
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Literal
 
 from fastapi import APIRouter, Query
 from fastapi.responses import JSONResponse
@@ -26,6 +26,15 @@ from second_brain.hybrid import RetrievalBoundaryError, hybrid_context
 from second_brain.web_contracts import QueryRequest
 
 router = APIRouter()
+
+@router.get("/api/v1/lutar-lineage")
+def lutar_lineage_route(scenario: Literal["observed", "withhold-source"] = Query("observed")) -> JSONResponse:
+    """A deterministic read-only projection; a scenario is never an action request."""
+    from second_brain.lutar_lineage import lutar_lineage
+    payload = lutar_lineage(scenario=scenario)
+    return JSONResponse(payload, status_code=200 if payload["observed_reference_ready"] else 503,
+                        headers={"Cache-Control": "no-store", "X-Content-Type-Options": "nosniff"})
+
 
 @router.get("/api/v1/lutar-invariants")
 def lutar_invariants_route() -> JSONResponse:
@@ -169,4 +178,4 @@ def anatomy_feed_route(
             },
             status_code=422,
         )
-    return JSONResponse(payload)
+    return JSONResponse(payload, headers={"Cache-Control": "no-store"})

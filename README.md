@@ -52,6 +52,19 @@ index is also [mirrored on Hugging Face at an exact revision](https://huggingfac
 that mirror does not grant training or promotion authority. An Anatomy source
 refresh and provider readback are separate release steps.
 
+## Source-bound evidence graph and optional agent-framework adapters
+`/evidence` is a server-rendered inspector over `/api/v1/evidence-graph`. Both
+use the same transaction projection, with typed public evidence handles, review
+candidates, Lutar source references, a software citation proposal and an unsigned
+result binding. The view does not execute tools, replay proofs, expose the private
+graph or configure a model. Missing or inconsistent source evidence is explicit.
+
+Optional LangChain, LangGraph and NVIDIA NeMo Relay factories reuse this exact
+contract without adding SDKs to the default runtime. See
+[the implementation and research decisions](docs/EVIDENCE_ECOSYSTEM_20261116.md)
+for installation, the F4-motivated runtime check's limits, canonical A11oy/Hatun
+ownership, telemetry privacy and the remaining release gates.
+
 ## Python frontend and backend
 
 The primary page is a Python-rendered evidence console. Run it with:
@@ -349,6 +362,25 @@ On Hugging Face, this repository's Space is
 [SZLHOLDINGS/szl-second-brain](https://huggingface.co/spaces/SZLHOLDINGS/szl-second-brain);
 the estate's models, datasets and Spaces are published under the
 [SZLHOLDINGS](https://huggingface.co/SZLHOLDINGS) org.
+
+## Lutar evidence lineage
+
+`/lutar` and `/api/v1/lutar-lineage` expose the same read-only projection of
+the pinned Lutar document: eight claim references and 24 carrier names, not
+newly replayed proofs. The main console links to the inspector, and the
+existing Anatomy feed includes the identical projection.
+
+The optional `scenario=withhold-source` is a labeled in-memory rehearsal: it
+removes reference support without changing files or invoking actions. Actual
+missing/changed source bytes return HTTP 503. Proof replay, semantic review,
+runtime refinement and model evaluation remain separate and unverified here.
+No training, execution, promotion or merge authority is granted.
+
+See [the architecture and research boundaries](docs/lutar-lineage-architecture.md)
+and the [frontier reference audit](docs/FRONTIER_REFERENCE_AUDIT_20261116.md),
+which compares AlphaProof Code, Harvard CS2680, governed agent memory, typed
+routing, retrieval and measurement without granting new execution authority.
+The unchanged Space publication contract remains review-gated and `publish=false`.
 
 ## Lutar scope-challenge development protocol
 
