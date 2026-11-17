@@ -381,3 +381,14 @@ and the [frontier reference audit](docs/FRONTIER_REFERENCE_AUDIT_20261116.md),
 which compares AlphaProof Code, Harvard CS2680, governed agent memory, typed
 routing, retrieval and measurement without granting new execution authority.
 The unchanged Space publication contract remains review-gated and `publish=false`.
+
+## Lutar scope-challenge development protocol
+
+The offline [development protocol](experiments/README.md) pairs declared theorem
+scope with broken-premise, unavailable-evidence and runtime-overclaim controls.
+It partitions the context pack by entire locked-formula families, rejects the
+all-16 export for this experiment, requires complete prediction coverage and
+reports explicit metric denominators. These public fixtures are not a blind
+benchmark, independently checked new proofs, model-training results or a
+qualification gate. Nothing is added to public HTTP payloads, the 575-chunk
+corpus, the private graph or current training jobs.
