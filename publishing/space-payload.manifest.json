@@ -48,6 +48,7 @@
     "second_brain/routes_legacy.py",
     "second_brain/routes_operational.py",
     "second_brain/routes_refinement.py",
+    "second_brain/temporal_evidence.py",
     "second_brain/web.py",
     "second_brain/web_contracts.py",
     "second_brain/workbench.py",
