@@ -4,7 +4,7 @@ import json
 import socket
 import sys
 import unittest
-from unittest import mock
+import unittest.mock
 
 sys.path.insert(0, ".")
 
@@ -399,11 +399,11 @@ class TemporalBoundsAndDeterminismTests(unittest.TestCase):
 
     def test_evaluation_does_not_open_network_or_use_wall_clock(self):
         ledger = TemporalEvidenceLedger([evidence()])
-        with mock.patch.object(socket, "create_connection",
+        with unittest.mock.patch.object(socket, "create_connection",
                                side_effect=AssertionError("NETWORK_FORBIDDEN")), \
-                mock.patch.object(socket.socket, "connect",
+                unittest.mock.patch.object(socket.socket, "connect",
                                   side_effect=AssertionError("NETWORK_FORBIDDEN")), \
-                mock.patch("time.time", side_effect=AssertionError("WALL_CLOCK_FORBIDDEN")):
+                unittest.mock.patch("time.time", side_effect=AssertionError("WALL_CLOCK_FORBIDDEN")):
             self.assertEqual(ledger.evaluate("claim:c", 100),
                              ledger.evaluate("claim:c", 100))
 
