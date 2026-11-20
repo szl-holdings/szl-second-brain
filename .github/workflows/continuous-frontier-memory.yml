@@ -59,9 +59,12 @@ jobs:
           set -euo pipefail
           mkdir -p reports
           before="$(git rev-parse HEAD)"
+          # Verify source parity while the tracked checkout is still clean.
+          PYTHONPATH=. python -m pytest -q tests/test_live_space_parity.py
           python scripts/refresh_frontier_memory.py | tee reports/frontier-refresh-output.json
           python -m py_compile scripts/refresh_frontier_memory.py second_brain/frontier.py app_operational.py
-          PYTHONPATH=. python -m pytest -q
+          # Refresh intentionally changes tracked snapshots; parity already ran.
+          PYTHONPATH=. python -m pytest -q --ignore=tests/test_live_space_parity.py
           python -m build --wheel
           git diff --check
           changed=false
