@@ -1,4 +1,5 @@
 """Adversarial offline tests for the unsigned temporal-evidence prototype."""
+
 import copy
 import json
 import socket
@@ -49,7 +50,9 @@ def tampered(record, **changes):
 
 
 def decision(receipt, identity):
-    return next(item for item in receipt["decisions"] if item["evidence_id"] == identity)
+    return next(
+        item for item in receipt["decisions"] if item["evidence_id"] == identity
+    )
 
 
 class TemporalLifecycleTests(unittest.TestCase):
@@ -58,8 +61,10 @@ class TemporalLifecycleTests(unittest.TestCase):
         self.assertEqual(receipt["state"], CURRENT_CANDIDATE)
         self.assertIsNone(receipt["code"])
         self.assertEqual(receipt["candidate_evidence_id"], "evidence:e1")
-        self.assertEqual(receipt["candidate_metadata_sha256"],
-                         decision(receipt, "evidence:e1")["metadata_sha256"])
+        self.assertEqual(
+            receipt["candidate_metadata_sha256"],
+            decision(receipt, "evidence:e1")["metadata_sha256"],
+        )
         self.assertEqual(receipt["truth_label"], TRUTH_LABEL)
         self.assertEqual(receipt["signed_provenance"], "NOT_ESTABLISHED")
         self.assertEqual(receipt["grounded_navigation"], "NOT_ESTABLISHED")
@@ -74,11 +79,13 @@ class TemporalLifecycleTests(unittest.TestCase):
 
     def test_validity_end_is_exclusive(self):
         receipt = TemporalEvidenceLedger([evidence()]).evaluate("claim:c", 110)
-        self.assertEqual((receipt["state"], receipt["code"]),
-                         (WARN_STALE, "TEMPORAL_STALE_ONLY"))
+        self.assertEqual(
+            (receipt["state"], receipt["code"]), (WARN_STALE, "TEMPORAL_STALE_ONLY")
+        )
         self.assertIsNone(receipt["candidate_evidence_id"])
-        self.assertEqual(decision(receipt, "evidence:e1")["code"],
-                         "TEMPORAL_STALE_AT_AS_OF")
+        self.assertEqual(
+            decision(receipt, "evidence:e1")["code"], "TEMPORAL_STALE_AT_AS_OF"
+        )
 
     def test_open_ended_interval_remains_current(self):
         record = evidence(valid_until=None)
@@ -88,18 +95,23 @@ class TemporalLifecycleTests(unittest.TestCase):
     def test_future_validity_abstains(self):
         record = evidence(recorded_at=-10, valid_from=0)
         receipt = TemporalEvidenceLedger([record]).evaluate("claim:c", -1)
-        self.assertEqual((receipt["state"], receipt["code"]),
-                         (ABSTAIN, "TEMPORAL_FUTURE_EVIDENCE"))
-        self.assertEqual(decision(receipt, "evidence:e1")["code"],
-                         "TEMPORAL_FUTURE_VALIDITY")
+        self.assertEqual(
+            (receipt["state"], receipt["code"]), (ABSTAIN, "TEMPORAL_FUTURE_EVIDENCE")
+        )
+        self.assertEqual(
+            decision(receipt, "evidence:e1")["code"], "TEMPORAL_FUTURE_VALIDITY"
+        )
 
     def test_future_observation_abstains_even_when_interval_is_current(self):
         record = evidence(recorded_at=20)
         receipt = TemporalEvidenceLedger([record]).evaluate("claim:c", 10)
         self.assertEqual(receipt["state"], ABSTAIN)
-        self.assertEqual(decision(receipt, "evidence:e1")["code"],
-                         "TEMPORAL_FUTURE_OBSERVATION")
-        self.assertEqual(decision(receipt, "evidence:e1")["axes"]["recorded_by_as_of"], 0)
+        self.assertEqual(
+            decision(receipt, "evidence:e1")["code"], "TEMPORAL_FUTURE_OBSERVATION"
+        )
+        self.assertEqual(
+            decision(receipt, "evidence:e1")["axes"]["recorded_by_as_of"], 0
+        )
 
     def test_stale_evidence_is_reported_but_does_not_veto_a_current_record(self):
         old = evidence("evidence:old", valid_until=50)
@@ -112,16 +124,19 @@ class TemporalLifecycleTests(unittest.TestCase):
     def test_unknown_rights_zero_vetoes_otherwise_current_evidence(self):
         record = evidence(rights="unknown")
         receipt = TemporalEvidenceLedger([record]).evaluate("claim:c", 100)
-        self.assertEqual((receipt["state"], receipt["code"]),
-                         (ABSTAIN, "TEMPORAL_RIGHTS_NOT_ADMISSIBLE"))
+        self.assertEqual(
+            (receipt["state"], receipt["code"]),
+            (ABSTAIN, "TEMPORAL_RIGHTS_NOT_ADMISSIBLE"),
+        )
         item = decision(receipt, "evidence:e1")
         self.assertEqual(item["zero_veto_pass"], 0)
         self.assertIn("rights_admissible", item["vetoed_by"])
 
     def test_rights_ineligible_record_cannot_create_ambiguity_or_conflict(self):
         allowed = evidence("evidence:allowed")
-        unknown = evidence("evidence:unknown", rights="unknown",
-                           contradicts=["evidence:allowed"])
+        unknown = evidence(
+            "evidence:unknown", rights="unknown", contradicts=["evidence:allowed"]
+        )
         receipt = TemporalEvidenceLedger([allowed, unknown]).evaluate("claim:c", 100)
         self.assertEqual(receipt["state"], CURRENT_CANDIDATE)
         self.assertEqual(receipt["candidate_evidence_id"], "evidence:allowed")
@@ -130,8 +145,10 @@ class TemporalLifecycleTests(unittest.TestCase):
     def test_multiple_current_records_without_links_are_ambiguous(self):
         records = [evidence("evidence:e1"), evidence("evidence:e2")]
         receipt = TemporalEvidenceLedger(records).evaluate("claim:c", 100)
-        self.assertEqual((receipt["state"], receipt["code"]),
-                         (ABSTAIN, "TEMPORAL_AMBIGUOUS_CURRENT_EVIDENCE"))
+        self.assertEqual(
+            (receipt["state"], receipt["code"]),
+            (ABSTAIN, "TEMPORAL_AMBIGUOUS_CURRENT_EVIDENCE"),
+        )
         self.assertIsNone(receipt["candidate_evidence_id"])
         self.assertEqual(len(receipt["eligible_evidence_ids"]), 2)
 
@@ -139,18 +156,22 @@ class TemporalLifecycleTests(unittest.TestCase):
         first = evidence("evidence:e1", contradicts=["evidence:e2"])
         second = evidence("evidence:e2")
         receipt = TemporalEvidenceLedger([first, second]).evaluate("claim:c", 100)
-        self.assertEqual((receipt["state"], receipt["code"]),
-                         (EXPLAIN_CONFLICT, "TEMPORAL_CONTRADICTORY_CURRENT_EVIDENCE"))
-        self.assertEqual(receipt["conflicting_evidence_pairs"],
-                         [["evidence:e1", "evidence:e2"]])
+        self.assertEqual(
+            (receipt["state"], receipt["code"]),
+            (EXPLAIN_CONFLICT, "TEMPORAL_CONTRADICTORY_CURRENT_EVIDENCE"),
+        )
+        self.assertEqual(
+            receipt["conflicting_evidence_pairs"], [["evidence:e1", "evidence:e2"]]
+        )
         self.assertIsNone(receipt["candidate_evidence_id"])
 
     def test_reciprocal_contradiction_declarations_are_one_edge(self):
         first = evidence("evidence:e1", contradicts=["evidence:e2"])
         second = evidence("evidence:e2", contradicts=["evidence:e1"])
         receipt = TemporalEvidenceLedger([first, second]).evaluate("claim:c", 100)
-        self.assertEqual(receipt["conflicting_evidence_pairs"],
-                         [["evidence:e1", "evidence:e2"]])
+        self.assertEqual(
+            receipt["conflicting_evidence_pairs"], [["evidence:e1", "evidence:e2"]]
+        )
 
     def test_uninvolved_current_record_abstains_when_other_pair_conflicts(self):
         records = [
@@ -160,12 +181,12 @@ class TemporalLifecycleTests(unittest.TestCase):
         ]
         receipt = TemporalEvidenceLedger(records).evaluate("claim:c", 100)
         self.assertEqual(receipt["state"], EXPLAIN_CONFLICT)
-        self.assertEqual(decision(receipt, "evidence:e3")["code"],
-                         "TEMPORAL_CONFLICT_BLOCKS_CLAIM")
+        self.assertEqual(
+            decision(receipt, "evidence:e3")["code"], "TEMPORAL_CONFLICT_BLOCKS_CLAIM"
+        )
 
     def test_stale_contradiction_does_not_block_current_evidence(self):
-        stale = evidence("evidence:old", valid_until=50,
-                         contradicts=["evidence:new"])
+        stale = evidence("evidence:old", valid_until=50, contradicts=["evidence:new"])
         current = evidence("evidence:new", valid_until=200)
         receipt = TemporalEvidenceLedger([stale, current]).evaluate("claim:c", 100)
         self.assertEqual(receipt["state"], CURRENT_CANDIDATE)
@@ -173,29 +194,35 @@ class TemporalLifecycleTests(unittest.TestCase):
 
     def test_active_supersession_excludes_old_evidence(self):
         old = evidence("evidence:old", valid_until=200)
-        new = evidence("evidence:new", valid_from=100, valid_until=200,
-                       supersedes=["evidence:old"])
+        new = evidence(
+            "evidence:new", valid_from=100, valid_until=200, supersedes=["evidence:old"]
+        )
         receipt = TemporalEvidenceLedger([old, new]).evaluate("claim:c", 150)
         self.assertEqual(receipt["candidate_evidence_id"], "evidence:new")
-        self.assertEqual(decision(receipt, "evidence:old")["code"],
-                         "TEMPORAL_SUPERSEDED_AT_AS_OF")
+        self.assertEqual(
+            decision(receipt, "evidence:old")["code"], "TEMPORAL_SUPERSEDED_AT_AS_OF"
+        )
 
     def test_future_successor_does_not_supersede_before_its_start(self):
         old = evidence("evidence:old", valid_until=200)
-        new = evidence("evidence:new", valid_from=100, valid_until=200,
-                       supersedes=["evidence:old"])
+        new = evidence(
+            "evidence:new", valid_from=100, valid_until=200, supersedes=["evidence:old"]
+        )
         receipt = TemporalEvidenceLedger([old, new]).evaluate("claim:c", 50)
         self.assertEqual(receipt["candidate_evidence_id"], "evidence:old")
-        self.assertEqual(decision(receipt, "evidence:new")["code"],
-                         "TEMPORAL_FUTURE_VALIDITY")
+        self.assertEqual(
+            decision(receipt, "evidence:new")["code"], "TEMPORAL_FUTURE_VALIDITY"
+        )
 
     def test_transitive_supersession_excludes_all_older_records(self):
         first = evidence("evidence:e1", valid_until=200)
-        second = evidence("evidence:e2", valid_until=200,
-                          supersedes=["evidence:e1"])
-        third = evidence("evidence:e3", valid_from=100, valid_until=200,
-                         supersedes=["evidence:e2"])
-        receipt = TemporalEvidenceLedger([first, second, third]).evaluate("claim:c", 150)
+        second = evidence("evidence:e2", valid_until=200, supersedes=["evidence:e1"])
+        third = evidence(
+            "evidence:e3", valid_from=100, valid_until=200, supersedes=["evidence:e2"]
+        )
+        receipt = TemporalEvidenceLedger([first, second, third]).evaluate(
+            "claim:c", 150
+        )
         self.assertEqual(receipt["candidate_evidence_id"], "evidence:e3")
         self.assertEqual(decision(receipt, "evidence:e1")["axes"]["not_superseded"], 0)
         self.assertEqual(decision(receipt, "evidence:e2")["axes"]["not_superseded"], 0)
@@ -225,28 +252,49 @@ class TemporalValidationTests(unittest.TestCase):
         self.assertNotIn("PRIVATE_SENTINEL_9f27", str(caught.exception))
 
     def test_strict_evidence_ids(self):
-        bad_values = (None, 1, True, "", "e1", "evidence:", "evidence:A",
-                      "evidence:a b", "evidence:a/", "evidence:a.", "claim:e1")
+        bad_values = (
+            None,
+            1,
+            True,
+            "",
+            "e1",
+            "evidence:",
+            "evidence:A",
+            "evidence:a b",
+            "evidence:a/",
+            "evidence:a.",
+            "claim:e1",
+        )
         for bad in bad_values:
             with self.subTest(bad=bad):
-                self.assert_code("TEMPORAL_EVIDENCE_ID_INVALID",
-                                 [tampered(evidence(), evidence_id=bad)])
+                self.assert_code(
+                    "TEMPORAL_EVIDENCE_ID_INVALID",
+                    [tampered(evidence(), evidence_id=bad)],
+                )
 
     def test_claim_source_and_link_identifiers_are_namespaced(self):
-        self.assert_code("TEMPORAL_CLAIM_ID_INVALID",
-                         [tampered(evidence(), claim_id="c")])
-        self.assert_code("TEMPORAL_SOURCE_HANDLE_INVALID",
-                         [tampered(evidence(), source_handle="https://example.invalid")])
-        self.assert_code("TEMPORAL_LINK_ID_INVALID",
-                         [tampered(evidence(), contradicts=["e2"])])
+        self.assert_code(
+            "TEMPORAL_CLAIM_ID_INVALID", [tampered(evidence(), claim_id="c")]
+        )
+        self.assert_code(
+            "TEMPORAL_SOURCE_HANDLE_INVALID",
+            [tampered(evidence(), source_handle="https://example.invalid")],
+        )
+        self.assert_code(
+            "TEMPORAL_LINK_ID_INVALID", [tampered(evidence(), contradicts=["e2"])]
+        )
 
     def test_content_and_metadata_sha256_are_lowercase_hex(self):
-        self.assert_code("TEMPORAL_CONTENT_SHA256_INVALID",
-                         [tampered(evidence(), content_sha256="A" * 64)])
-        self.assert_code("TEMPORAL_METADATA_SHA256_INVALID",
-                         [evidence(metadata_sha256="0" * 63)])
-        self.assert_code("TEMPORAL_METADATA_SHA256_MISMATCH",
-                         [evidence(metadata_sha256="0" * 64)])
+        self.assert_code(
+            "TEMPORAL_CONTENT_SHA256_INVALID",
+            [tampered(evidence(), content_sha256="A" * 64)],
+        )
+        self.assert_code(
+            "TEMPORAL_METADATA_SHA256_INVALID", [evidence(metadata_sha256="0" * 63)]
+        )
+        self.assert_code(
+            "TEMPORAL_METADATA_SHA256_MISMATCH", [evidence(metadata_sha256="0" * 64)]
+        )
 
     def test_metadata_tampering_is_detected(self):
         record = tampered(evidence(), rights="mit")
@@ -258,48 +306,72 @@ class TemporalValidationTests(unittest.TestCase):
         self.assertEqual(forward["metadata_sha256"], reverse["metadata_sha256"])
 
     def test_nonfinite_and_non_real_timestamps_fail_closed(self):
-        bad_values = (None, "100", True, False, float("nan"), float("inf"),
-                      float("-inf"), 10**1000)
+        bad_values = (
+            None,
+            "100",
+            True,
+            False,
+            float("nan"),
+            float("inf"),
+            float("-inf"),
+            10**1000,
+        )
         for field in ("recorded_at", "valid_from", "valid_until"):
             values = bad_values[1:] if field == "valid_until" else bad_values
             for bad in values:
                 with self.subTest(field=field, bad=repr(bad)):
-                    self.assert_code("TEMPORAL_TIMESTAMP_INVALID",
-                                     [tampered(evidence(), **{field: bad})])
+                    self.assert_code(
+                        "TEMPORAL_TIMESTAMP_INVALID",
+                        [tampered(evidence(), **{field: bad})],
+                    )
 
     def test_empty_or_reversed_validity_intervals_are_rejected(self):
         for start, end in ((10, 10), (11, 10), (0, -1)):
             with self.subTest(start=start, end=end):
-                self.assert_code("TEMPORAL_VALIDITY_INTERVAL_INVALID",
-                                 [tampered(evidence(), valid_from=start, valid_until=end)])
+                self.assert_code(
+                    "TEMPORAL_VALIDITY_INTERVAL_INVALID",
+                    [tampered(evidence(), valid_from=start, valid_until=end)],
+                )
 
     def test_rights_field_is_bounded_and_machine_readable(self):
-        for bad in (None, True, "", "unknown rights", "a" * 65, "proprietary all rights"):
+        for bad in (
+            None,
+            True,
+            "",
+            "unknown rights",
+            "a" * 65,
+            "proprietary all rights",
+        ):
             with self.subTest(bad=bad):
-                self.assert_code("TEMPORAL_RIGHTS_FIELD_INVALID",
-                                 [tampered(evidence(), rights=bad)])
+                self.assert_code(
+                    "TEMPORAL_RIGHTS_FIELD_INVALID", [tampered(evidence(), rights=bad)]
+                )
 
     def test_duplicate_evidence_ids_are_rejected(self):
-        self.assert_code("TEMPORAL_DUPLICATE_EVIDENCE_ID",
-                         [evidence(), evidence()])
+        self.assert_code("TEMPORAL_DUPLICATE_EVIDENCE_ID", [evidence(), evidence()])
 
     def test_duplicate_links_are_rejected(self):
         for field in ("supersedes", "contradicts"):
             with self.subTest(field=field):
-                self.assert_code("TEMPORAL_DUPLICATE_LINK",
-                                 [tampered(evidence(), **{field: ["evidence:e2", "evidence:e2"]})])
+                self.assert_code(
+                    "TEMPORAL_DUPLICATE_LINK",
+                    [tampered(evidence(), **{field: ["evidence:e2", "evidence:e2"]})],
+                )
 
     def test_missing_references_are_rejected(self):
         for field in ("supersedes", "contradicts"):
             with self.subTest(field=field):
-                self.assert_code("TEMPORAL_MISSING_REFERENCE",
-                                 [evidence(**{field: ["evidence:ghost"]})])
+                self.assert_code(
+                    "TEMPORAL_MISSING_REFERENCE",
+                    [evidence(**{field: ["evidence:ghost"]})],
+                )
 
     def test_self_links_are_rejected(self):
         for field in ("supersedes", "contradicts"):
             with self.subTest(field=field):
-                self.assert_code("TEMPORAL_SELF_LINK",
-                                 [evidence(**{field: ["evidence:e1"]})])
+                self.assert_code(
+                    "TEMPORAL_SELF_LINK", [evidence(**{field: ["evidence:e1"]})]
+                )
 
     def test_cross_claim_links_are_rejected(self):
         for field in ("supersedes", "contradicts"):
@@ -330,21 +402,26 @@ class TemporalValidationTests(unittest.TestCase):
 
 class TemporalBoundsAndDeterminismTests(unittest.TestCase):
     def test_record_count_is_bounded(self):
-        records = [evidence("evidence:e%d" % index) for index in range(MAX_EVIDENCE + 1)]
+        records = [evidence(f"evidence:e{index}") for index in range(MAX_EVIDENCE + 1)]
         with self.assertRaises(TemporalEvidenceError) as caught:
             TemporalEvidenceLedger(records)
         self.assertEqual(caught.exception.code, "TEMPORAL_RECORD_LIMIT_EXCEEDED")
 
     def test_each_link_list_is_bounded(self):
-        links = ["evidence:e%d" % index for index in range(MAX_LINKS_PER_RECORD + 1)]
+        links = [f"evidence:e{index}" for index in range(MAX_LINKS_PER_RECORD + 1)]
         with self.assertRaises(TemporalEvidenceError) as caught:
             TemporalEvidenceLedger([tampered(evidence(), contradicts=links)])
         self.assertEqual(caught.exception.code, "TEMPORAL_LINK_LIMIT_EXCEEDED")
 
     def test_total_link_count_is_bounded(self):
-        identities = ["evidence:e%d" % index for index in range(33)]
-        records = [evidence(identity, contradicts=[other for other in identities if other != identity])
-                   for identity in identities]
+        identities = [f"evidence:e{index}" for index in range(33)]
+        records = [
+            evidence(
+                identity,
+                contradicts=[other for other in identities if other != identity],
+            )
+            for identity in identities
+        ]
         with self.assertRaises(TemporalEvidenceError) as caught:
             TemporalEvidenceLedger(records)
         self.assertEqual(caught.exception.code, "TEMPORAL_TOTAL_LINK_LIMIT_EXCEEDED")
@@ -379,10 +456,14 @@ class TemporalBoundsAndDeterminismTests(unittest.TestCase):
         self.assertNotIn(bad_claim, json.dumps(receipt))
 
     def test_unknown_claim_and_empty_ledger_abstain(self):
-        for ledger in (TemporalEvidenceLedger([]), TemporalEvidenceLedger([evidence()])):
+        for ledger in (
+            TemporalEvidenceLedger([]),
+            TemporalEvidenceLedger([evidence()]),
+        ):
             receipt = ledger.evaluate("claim:missing", 100)
-            self.assertEqual((receipt["state"], receipt["code"]),
-                             (ABSTAIN, "TEMPORAL_UNKNOWN_CLAIM"))
+            self.assertEqual(
+                (receipt["state"], receipt["code"]), (ABSTAIN, "TEMPORAL_UNKNOWN_CLAIM")
+            )
             self.assertEqual(receipt["decisions"], [])
 
     def test_receipt_exposes_handles_only_as_digests_not_source_or_content(self):
@@ -399,13 +480,24 @@ class TemporalBoundsAndDeterminismTests(unittest.TestCase):
 
     def test_evaluation_does_not_open_network_or_use_wall_clock(self):
         ledger = TemporalEvidenceLedger([evidence()])
-        with unittest.mock.patch.object(socket, "create_connection",
-                               side_effect=AssertionError("NETWORK_FORBIDDEN")), \
-                unittest.mock.patch.object(socket.socket, "connect",
-                                  side_effect=AssertionError("NETWORK_FORBIDDEN")), \
-                unittest.mock.patch("time.time", side_effect=AssertionError("WALL_CLOCK_FORBIDDEN")):
-            self.assertEqual(ledger.evaluate("claim:c", 100),
-                             ledger.evaluate("claim:c", 100))
+        with (
+            unittest.mock.patch.object(
+                socket,
+                "create_connection",
+                side_effect=AssertionError("NETWORK_FORBIDDEN"),
+            ),
+            unittest.mock.patch.object(
+                socket.socket,
+                "connect",
+                side_effect=AssertionError("NETWORK_FORBIDDEN"),
+            ),
+            unittest.mock.patch(
+                "time.time", side_effect=AssertionError("WALL_CLOCK_FORBIDDEN")
+            ),
+        ):
+            self.assertEqual(
+                ledger.evaluate("claim:c", 100), ledger.evaluate("claim:c", 100)
+            )
 
 
 if __name__ == "__main__":

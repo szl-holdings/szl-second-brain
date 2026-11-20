@@ -6,6 +6,7 @@ verify the referenced content, establish rights, or prove semantic support.
 
 SPDX-License-Identifier: Apache-2.0
 """
+
 from __future__ import annotations
 
 import hashlib
@@ -28,9 +29,17 @@ MAX_TOTAL_LINKS = 1024
 ADMISSIBLE_RIGHTS = frozenset({"apache-2.0", "mit", "cc-by-4.0", "bsd-3-clause"})
 
 _FIELDS = {
-    "evidence_id", "claim_id", "source_handle", "content_sha256",
-    "recorded_at", "valid_from", "valid_until", "rights", "supersedes",
-    "contradicts", "metadata_sha256",
+    "evidence_id",
+    "claim_id",
+    "source_handle",
+    "content_sha256",
+    "recorded_at",
+    "valid_from",
+    "valid_until",
+    "rights",
+    "supersedes",
+    "contradicts",
+    "metadata_sha256",
 }
 _ID = re.compile(r"(?:claim|evidence|handle):[a-z0-9](?:[a-z0-9._-]{0,62}[a-z0-9])?\Z")
 _RIGHTS = re.compile(r"[A-Za-z0-9][A-Za-z0-9.+-]{0,63}\Z")
@@ -55,13 +64,21 @@ def _finite_real(value: Any) -> bool:
 
 
 def _identifier(value: Any, kind: str) -> bool:
-    return (isinstance(value, str) and value.startswith(kind + ":")
-            and _ID.fullmatch(value) is not None)
+    return (
+        isinstance(value, str)
+        and value.startswith(kind + ":")
+        and _ID.fullmatch(value) is not None
+    )
 
 
 def _digest(value: Any) -> str:
-    raw = json.dumps(value, ensure_ascii=False, sort_keys=True,
-                     separators=(",", ":"), allow_nan=False).encode("utf-8")
+    raw = json.dumps(
+        value,
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+        allow_nan=False,
+    ).encode("utf-8")
     return hashlib.sha256(raw).hexdigest()
 
 
@@ -106,8 +123,10 @@ def _validate_record(record: Any, verify_metadata_sha256: bool = True) -> _Evide
         raise TemporalEvidenceError("TEMPORAL_CLAIM_ID_INVALID")
     if not _identifier(record["source_handle"], "handle"):
         raise TemporalEvidenceError("TEMPORAL_SOURCE_HANDLE_INVALID")
-    if (not isinstance(record["content_sha256"], str)
-            or _SHA256.fullmatch(record["content_sha256"]) is None):
+    if (
+        not isinstance(record["content_sha256"], str)
+        or _SHA256.fullmatch(record["content_sha256"]) is None
+    ):
         raise TemporalEvidenceError("TEMPORAL_CONTENT_SHA256_INVALID")
     for field in ("recorded_at", "valid_from"):
         if not _finite_real(record[field]):
@@ -132,19 +151,26 @@ def _validate_record(record: Any, verify_metadata_sha256: bool = True) -> _Evide
             raise TemporalEvidenceError("TEMPORAL_DUPLICATE_LINK")
     declared_sha = record["metadata_sha256"]
     if verify_metadata_sha256 and (
-            not isinstance(declared_sha, str) or _SHA256.fullmatch(declared_sha) is None):
+        not isinstance(declared_sha, str) or _SHA256.fullmatch(declared_sha) is None
+    ):
         raise TemporalEvidenceError("TEMPORAL_METADATA_SHA256_INVALID")
     try:
         computed_sha = _digest(_declared_metadata(record))
     except (TypeError, ValueError, OverflowError, RecursionError) as exc:
-        raise TemporalEvidenceError("TEMPORAL_METADATA_CANONICALIZATION_FAILED") from exc
+        raise TemporalEvidenceError(
+            "TEMPORAL_METADATA_CANONICALIZATION_FAILED"
+        ) from exc
     if verify_metadata_sha256 and declared_sha != computed_sha:
         raise TemporalEvidenceError("TEMPORAL_METADATA_SHA256_MISMATCH")
     return _Evidence(
-        evidence_id=record["evidence_id"], claim_id=record["claim_id"],
-        source_handle=record["source_handle"], content_sha256=record["content_sha256"],
-        recorded_at=record["recorded_at"], valid_from=record["valid_from"],
-        valid_until=valid_until, rights=rights,
+        evidence_id=record["evidence_id"],
+        claim_id=record["claim_id"],
+        source_handle=record["source_handle"],
+        content_sha256=record["content_sha256"],
+        recorded_at=record["recorded_at"],
+        valid_from=record["valid_from"],
+        valid_until=valid_until,
+        rights=rights,
         supersedes=tuple(sorted(record["supersedes"])),
         contradicts=tuple(sorted(record["contradicts"])),
         metadata_sha256=declared_sha if verify_metadata_sha256 else computed_sha,
@@ -153,7 +179,10 @@ def _validate_record(record: Any, verify_metadata_sha256: bool = True) -> _Evide
 
 def compute_metadata_sha256(record: dict[str, Any]) -> str:
     """Validate the fixed metadata and compute its digest, with links sorted."""
-    if not isinstance(record, dict) or set(record) not in (_FIELDS, _FIELDS - {"metadata_sha256"}):
+    if not isinstance(record, dict) or set(record) not in (
+        _FIELDS,
+        _FIELDS - {"metadata_sha256"},
+    ):
         raise TemporalEvidenceError("TEMPORAL_RECORD_FIELDS_INVALID")
     candidate = dict(record)
     candidate["metadata_sha256"] = "0" * 64
@@ -180,11 +209,16 @@ class TemporalEvidenceLedger:
                 raise TemporalEvidenceError("TEMPORAL_DUPLICATE_EVIDENCE_ID")
             by_id[item.evidence_id] = item
             evidence.append(item)
-        if sum(len(item.supersedes) + len(item.contradicts) for item in evidence) > MAX_TOTAL_LINKS:
+        if (
+            sum(len(item.supersedes) + len(item.contradicts) for item in evidence)
+            > MAX_TOTAL_LINKS
+        ):
             raise TemporalEvidenceError("TEMPORAL_TOTAL_LINK_LIMIT_EXCEEDED")
         for item in evidence:
-            for field, links in (("supersedes", item.supersedes),
-                                 ("contradicts", item.contradicts)):
+            for field, links in (
+                ("supersedes", item.supersedes),
+                ("contradicts", item.contradicts),
+            ):
                 for target in links:
                     if target not in by_id:
                         raise TemporalEvidenceError("TEMPORAL_MISSING_REFERENCE")
@@ -195,8 +229,12 @@ class TemporalEvidenceLedger:
         self._by_id = by_id
         self._claims: dict[str, tuple[str, ...]] = {}
         for item in evidence:
-            self._claims[item.claim_id] = self._claims.get(item.claim_id, ()) + (item.evidence_id,)
-        self._claims = {claim: tuple(sorted(ids)) for claim, ids in self._claims.items()}
+            self._claims[item.claim_id] = self._claims.get(item.claim_id, ()) + (
+                item.evidence_id,
+            )
+        self._claims = {
+            claim: tuple(sorted(ids)) for claim, ids in self._claims.items()
+        }
         self._superseded_by = {item.evidence_id: [] for item in evidence}
         contradictions = {item.evidence_id: set() for item in evidence}
         for item in evidence:
@@ -210,14 +248,19 @@ class TemporalEvidenceLedger:
             for identity, targets in self._superseded_by.items()
         }
         self._contradictions = {
-            identity: tuple(sorted(targets)) for identity, targets in contradictions.items()
+            identity: tuple(sorted(targets))
+            for identity, targets in contradictions.items()
         }
         self._check_supersession_cycles()
-        self.ledger_sha256 = _digest({
-            "schema": SCHEMA,
-            "evidence_metadata_sha256": [item.metadata_sha256
-                                          for item in sorted(evidence, key=lambda value: value.evidence_id)],
-        })
+        self.ledger_sha256 = _digest(
+            {
+                "schema": SCHEMA,
+                "evidence_metadata_sha256": [
+                    item.metadata_sha256
+                    for item in sorted(evidence, key=lambda value: value.evidence_id)
+                ],
+            }
+        )
 
     def _check_supersession_cycles(self) -> None:
         colours: dict[str, int] = {}
@@ -236,14 +279,16 @@ class TemporalEvidenceLedger:
             visit(identity)
 
     @staticmethod
-    def _recorded_by(item: _Evidence, as_of: int | float) -> bool:
+    def _recorded_by(item: _Evidence, as_of: float) -> bool:
         return item.recorded_at <= as_of
 
     @staticmethod
-    def _interval_current(item: _Evidence, as_of: int | float) -> bool:
-        return item.valid_from <= as_of and (item.valid_until is None or as_of < item.valid_until)
+    def _interval_current(item: _Evidence, as_of: float) -> bool:
+        return item.valid_from <= as_of and (
+            item.valid_until is None or as_of < item.valid_until
+        )
 
-    def _superseded_at(self, identity: str, as_of: int | float) -> bool:
+    def _superseded_at(self, identity: str, as_of: float) -> bool:
         pending = list(self._superseded_by[identity])
         visited: set[str] = set()
         while pending:
@@ -252,12 +297,16 @@ class TemporalEvidenceLedger:
                 continue
             visited.add(successor_id)
             successor = self._by_id[successor_id]
-            if self._recorded_by(successor, as_of) and self._interval_current(successor, as_of):
+            if self._recorded_by(successor, as_of) and self._interval_current(
+                successor, as_of
+            ):
                 return True
             pending.extend(self._superseded_by[successor_id])
         return False
 
-    def _base_receipt(self, claim_id: str | None, as_of: int | float | None) -> dict[str, Any]:
+    def _base_receipt(
+        self, claim_id: str | None, as_of: float | None
+    ) -> dict[str, Any]:
         return {
             "schema": SCHEMA,
             "claim_id": claim_id,
@@ -287,45 +336,86 @@ class TemporalEvidenceLedger:
         receipt["code"] = code
         return receipt
 
-    def evaluate(self, claim_id: str, as_of: int | float) -> dict[str, Any]:
+    def evaluate(self, claim_id: str, as_of: float) -> dict[str, Any]:
         """Evaluate one claim at an explicit time; no result grants authority."""
         if not _finite_real(as_of):
             return self._query_refusal(claim_id, as_of, "TEMPORAL_AS_OF_INVALID")
         if not _identifier(claim_id, "claim"):
-            return self._query_refusal(claim_id, as_of, "TEMPORAL_QUERY_CLAIM_ID_INVALID")
+            return self._query_refusal(
+                claim_id, as_of, "TEMPORAL_QUERY_CLAIM_ID_INVALID"
+            )
         if claim_id not in self._claims:
             return self._query_refusal(claim_id, as_of, "TEMPORAL_UNKNOWN_CLAIM")
 
         ids = self._claims[claim_id]
-        rights = {identity: self._by_id[identity].rights in ADMISSIBLE_RIGHTS for identity in ids}
-        recorded = {identity: self._recorded_by(self._by_id[identity], as_of) for identity in ids}
-        interval = {identity: self._interval_current(self._by_id[identity], as_of) for identity in ids}
-        superseded = {identity: self._superseded_at(identity, as_of) for identity in ids}
-        eligible = [identity for identity in ids
-                    if rights[identity] and recorded[identity] and interval[identity]
-                    and not superseded[identity]]
+        rights = {
+            identity: self._by_id[identity].rights in ADMISSIBLE_RIGHTS
+            for identity in ids
+        }
+        recorded = {
+            identity: self._recorded_by(self._by_id[identity], as_of)
+            for identity in ids
+        }
+        interval = {
+            identity: self._interval_current(self._by_id[identity], as_of)
+            for identity in ids
+        }
+        superseded = {
+            identity: self._superseded_at(identity, as_of) for identity in ids
+        }
+        eligible = [
+            identity
+            for identity in ids
+            if rights[identity]
+            and recorded[identity]
+            and interval[identity]
+            and not superseded[identity]
+        ]
         eligible_set = set(eligible)
-        conflict_pairs = [(left, right) for index, left in enumerate(eligible)
-                          for right in eligible[index + 1:]
-                          if right in self._contradictions[left]]
+        conflict_pairs = [
+            (left, right)
+            for index, left in enumerate(eligible)
+            for right in eligible[index + 1 :]
+            if right in self._contradictions[left]
+        ]
         conflict_ids = {identity for pair in conflict_pairs for identity in pair}
 
         if conflict_pairs:
-            state, code, candidate = EXPLAIN_CONFLICT, "TEMPORAL_CONTRADICTORY_CURRENT_EVIDENCE", None
+            state, code, candidate = (
+                EXPLAIN_CONFLICT,
+                "TEMPORAL_CONTRADICTORY_CURRENT_EVIDENCE",
+                None,
+            )
         elif len(eligible) > 1:
-            state, code, candidate = ABSTAIN, "TEMPORAL_AMBIGUOUS_CURRENT_EVIDENCE", None
+            state, code, candidate = (
+                ABSTAIN,
+                "TEMPORAL_AMBIGUOUS_CURRENT_EVIDENCE",
+                None,
+            )
         elif len(eligible) == 1:
             state, code, candidate = CURRENT_CANDIDATE, None, eligible[0]
         else:
-            rights_blocked = any(recorded[identity] and interval[identity]
-                                 and not superseded[identity] and not rights[identity]
-                                 for identity in ids)
-            future = any(not recorded[identity]
-                         or self._by_id[identity].valid_from > as_of for identity in ids)
-            stale = any(recorded[identity] and self._by_id[identity].valid_from <= as_of
-                        and not interval[identity] for identity in ids)
-            currently_superseded = any(recorded[identity] and interval[identity]
-                                       and superseded[identity] for identity in ids)
+            rights_blocked = any(
+                recorded[identity]
+                and interval[identity]
+                and not superseded[identity]
+                and not rights[identity]
+                for identity in ids
+            )
+            future = any(
+                not recorded[identity] or self._by_id[identity].valid_from > as_of
+                for identity in ids
+            )
+            stale = any(
+                recorded[identity]
+                and self._by_id[identity].valid_from <= as_of
+                and not interval[identity]
+                for identity in ids
+            )
+            currently_superseded = any(
+                recorded[identity] and interval[identity] and superseded[identity]
+                for identity in ids
+            )
             if rights_blocked:
                 state, code = ABSTAIN, "TEMPORAL_RIGHTS_NOT_ADMISSIBLE"
             elif future:
@@ -339,14 +429,18 @@ class TemporalEvidenceLedger:
             candidate = None
 
         receipt = self._base_receipt(claim_id, as_of)
-        receipt.update({
-            "state": state,
-            "code": code,
-            "candidate_evidence_id": candidate,
-            "candidate_metadata_sha256": self._by_id[candidate].metadata_sha256 if candidate else None,
-            "eligible_evidence_ids": eligible,
-            "conflicting_evidence_pairs": [list(pair) for pair in conflict_pairs],
-        })
+        receipt.update(
+            {
+                "state": state,
+                "code": code,
+                "candidate_evidence_id": candidate,
+                "candidate_metadata_sha256": self._by_id[candidate].metadata_sha256
+                if candidate
+                else None,
+                "eligible_evidence_ids": eligible,
+                "conflicting_evidence_pairs": [list(pair) for pair in conflict_pairs],
+            }
+        )
         decisions = []
         for identity in ids:
             item = self._by_id[identity]
@@ -359,11 +453,19 @@ class TemporalEvidenceLedger:
             }
             if identity in eligible_set:
                 if conflict_pairs:
-                    item_state = EXPLAIN_CONFLICT if identity in conflict_ids else ABSTAIN
-                    item_code = ("TEMPORAL_CONTRADICTORY_CURRENT_EVIDENCE"
-                                 if identity in conflict_ids else "TEMPORAL_CONFLICT_BLOCKS_CLAIM")
+                    item_state = (
+                        EXPLAIN_CONFLICT if identity in conflict_ids else ABSTAIN
+                    )
+                    item_code = (
+                        "TEMPORAL_CONTRADICTORY_CURRENT_EVIDENCE"
+                        if identity in conflict_ids
+                        else "TEMPORAL_CONFLICT_BLOCKS_CLAIM"
+                    )
                 elif len(eligible) > 1:
-                    item_state, item_code = ABSTAIN, "TEMPORAL_AMBIGUOUS_CURRENT_EVIDENCE"
+                    item_state, item_code = (
+                        ABSTAIN,
+                        "TEMPORAL_AMBIGUOUS_CURRENT_EVIDENCE",
+                    )
                 else:
                     item_state, item_code = CURRENT_CANDIDATE, None
             elif not recorded[identity]:
@@ -376,24 +478,38 @@ class TemporalEvidenceLedger:
                 item_state, item_code = ABSTAIN, "TEMPORAL_SUPERSEDED_AT_AS_OF"
             else:
                 item_state, item_code = ABSTAIN, "TEMPORAL_RIGHTS_NOT_ADMISSIBLE"
-            decisions.append({
-                "evidence_id": identity,
-                "metadata_sha256": item.metadata_sha256,
-                "state": item_state,
-                "code": item_code,
-                "axes": axes,
-                "zero_veto_pass": int(all(axes.values())),
-                "vetoed_by": [name for name, passed in axes.items() if not passed],
-                "current_conflicts": [other for other in self._contradictions[identity]
-                                      if other in eligible_set],
-            })
+            decisions.append(
+                {
+                    "evidence_id": identity,
+                    "metadata_sha256": item.metadata_sha256,
+                    "state": item_state,
+                    "code": item_code,
+                    "axes": axes,
+                    "zero_veto_pass": int(all(axes.values())),
+                    "vetoed_by": [name for name, passed in axes.items() if not passed],
+                    "current_conflicts": [
+                        other
+                        for other in self._contradictions[identity]
+                        if other in eligible_set
+                    ],
+                }
+            )
         receipt["decisions"] = decisions
         return receipt
 
 
 __all__ = [
-    "ABSTAIN", "ADMISSIBLE_RIGHTS", "CURRENT_CANDIDATE", "EXPLAIN_CONFLICT",
-    "MAX_EVIDENCE", "MAX_LINKS_PER_RECORD", "MAX_TOTAL_LINKS", "SCHEMA",
-    "TRUTH_LABEL", "WARN_STALE", "TemporalEvidenceError", "TemporalEvidenceLedger",
+    "ABSTAIN",
+    "ADMISSIBLE_RIGHTS",
+    "CURRENT_CANDIDATE",
+    "EXPLAIN_CONFLICT",
+    "MAX_EVIDENCE",
+    "MAX_LINKS_PER_RECORD",
+    "MAX_TOTAL_LINKS",
+    "SCHEMA",
+    "TRUTH_LABEL",
+    "WARN_STALE",
+    "TemporalEvidenceError",
+    "TemporalEvidenceLedger",
     "compute_metadata_sha256",
 ]
