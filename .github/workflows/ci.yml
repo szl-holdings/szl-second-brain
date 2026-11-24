@@ -48,6 +48,9 @@ jobs:
           python-version: "3.12"
       - name: Require Space payload manifest to cover Dockerfile COPY sources
         run: python tools/check_space_payload.py
+      - name: Require every HIRAG admission sidecar claim to be true in git history
+        # A STALE sidecar (corpus changed after the cited mainline commit) passes here; the served opt-in BLOCKS on it.
+        run: python tools/check_admission_metadata.py
       - name: Install the package with its test extra (clean-machine contract)
         # Exactly what a contributor runs on a fresh machine; requirements.txt stays the container input.
         run: python -m pip install --disable-pip-version-check -e ".[test]"
@@ -70,7 +73,8 @@ jobs:
           packages = {entry for entry in top if not entry.endswith(".dist-info")}
           assert packages == {"second_brain"}, sorted(top)
           for required in ("brain-corpus.public.jsonl", "frontier-candidates.public.jsonl",
-                           "frontier-state.v1.json", "manifest.json", "neomme-260m.lock.json"):
+                           "frontier-state.v1.json", "manifest.json", "neomme-260m.lock.json",
+                           "corpus-admission-metadata.v1.json"):
               assert "second_brain/data/" + required in names, required
           print("wheel top-level:", sorted(top))
           PY

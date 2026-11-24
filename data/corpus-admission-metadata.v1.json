@@ -1,0 +1,18 @@
+{
+  "schema": "szl.second-brain.corpus-admission-metadata/v1",
+  "corpus_file": "brain-corpus.public.jsonl",
+  "corpus_sha256": "387337acbd8fe443637102fe7ea75387fa4c3d9d746d8ab6e2d14d6c138aad8f",
+  "row_count": 575,
+  "ingested_at": {
+    "unix_s": 1788009755,
+    "utc": "2026-08-29T13:22:35Z",
+    "kind": "REPOSITORY_ADMISSION_COMMIT_TIME",
+    "granularity": "WHOLE_CORPUS",
+    "source_commit": "ba400df03d1252d300328a3fdbc4f6b86df05b4c",
+    "signature_verification": "NOT_VERIFIED",
+    "basis": "Committer time of the only commit that added these exact corpus bytes to this repository (PR #1). It is an upper bound on when the projection was built, not an upstream ingestion observation, so as a freshness input it can only overstate freshness. Using it in place of a controller-recorded ingestion time is not ratified and requires an owner decision. The commit signature was not verified."
+  },
+  "licenses": {},
+  "license_policy": "ABSENT_IS_UNKNOWN",
+  "license_basis": "No per-row rights are declared. The repository Apache-2.0 licence is not a per-row rights adjudication, and the ingest lane summarises third-party projects. Unknown rights are refused by the gate. Only the owner may add declarations, each with its own basis."
+}

@@ -11,6 +11,34 @@ def _e(value: Any) -> str:
     return html.escape(str(value), quote=True)
 
 
+def _admission_notice(admission: dict[str, Any] | None) -> str:
+    # Nothing is rendered while the opt-in is off, so the default page is unchanged.
+    state = (admission or {}).get("state")
+    if state == "CONFIGURED":
+        return ('<p role="status">HIRAG admission opt-in: <strong>Configured</strong>. Corpus handles appear '
+                'only when the gate admits them. Research and formula review candidates are not gated.</p>')
+    if state == "BLOCKED":
+        return (f'<p role="status" class="error">HIRAG admission opt-in: <strong>Blocked</strong> '
+                f'({_e(admission.get("reason"))}). Corpus searches on this page are refused, not served ungated.</p>')
+    return ""
+
+
+def _admission_outcome(receipt: dict[str, Any]) -> str:
+    detail = receipt.get("admission_detail")
+    if receipt.get("admission") != "APPLIED" or not isinstance(detail, dict):
+        return ""
+    return (f'<span>HIRAG admission: {_e(detail["admitted_count"])} admitted · '
+            f'{_e(detail["refused_count"])} refused</span>')
+
+
+def _no_corpus_handles(receipt: dict[str, Any]) -> str:
+    detail = receipt.get("admission_detail")
+    if receipt.get("admission") == "APPLIED" and isinstance(detail, dict) and detail.get("refused_count"):
+        return (f'<p class="empty">HIRAG admission refused all {_e(detail["refused_count"])} offered corpus '
+                'handles. The planner abstains.</p>')
+    return '<p class="empty">No corpus handles found. The planner abstains.</p>'
+
+
 def render_console(query: str, k: int, status: dict[str, Any],
                    bundle: dict[str, Any] | None = None, error: str | None = None) -> str:
     components = status["components"]
@@ -20,6 +48,7 @@ def render_console(query: str, k: int, status: dict[str, Any],
         f'<small>{_e(part.get("chunk_count", part.get("candidate_count", part.get("pattern_count", "—"))))} records</small></article>'
         for name, part in components.items()
     )
+    notice = _admission_notice(status.get("hirag_admission"))
     results = '<p class="empty">Search the public corpus and review candidates to inspect their evidence.</p>'
     if error:
         results = f'<p role="alert" class="error">Request unavailable: {_e(error)}</p>'
@@ -34,7 +63,7 @@ def render_console(query: str, k: int, status: dict[str, Any],
             f'<code>{_e(h["nodeId"])}</code><details><summary>Content digest</summary>'
             f'<code>{_e(evidence[h["nodeId"]]["sha256"])}</code></details></article>'
             for h in retrieval["handles"]
-        ) or '<p class="empty">No corpus handles found. The planner abstains.</p>'
+        ) or _no_corpus_handles(retrieval["ranking_receipt"])
         review = "".join(
             '<article class="result">'
             f'<span class="tag review">Review required · {_e(h["kind"])}</span>'
@@ -47,7 +76,8 @@ def render_console(query: str, k: int, status: dict[str, Any],
         api_url = "/api/v1/query?" + urlencode({"q": query, "k": k})
         results = (
             f'<section class="outcome" aria-live="polite"><strong>{_e(plan["decision"])}</strong>'
-            f'<span>{_e(bundle["state"])}</span><span>{_e(retrieval["ranking_receipt"]["mode"])}</span></section>'
+            f'<span>{_e(bundle["state"])}</span><span>{_e(retrieval["ranking_receipt"]["mode"])}</span>'
+            + _admission_outcome(retrieval["ranking_receipt"]) + '</section>'
             '<div class="columns"><section><h2>Corpus evidence</h2>' + rows + '</section>'
             '<section><h2>Research &amp; formula review</h2>' + review + '</section></div>'
             '<section class="receipt"><h2>Evidence receipt</h2>'
@@ -67,7 +97,7 @@ a{color:var(--mint)}header,main,footer{max-width:1160px;margin:auto;padding:24px
 <a href="/">Console</a><a href="/lutar">Lutar evidence</a><a href="/evidence">Evidence graph</a><a href="/hologram">Hologram</a><a href="/api/v1/retrieval-capabilities">Capabilities</a><a href="/readyz">Readiness</a>
 </nav></header><main><div class="eyebrow">Public evidence workspace</div><h1>Follow the evidence.</h1>
 <p class="lead">Search governed memory, trace source digests, and inspect research and formula candidates. The software planner proposes citations; review candidates carry no execution authority.</p>
-<div class="metrics">''' + cards + '''</div><form class="search" action="/" method="get">
+<div class="metrics">''' + cards + '''</div>''' + notice + '''<form class="search" action="/" method="get">
 <div><label for="q">Search query</label><input id="q" name="q" maxlength="2000" placeholder="Formula authority, Khipu, retrieval…" value="''' + _e(query) + '''"></div>
 <div><label for="k">Results</label><select id="k" name="k">''' + "".join(f'<option value="{n}"{" selected" if n == k else ""}>{n}</option>' for n in range(1,13)) + '''</select></div>
 <button type="submit">Search evidence</button></form><p>Ranking measures relevance. It is not a correctness probability or a mathematical proof.</p>''' + results + '''</main><footer>Python frontend and backend · Public handles only · Dense retrieval and model generation are not configured.</footer></body></html>'''
