@@ -3,7 +3,10 @@
 
 The public deployment intentionally configures no opaque dense provider. It
 therefore reports ``BM25_ONLY`` until a controller injects a revision-pinned,
-qualified dense provider. Content hydration remains a library-only controller
+qualified dense provider. The optional HIRAG admission opt-in never changes that
+mode: it is reported separately as ``hirag_admission``, which names the routes it
+gates, the routes it blocks and the routes it never covers, and per query by the
+ranking receipt's ``admission`` field. Content hydration remains a library-only controller
 operation and is never exposed as an HTTP route. Continuous frontier learning
 means content-addressed public-source candidates proposed for review; it never
 means silent weight updates, automatic truth promotion, or autonomous execution.
@@ -16,13 +19,15 @@ from fastapi import APIRouter, Query
 from fastapi.responses import JSONResponse
 
 from second_brain import __version__
+from second_brain.admission_runtime import admission_observation
+from second_brain.admission_runtime import served_hybrid_context as hybrid_context
 from second_brain.frontier import (
     FrontierBoundaryError,
     anatomy_feed as build_anatomy_feed,
     frontier_search,
     frontier_status,
 )
-from second_brain.hybrid import RetrievalBoundaryError, hybrid_context
+from second_brain.hybrid import RetrievalBoundaryError
 from second_brain.web_contracts import QueryRequest
 
 router = APIRouter()
@@ -47,6 +52,7 @@ def lutar_invariants_route() -> JSONResponse:
 @router.get("/api/v1/retrieval-capabilities")
 def retrieval_capabilities() -> dict[str, Any]:
     frontier = frontier_status()
+    admission = admission_observation()
     return {
         "schema": "szl.second-brain.retrieval-capabilities/v2",
         "version": __version__,
@@ -56,8 +62,10 @@ def retrieval_capabilities() -> dict[str, Any]:
             "BM25_ONLY",
             "HYBRID_SPARSE_DENSE",
             "HYBRID_SPARSE_DENSE+RERANKER",
+            "BM25_ONLY+HIRAG_ADMISSION",
         ],
         "public_runtime_mode": "BM25_ONLY",
+        "hirag_admission": admission,
         "dense_provider": "NOT_CONFIGURED",
         "reranker": "NOT_CONFIGURED",
         "frontier_memory": {
