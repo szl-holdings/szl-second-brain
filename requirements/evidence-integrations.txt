@@ -1,4 +1,4 @@
 # Tested optional SDK versions; not a complete transitive lock.
-langgraph==1.2.22
-langchain-core==1.8.1
+langgraph==1.2.24
+langchain-core==1.8.4
 nemo-relay[langgraph]==0.11.1
