@@ -82,8 +82,10 @@ candidates. It never hydrates private content. The hologram remains available at
 all resolve to `second_brain.web:app`.
 
 `/readyz` now returns HTTP 503 if the corpus, frontier or refinement projection
-is unavailable. It qualifies the public retrieval/review surface only; dense
-retrieval, model generation and production deployment remain separate checks.
+is unavailable, or if the HIRAG admission opt-in was requested but is `BLOCKED`
+(see [HIRAG](docs/HIRAG.md#served-runtime-opt-in)). It qualifies the public
+retrieval/review surface only; dense retrieval, model generation and production
+deployment remain separate checks.
 Malformed POST objects and invalid `k` return HTTP 400 rather than being coerced
 or clipped. Legacy plan callers may select only exact, unique handles returned
 by the current retrieval; invented or altered handles return HTTP 422.
@@ -274,6 +276,8 @@ optional reranker
       ↓
 source-diversity limit
       ↓
+optional HIRAG admission gate (served opt-in, default off)
+      ↓
 handles + source/content digests only
 ```
 
@@ -283,6 +287,33 @@ provider and reranker. If a provider fails, the response either blocks or
 explicitly reports `BM25_FALLBACK_DENSE_UNAVAILABLE`; it never claims a hybrid
 run that did not occur. Similarity and ranking are never represented as
 correctness.
+
+HIRAG admission is off by default: ranking receipts for non-empty queries report
+`admission: NOT_APPLIED`, and `/api/v1/retrieval-capabilities` and `/readyz`
+report `hirag_admission.state: NOT_APPLIED` with reason `OPT_IN_NOT_ENABLED`.
+The console page and the retrieval payloads are unchanged.
+
+Setting `SECOND_BRAIN_HIRAG_ADMISSION=1` applies admission to the brain-corpus
+handles of `/`, `/api/v1/query`, `/api/v1/hybrid`, `/api/v1/evidence-graph` and
+`/evidence`, using the committed metadata in
+`data/corpus-admission-metadata.v1.json`. The opt-in requires an owner decision
+first: its ingestion timestamp is a repository commit time standing in for a
+controller-measured one, and that substitution is not ratified. The metadata
+declares no per-row licence, and the shipped corpus's 30-day freshness window
+closed on 2026-09-28. Every node is therefore refused, which has these effects:
+
+- Those corpus queries abstain (`ABSTAIN_NO_GROUNDED_HANDLES`).
+- `/api/v1/evidence-graph` and `/evidence` return HTTP 503
+  `PARTIAL_OR_UNAVAILABLE`.
+- Review-candidate handles in the same responses are still returned, because
+  they are not gated.
+
+`public_runtime_mode` stays `BM25_ONLY`. The legacy `/retrieve`,
+`/api/v1/retrieve`, `/plan`, `/api/v1/plan` and `/api/v1/navigator` routes and the
+frontier routes are not gated and are listed in
+`hirag_admission.ungated_routes`. Any other value, or a missing, malformed or
+stale sidecar, gives `BLOCKED`. See
+[HIRAG](docs/HIRAG.md#served-runtime-opt-in).
 
 ## Local persistent memory prototype
 
@@ -350,7 +381,7 @@ review_content = review_hydrator.hydrate(
 | `GET /api/v1/navigator?q=` | Legacy navigator context |
 | `GET /api/v1/hybrid?q=` | Governed retrieval with an explicit ranking receipt |
 | `POST /api/v1/hybrid` | JSON alias for governed retrieval |
-| `GET /api/v1/retrieval-capabilities` | Truthful runtime capability declaration |
+| `GET /api/v1/retrieval-capabilities` | Truthful runtime capability declaration, including `hirag_admission` state |
 | `GET /api/v1/frontier-status` | Exact candidate/source/digest state, no content |
 | `GET /api/v1/frontier-handles?q=` | Handles-only review-candidate search |
 | `GET /api/v1/anatomy-feed` | Read-only Brain/formula/quant/Ouroboros feed for Living Anatomy |

@@ -5,8 +5,9 @@ from typing import Any
 from pathlib import Path
 
 from second_brain._data import data_file
+from second_brain.admission_runtime import admission_observation
+from second_brain.admission_runtime import served_hybrid_context as hybrid_context
 from second_brain.frontier import FrontierBoundaryError, frontier_search, frontier_status
-from second_brain.hybrid import hybrid_context
 from second_brain.plan import plan_from_handles
 from second_brain.retrieve import canonical_sha256, rag_status
 from second_brain.refinement_memory import load_public_state
@@ -20,6 +21,7 @@ def readiness() -> dict[str, Any]:
     """Readiness covers the public services, not model/provider qualification."""
     corpus = rag_status()
     frontier = frontier_status()
+    admission = admission_observation()
     try:
         memory = load_public_state(_state_path())
         refinement = {"ready": True, "state": memory["state"],
@@ -34,10 +36,13 @@ def readiness() -> dict[str, Any]:
                      "candidate_count": frontier.get("candidate_count", 0)},
         "refinement": refinement,
     }
-    ready = all(item["ready"] for item in components.values())
+    # Admission is not a service component (the console renders one card per component),
+    # but an opt-in that was requested and cannot be built makes the service not ready.
+    ready = all(item["ready"] for item in components.values()) and admission["state"] != "BLOCKED"
     return {"schema": "szl.second-brain.readiness/v1", "ready": ready,
             "state": "READY" if ready else "UNAVAILABLE", "components": components,
             "scope": "PUBLIC_RETRIEVAL_AND_REVIEW", "runtime_mode": "BM25_ONLY",
+            "hirag_admission": admission,
             "model_generation": "NOT_CONFIGURED", "execution_authority": "NONE"}
 
 

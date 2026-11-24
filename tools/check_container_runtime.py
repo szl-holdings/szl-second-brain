@@ -36,7 +36,10 @@ def main() -> None:
         assert health["ok"] is True and health["chunk_count"] == 575
         assert health["publication_eligible"] is False
         with urlopen("http://127.0.0.1:7860/", timeout=3) as response:
-            assert 'Search evidence' in response.read().decode("utf-8")
+            page = response.read().decode("utf-8")
+            assert 'Search evidence' in page
+            # The default console carries no admission card or notice: the opt-in is off.
+            assert page.count('<article class="metric">') == 3 and "HIRAG" not in page
         assert read_json("/readyz")["ready"] is True
         bundle = read_json("/api/v1/query?q=formula%20authority")
         assert bundle["retrieve"]["handles"]
@@ -44,6 +47,14 @@ def main() -> None:
         assert bundle["frontier"]["state"] == "REVIEW_REQUIRED"
         capabilities = read_json("/api/v1/retrieval-capabilities")
         assert capabilities["public_content_access"] == "HANDLES_ONLY"
+        # The image default: HIRAG admission is opt-in and reported as not applied, with its reason.
+        assert capabilities["public_runtime_mode"] == "BM25_ONLY"
+        assert capabilities["hirag_admission"]["state"] == "NOT_APPLIED"
+        assert capabilities["hirag_admission"]["reason"] == "OPT_IN_NOT_ENABLED"
+        ready = read_json("/readyz")
+        assert set(ready["components"]) == {"corpus", "frontier", "refinement"}
+        assert (ready["hirag_admission"]["state"], ready["hirag_admission"]["reason"]) == (
+            "NOT_APPLIED", "OPT_IN_NOT_ENABLED")
         frontier = read_json("/api/v1/frontier-status")
         assert frontier["ready"] is True and frontier["execution_authority"] == "NONE"
         hybrid = read_json("/api/v1/hybrid?q=Lambda%20uniqueness%20conjecture")
@@ -51,6 +62,9 @@ def main() -> None:
         assert hybrid["handles"] and all(
             "content" not in handle and "text" not in handle for handle in hybrid["handles"]
         )
+        assert hybrid["ranking_receipt"]["admission"] == "NOT_APPLIED"
+        assert hybrid["ranking_receipt"]["mode"] == capabilities["public_runtime_mode"]
+        assert "admission_runtime" not in hybrid["ranking_receipt"]
         lutar = read_json("/api/v1/lutar-invariants")
         assert lutar["ready"] is True and lutar["state"] == "SOURCE_BOUND_REFERENCE"
         assert lutar["declared_locked_count"] == 8 and lutar["declared_carrier_count"] == 24
@@ -66,7 +80,28 @@ def main() -> None:
         for route, name in (("receipt", "training_receipt.json"), ("eval", "eval_report.json")):
             expected = json.loads((Path("train") / name).read_text(encoding="utf-8"))
             assert read_json("/api/v1/" + route) == expected
-        print("container runtime closure passed: corpus, UI, Lutar/Anatomy handles, and retained records")
+        # The shipped sidecar builds the opt-in gate inside the read-only image (not served by default)
+        # when it names the shipped corpus bytes; a stale sidecar must refuse to build, never fall back.
+        import hashlib
+        from second_brain import admission_runtime
+        from second_brain._data import data_file
+        from second_brain.retrieve import index
+        sidecar_path = data_file(admission_runtime.METADATA_FILE)
+        sidecar = json.loads(sidecar_path.read_text(encoding="utf-8"))
+        shipped = hashlib.sha256(data_file("brain-corpus.public.jsonl").read_bytes()).hexdigest()
+        if sidecar["corpus_sha256"] == shipped:
+            _gated, block = admission_runtime.build_runtime(index(), sidecar_path)
+            assert block["state"] == "CONFIGURED" and block["corpus_row_count"] == health["chunk_count"]
+            assert block["declared_license_count"] == 0 and block["unknown_license_count"] == health["chunk_count"]
+        else:
+            try:
+                admission_runtime.build_runtime(index(), sidecar_path)
+            except admission_runtime.AdmissionBlocked as exc:
+                assert exc.reason == "METADATA_GENERATION_MISMATCH", exc.reason
+            else:
+                raise AssertionError("a stale admission sidecar built a gate")
+        print("container runtime closure passed: corpus, UI, Lutar/Anatomy handles, retained records, "
+              "and opt-in HIRAG admission sidecar")
     finally:
         process.terminate()
         try:
