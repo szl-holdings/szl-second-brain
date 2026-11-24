@@ -253,8 +253,9 @@ def test_sidecar_claims_are_true_in_git_history():
     except history_check.HistoryUnavailable as exc:
         # Only a shallow clone or a missing git can skip; an absent or off-mainline commit fails.
         pytest.skip(f"{exc} (CI runs tools/check_admission_metadata.py with fetch-depth 0, where this cannot skip)")
-    assert (result["commit"], result["unix_s"]) == (ADMISSION_COMMIT, ADMISSION_COMMIT_UNIX_S)
-    assert result["status"] == ("CURRENT" if _committed_sidecar_is_current() else "STALE")
+    else:
+        assert (result["commit"], result["unix_s"]) == (ADMISSION_COMMIT, ADMISSION_COMMIT_UNIX_S)
+        assert result["status"] == ("CURRENT" if _committed_sidecar_is_current() else "STALE")
 
 
 # --- console with the opt-in set --------------------------------------------------------
