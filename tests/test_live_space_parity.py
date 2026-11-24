@@ -3,9 +3,13 @@
 from __future__ import annotations
 
 import importlib.util
+import json
 import subprocess
 import unittest
+from email.message import Message
+from io import BytesIO
 from pathlib import Path
+from unittest.mock import Mock, patch
 
 ROOT = Path(__file__).resolve().parents[1]
 SPEC = importlib.util.spec_from_file_location(
@@ -35,6 +39,79 @@ def fixture():
 
 
 class LiveSpaceParityTests(unittest.TestCase):
+    @staticmethod
+    def page(rows, next_url=None):
+        response = BytesIO(json.dumps(rows).encode("utf-8"))
+        response.status = 200
+        response.headers = Message()
+        if next_url is not None:
+            response.headers["Link"] = f'<{next_url}>; rel="next"'
+        return response
+
+    def test_extra_file_on_later_pinned_page_requires_review(self):
+        expected, rows = fixture()
+        tree_url = gate.SPACE_API + "/tree/" + "a" * 40
+        first = tree_url + "?recursive=true"
+        second = tree_url + "?expand=false&recursive=true&limit=1000&cursor=cGFnZTI%3D"
+        extra = {"type": "file", "oid": "e" * 40, "path": "extra.py"}
+        opener = Mock()
+        opener.open.side_effect = [self.page(rows, second), self.page([extra])]
+        report = gate.compare_file_oids(expected, gate.provider_json(first, opener=opener))
+        self.assertEqual(report["state"], "SOURCE_PARITY_MATCH_EXTRA_REVIEW_REQUIRED")
+        self.assertEqual(report["extra_space_paths_sample"], ["extra.py"])
+        self.assertEqual(
+            [call.args[0].full_url for call in opener.open.call_args_list],
+            [first, second],
+        )
+
+    def test_continuation_cannot_leave_the_pinned_recursive_tree(self):
+        first = gate.SPACE_API + "/tree/" + "a" * 40 + "?recursive=true"
+        for second in (
+            first.replace("a" * 40, "b" * 40) + "&cursor=next",
+            first.replace("huggingface.co", "example.org") + "&cursor=next",
+            first.replace("recursive=true", "recursive=false") + "&cursor=next",
+        ):
+            with self.subTest(second=second):
+                opener = Mock()
+                opener.open.return_value = self.page([], second)
+                with self.assertRaises(gate.ParityHold):
+                    gate.provider_json(first, opener=opener)
+                opener.open.assert_called_once()
+
+    def test_repeated_or_over_budget_continuation_holds(self):
+        _, rows = fixture()
+        first = gate.SPACE_API + "/tree/" + "a" * 40 + "?recursive=true"
+        second = first + "&cursor=next"
+        opener = Mock()
+        opener.open.side_effect = [self.page(rows[:1], second), self.page(rows[1:], second)]
+        with self.assertRaisesRegex(gate.ParityHold, "PROVIDER_TREE_PAGINATION"):
+            gate.provider_json(first, opener=opener)
+        opener = Mock()
+        opener.open.return_value = self.page(rows, second)
+        with patch.object(gate, "MAX_FILES", len(rows)):
+            with self.assertRaisesRegex(gate.ParityHold, "PROVIDER_TREE_LIMIT"):
+                gate.provider_json(first, opener=opener)
+        opener.open.assert_called_once()
+
+    def test_unavailable_second_page_cannot_produce_a_match(self):
+        _, rows = fixture()
+        first = gate.SPACE_API + "/tree/" + "a" * 40 + "?recursive=true"
+        second = first + "&cursor=next"
+        opener = Mock()
+        opener.open.side_effect = [self.page(rows, second), TimeoutError()]
+        with self.assertRaisesRegex(gate.ParityHold, "PROVIDER_TRANSPORT_TimeoutError"):
+            gate.provider_json(first, opener=opener)
+
+    def test_byte_budget_spans_pages(self):
+        _, rows = fixture()
+        first = gate.SPACE_API + "/tree/" + "a" * 40 + "?recursive=true"
+        first_page = self.page(rows[:1], first + "&cursor=next")
+        opener = Mock()
+        opener.open.side_effect = [first_page, self.page(rows[1:])]
+        with patch.object(gate, "MAX_HTTP_BYTES", len(first_page.getvalue()) + 1):
+            with self.assertRaisesRegex(gate.ParityHold, "PROVIDER_RESPONSE_OVERSIZE"):
+                gate.provider_json(first, opener=opener)
+
     def test_exact_matches_are_only_source_matches(self):
         expected, rows = fixture()
         report = gate.compare_file_oids(expected, rows)

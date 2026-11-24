@@ -14,6 +14,7 @@ import json
 import re
 import subprocess
 import urllib.error
+import urllib.parse
 import urllib.request
 from datetime import UTC, datetime
 from pathlib import Path
@@ -25,6 +26,7 @@ SPACE_API = "https://huggingface.co/api/spaces/" + SPACE_REPO
 SHA40 = re.compile(r"[a-f0-9]{40}\Z")
 MAX_HTTP_BYTES = 1_000_000
 MAX_FILES = 1000
+MAX_TREE_PAGES = 10
 MAX_EXTRAS_DISPLAY = 30
 
 
@@ -61,18 +63,7 @@ class NoRedirect(urllib.request.HTTPRedirectHandler):
         return None
 
 
-def provider_json(url: str, *, opener=None):
-    """Only fixed Hugging Face public API paths. No credentials or redirects."""
-    require(
-        url == SPACE_API
-        or (
-            url.startswith(SPACE_API + "/tree/")
-            and url.endswith("?recursive=true")
-            and SHA40.fullmatch(url[len(SPACE_API) + 6 : -len("?recursive=true")])
-            is not None
-        ),
-        "PROVIDER_URL_NOT_ALLOWLISTED",
-    )
+def read_page(url, opener, byte_budget):
     request = urllib.request.Request(
         url,
         headers={
@@ -81,20 +72,81 @@ def provider_json(url: str, *, opener=None):
         },
         method="GET",
     )
-    opener = opener or urllib.request.build_opener(NoRedirect())
     try:
         with opener.open(request, timeout=10) as response:
             require(
                 type(response.status) is int and response.status == 200,
                 "PROVIDER_HTTP_NON_200",
             )
-            raw = response.read(MAX_HTTP_BYTES + 1)
-            require(len(raw) <= MAX_HTTP_BYTES, "PROVIDER_RESPONSE_OVERSIZE")
+            raw = response.read(byte_budget + 1)
+            require(len(raw) <= byte_budget, "PROVIDER_RESPONSE_OVERSIZE")
+            links = response.headers.get_all("Link", [])
     except urllib.error.HTTPError as exc:
         raise ParityHold("PROVIDER_HTTP_" + str(exc.code)) from None
     except (OSError, TimeoutError) as exc:
         raise ParityHold("PROVIDER_TRANSPORT_" + type(exc).__name__) from None
-    return strict_json(raw)
+    return strict_json(raw), links, len(raw)
+
+
+def next_tree_url(links, tree_url):
+    """Accept the Hub's single next link on exactly the original tree."""
+    require(len(links) == 1, "PROVIDER_TREE_PAGINATION")
+    match = re.fullmatch(r'\s*<([^<>\s]+)>\s*;\s*rel="next"\s*', links[0])
+    require(match is not None, "PROVIDER_TREE_PAGINATION")
+    url = match.group(1)
+    path, _, query = url.partition("?")
+    require(path == tree_url and "#" not in url, "PROVIDER_TREE_PAGINATION")
+    try:
+        params = urllib.parse.parse_qs(
+            query, keep_blank_values=True, strict_parsing=True, max_num_fields=4
+        )
+    except ValueError:
+        raise ParityHold("PROVIDER_TREE_PAGINATION") from None
+    limits = params.get("limit", ["1000"])
+    require(
+        set(params) <= {"recursive", "expand", "limit", "cursor"}
+        and params.get("recursive") == ["true"]
+        and params.get("expand", ["false"]) == ["false"]
+        and len(params.get("cursor", [])) == 1
+        and bool(params["cursor"][0])
+        and len(limits) == 1
+        and re.fullmatch(r"[1-9][0-9]{0,3}", limits[0]) is not None
+        and int(limits[0]) <= 1000,
+        "PROVIDER_TREE_PAGINATION",
+    )
+    return url
+
+
+def provider_json(url: str, *, opener=None):
+    """Only fixed Hugging Face public API paths. No credentials or redirects."""
+    opener = opener or urllib.request.build_opener(NoRedirect())
+    if url == SPACE_API:
+        return read_page(url, opener, MAX_HTTP_BYTES)[0]
+    tree_url, _, query = url.partition("?")
+    prefix = SPACE_API + "/tree/"
+    require(
+        tree_url.startswith(prefix)
+        and SHA40.fullmatch(tree_url[len(prefix):]) is not None
+        and query == "recursive=true",
+        "PROVIDER_URL_NOT_ALLOWLISTED",
+    )
+    rows = []
+    seen = set()
+    byte_budget = MAX_HTTP_BYTES
+    while True:
+        require(
+            url not in seen and len(seen) < MAX_TREE_PAGES, "PROVIDER_TREE_PAGINATION"
+        )
+        seen.add(url)
+        page, links, size = read_page(url, opener, byte_budget)
+        require(type(page) is list, "PROVIDER_TREE_INVALID")
+        require(len(rows) + len(page) <= MAX_FILES, "PROVIDER_TREE_LIMIT")
+        rows.extend(page)
+        if not links:
+            return rows
+        require(len(rows) < MAX_FILES, "PROVIDER_TREE_LIMIT")
+        byte_budget -= size
+        url = next_tree_url(links, tree_url)
 
 
 def commit_and_index(root: Path, expected_commit: str):
