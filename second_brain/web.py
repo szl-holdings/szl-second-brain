@@ -41,6 +41,12 @@ async def retrieval_boundary(request: Request, exc: RetrievalBoundaryError) -> J
                          "reason": type(exc).__name__}, status_code=422)
 
 
+@app.get("/healthz")
+def healthz() -> dict:
+    """Platform liveness for the canonical Python web application."""
+    return {"status": "ok", "service": "szl-second-brain", "version": __version__}
+
+
 @app.get("/readyz")
 def readyz() -> JSONResponse:
     payload = readiness()
